@@ -77,7 +77,7 @@ FcProcess * FcpCreateProcess(FcPool *pool)
 	pool->ReferenceCount += 1;
 	
 	// Initialize the object
-	process->ReferenceCount = 1;
+	process->ReferenceCount = 0;
 	process->Pool = pool;
 	InsertHeadList(&pool->RunningList, &process->PoolEntry);
 	process->State = FCP_STATE_READY;
@@ -129,10 +129,16 @@ int FcpWriteProcess(FcProcess *process, const void *buffer, size_t size, FcReadW
 	return 0;
 }
 
+static void FcpWriteEofComplete(void *state, size_t size, int error)
+{
+}
+
 int FcpTerminateProcess(FcProcess *process, int error)
 {
 	if (process->State == FCP_STATE_POOLING) {
 		FcpRemovePoolProcess(process);
+	} else if (process->State == FCP_STATE_INTERACTIVE) {
+		RtlWriteFifo(process->Request->StdoutFifo, NULL, 0, FcpWriteEofComplete, NULL);
 	} else if (process->State == FCP_STATE_TERMINATED) {
 		return 1;
 	}

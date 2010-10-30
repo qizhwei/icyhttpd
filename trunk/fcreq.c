@@ -234,6 +234,7 @@ int FcBeginRequest(FcPool *pool, const char *scriptPath, FcBeginRequestCompletio
 	// Write the begin request packet
 	if (FcpWriteProcess(process, &FcpBeginRequestPacket, sizeof(FcpBeginRequestPacket), &FcpBeginTrigger, brstate)) {
 		FcpTerminateProcess(process, 1);
+		FcpDereferenceProcess(process);
 		FcpDereferenceRequest(request);
 		RtlFreeHeap(brstate);
 		return 1;

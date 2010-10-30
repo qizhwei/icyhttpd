@@ -78,6 +78,7 @@ FcProcess * FcpCreateProcess(FcPool *pool)
 	
 	// Initialize the object
 	process->ReferenceCount = 0;
+	process->RemainingRequests = pool->MaxRequests;
 	process->Pool = pool;
 	InsertHeadList(&pool->RunningList, &process->PoolEntry);
 	process->State = FCP_STATE_READY;

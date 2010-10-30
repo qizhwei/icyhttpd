@@ -10,7 +10,7 @@ typedef struct _FcRequest FcRequest;
 typedef void FcBeginRequestCompletion(void *state, FcRequest *request, int error);
 typedef void FcReadWriteCompletion(void *state, size_t size, int error);
 
-extern FcPool * FcCreatePool(const char *commandLine, int idleTime);
+extern FcPool * FcCreatePool(const char *commandLine, int idleTime, int maxRequests);
 extern int FcBeginRequest(FcPool *pool, const char *scriptPath, FcBeginRequestCompletion *completion, void *state);
 extern int FcReadRequest(FcRequest *request, char *buffer, size_t size, FcReadWriteCompletion *completion, void *state);
 extern int FcWriteRequest(FcRequest *request, char *buffer, size_t size, FcReadWriteCompletion *completion, void *state);

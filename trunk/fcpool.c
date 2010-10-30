@@ -3,7 +3,7 @@
 
 static void CALLBACK FcpProcessTimerProc(void *state, DWORD dwTimerLowValue, DWORD dwTimerHighValue);
 
-FcPool * FcCreatePool(const char *commandLine, int idleTime)
+FcPool * FcCreatePool(const char *commandLine, int idleTime, int maxRequests)
 {
 	FcPool *pool;
 	
@@ -30,6 +30,7 @@ FcPool * FcCreatePool(const char *commandLine, int idleTime)
 	}
 	
 	pool->IdleTime = idleTime;
+	pool->MaxRequests = maxRequests;
 	
 	return pool;
 }
@@ -117,7 +118,7 @@ FcProcess * FcpPopPoolProcess(FcPool *pool)
 		return NULL;
 	}
 	
-	process = CONTAINING_RECORD(pool->PoolingList.next, FcProcess, PoolEntry);
+	process = CONTAINING_RECORD(pool->PoolingList.Flink, FcProcess, PoolEntry);
 	FcpRemovePoolProcess(process);
 	return process;
 }

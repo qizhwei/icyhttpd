@@ -99,8 +99,8 @@ static void RtlpTransferFifo(RtlFifo *fifo)
 	size_t readLength, writeLength;
 	
 	while (!IsListEmpty(&fifo->ReadList) && !IsListEmpty(&fifo->WriteList)) {
-		readBlock = CONTAINING_RECORD(fifo->ReadList.next, RtlpFifoBlock, Entry);
-		writeBlock = CONTAINING_RECORD(fifo->WriteList.next, RtlpFifoBlock, Entry);
+		readBlock = CONTAINING_RECORD(fifo->ReadList.Flink, RtlpFifoBlock, Entry);
+		writeBlock = CONTAINING_RECORD(fifo->WriteList.Flink, RtlpFifoBlock, Entry);
 		
 		if (writeBlock->Size == 0) {
 			RtlpCompleteFifoBlock(readBlock);
@@ -141,7 +141,10 @@ static void CALLBACK RtlpCompleteFifoApc(ULONG_PTR dwParam)
 static void RtlpCompleteFifoBlock(RtlpFifoBlock *block)
 {
 	RemoveEntryList(&block->Entry);
-	QueueUserAPC(&RtlpCompleteFifoApc, GetCurrentThread(), (ULONG_PTR)block);
+	if (!QueueUserAPC(&RtlpCompleteFifoApc, GetCurrentThread(), (ULONG_PTR)block)) {
+		block->Completion(block->CompletionState, block->Transferred, 1);
+		RtlFreeHeap(block);
+	}
 }
 
 static void RtlpCancelFifo(RtlFifo *fifo)
@@ -149,13 +152,13 @@ static void RtlpCancelFifo(RtlFifo *fifo)
 	RtlpFifoBlock *block;
 	
 	while (!IsListEmpty(&fifo->ReadList)) {
-		block = CONTAINING_RECORD(fifo->ReadList.next, RtlpFifoBlock, Entry);
+		block = CONTAINING_RECORD(fifo->ReadList.Flink, RtlpFifoBlock, Entry);
 		block->Error = 1;
 		RtlpCompleteFifoBlock(block);
 	}
 	
 	while (!IsListEmpty(&fifo->WriteList)) {
-		block = CONTAINING_RECORD(fifo->WriteList.next, RtlpFifoBlock, Entry);
+		block = CONTAINING_RECORD(fifo->WriteList.Flink, RtlpFifoBlock, Entry);
 		block->Error = 1;
 		RtlpCompleteFifoBlock(block);
 	}

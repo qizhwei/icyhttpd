@@ -19,10 +19,12 @@ struct _FcPool {
 	ListEntry PoolingList;
 	char *CommandLine;
 	int IdleTime;
+	int MaxRequests;
 };
 
 struct _FcProcess {
 	int ReferenceCount;
+	int RemainingRequests;
 	FcPool *Pool;
 	ListEntry PoolEntry;
 	int State;

@@ -96,8 +96,9 @@ static void CALLBACK FcpReadPipeComplete(DWORD errorCode, DWORD bytesTransferred
 				}
 				process->State = FCP_STATE_READY;
 				FcpDereferenceRequest(request);
-				if (FcpPushPoolProcess(process)) {
-					FcpTerminateProcess(process, 1);
+				process->RemainingRequests -= 1;
+				if (process->RemainingRequests == 0 || FcpPushPoolProcess(process)) {
+					goto Error;
 				}
 				break;
 		}

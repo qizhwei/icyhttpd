@@ -13,7 +13,7 @@ CurrentFileName        :=
 CurrentFilePath        :=
 CurrentFileFullPath    :=
 User                   :=iceboy
-Date                   :=10/30/10
+Date                   :=10/31/10
 CodeLitePath           :="C:\Program Files\CodeLite"
 LinkerName             :=gcc
 ArchiveTool            :=ar rcus
@@ -40,7 +40,7 @@ CmpOptions             := -g $(Preprocessors)
 LinkOptions            :=  
 IncludePath            :=  "$(IncludeSwitch)." "$(IncludeSwitch)." 
 RcIncludePath          :=
-Libs                   :=
+Libs                   :=$(LibrarySwitch)ws2_32 
 LibPath                := "$(LibraryPathSwitch)." 
 
 
@@ -50,7 +50,7 @@ LibPath                := "$(LibraryPathSwitch)."
 CodeLiteDir:=C:\Program Files\CodeLite
 UNIT_TEST_PP_SRC_DIR:=C:\UnitTest++-1.3
 Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/fcpool$(ObjectSuffix) $(IntermediateDirectory)/fcinit$(ObjectSuffix) $(IntermediateDirectory)/fcproc$(ObjectSuffix) $(IntermediateDirectory)/fcreq$(ObjectSuffix) $(IntermediateDirectory)/fcstd$(ObjectSuffix) $(IntermediateDirectory)/rtlheap$(ObjectSuffix) $(IntermediateDirectory)/rtlstr$(ObjectSuffix) $(IntermediateDirectory)/rtlpipe$(ObjectSuffix) $(IntermediateDirectory)/rtlfifo$(ObjectSuffix) \
-	
+	$(IntermediateDirectory)/svinit$(ObjectSuffix) $(IntermediateDirectory)/svsite$(ObjectSuffix) $(IntermediateDirectory)/sventry$(ObjectSuffix) $(IntermediateDirectory)/svlisten$(ObjectSuffix) $(IntermediateDirectory)/svss$(ObjectSuffix) 
 
 ##
 ## Main Build Targets 
@@ -150,6 +150,46 @@ $(IntermediateDirectory)/rtlfifo$(DependSuffix): rtlfifo.c
 $(IntermediateDirectory)/rtlfifo$(PreprocessSuffix): rtlfifo.c
 	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/rtlfifo$(PreprocessSuffix) "D:/CodeLite/icyhttpd/rtlfifo.c"
 
+$(IntermediateDirectory)/svinit$(ObjectSuffix): svinit.c $(IntermediateDirectory)/svinit$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd/svinit.c" $(CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/svinit$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/svinit$(DependSuffix): svinit.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) -MT$(IntermediateDirectory)/svinit$(ObjectSuffix) -MF$(IntermediateDirectory)/svinit$(DependSuffix) -MM "D:/CodeLite/icyhttpd/svinit.c"
+
+$(IntermediateDirectory)/svinit$(PreprocessSuffix): svinit.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/svinit$(PreprocessSuffix) "D:/CodeLite/icyhttpd/svinit.c"
+
+$(IntermediateDirectory)/svsite$(ObjectSuffix): svsite.c $(IntermediateDirectory)/svsite$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd/svsite.c" $(CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/svsite$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/svsite$(DependSuffix): svsite.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) -MT$(IntermediateDirectory)/svsite$(ObjectSuffix) -MF$(IntermediateDirectory)/svsite$(DependSuffix) -MM "D:/CodeLite/icyhttpd/svsite.c"
+
+$(IntermediateDirectory)/svsite$(PreprocessSuffix): svsite.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/svsite$(PreprocessSuffix) "D:/CodeLite/icyhttpd/svsite.c"
+
+$(IntermediateDirectory)/sventry$(ObjectSuffix): sventry.c $(IntermediateDirectory)/sventry$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd/sventry.c" $(CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/sventry$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/sventry$(DependSuffix): sventry.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) -MT$(IntermediateDirectory)/sventry$(ObjectSuffix) -MF$(IntermediateDirectory)/sventry$(DependSuffix) -MM "D:/CodeLite/icyhttpd/sventry.c"
+
+$(IntermediateDirectory)/sventry$(PreprocessSuffix): sventry.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/sventry$(PreprocessSuffix) "D:/CodeLite/icyhttpd/sventry.c"
+
+$(IntermediateDirectory)/svlisten$(ObjectSuffix): svlisten.c $(IntermediateDirectory)/svlisten$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd/svlisten.c" $(CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/svlisten$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/svlisten$(DependSuffix): svlisten.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) -MT$(IntermediateDirectory)/svlisten$(ObjectSuffix) -MF$(IntermediateDirectory)/svlisten$(DependSuffix) -MM "D:/CodeLite/icyhttpd/svlisten.c"
+
+$(IntermediateDirectory)/svlisten$(PreprocessSuffix): svlisten.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/svlisten$(PreprocessSuffix) "D:/CodeLite/icyhttpd/svlisten.c"
+
+$(IntermediateDirectory)/svss$(ObjectSuffix): svss.c $(IntermediateDirectory)/svss$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd/svss.c" $(CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/svss$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/svss$(DependSuffix): svss.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) -MT$(IntermediateDirectory)/svss$(ObjectSuffix) -MF$(IntermediateDirectory)/svss$(DependSuffix) -MM "D:/CodeLite/icyhttpd/svss.c"
+
+$(IntermediateDirectory)/svss$(PreprocessSuffix): svss.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/svss$(PreprocessSuffix) "D:/CodeLite/icyhttpd/svss.c"
+
 
 -include $(IntermediateDirectory)/*$(DependSuffix)
 ##
@@ -186,6 +226,21 @@ clean:
 	$(RM) $(IntermediateDirectory)/rtlfifo$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/rtlfifo$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/rtlfifo$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/svinit$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/svinit$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/svinit$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/svsite$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/svsite$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/svsite$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/sventry$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/sventry$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/sventry$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/svlisten$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/svlisten$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/svlisten$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/svss$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/svss$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/svss$(PreprocessSuffix)
 	$(RM) $(OutputFile)
 	$(RM) $(OutputFile).exe
 

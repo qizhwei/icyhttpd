@@ -241,7 +241,7 @@ int FcBeginRequest(FcPool *pool, const char *scriptPath, FcBeginRequestCompletio
 	}
 	
 	// Send parameters
-	FcpSendParam(brstate, "PATH_TRANSLATED", scriptPath);
+	FcpSendParam(brstate, "SCRIPT_FILENAME", scriptPath);
 	FcpSendParam(brstate, NULL, NULL);
 		
 	return 0;

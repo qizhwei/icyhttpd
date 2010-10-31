@@ -10,7 +10,7 @@ FcProcess * FcpCreateProcess(FcPool *pool)
 	FcProcess *process;
 	
 	// Create a pair of pipe
-	if (RtlCreatePipeDuplex(&remotePipe, &localPipe)) {
+	if (RtlCreatePipe(&remotePipe, &localPipe)) {
 		return NULL;
 	}
 	

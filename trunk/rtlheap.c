@@ -89,7 +89,7 @@ void RtlTraceHeap(void)
 	RtlpHeapTrace *trace;
 	char *tagWord;
 	
-	for (entry = RtlpHeapTraceList.next; entry != &RtlpHeapTraceList; entry = entry->next) {
+	for (entry = RtlpHeapTraceList.Flink; entry != &RtlpHeapTraceList; entry = entry->Flink) {
 		trace = CONTAINING_RECORD(entry, RtlpHeapTrace, Entry);
 		printf("%s\n", trace->Tag);
 	}

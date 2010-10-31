@@ -9,14 +9,14 @@ int FcpInitialize(void)
 
 	if (!Initialized) {
 		
-		/* create a job object */
+		// create a job object
 		FcpJobObject = CreateJobObject(NULL, NULL);
 		if (FcpJobObject == NULL) {
 			return 1;
 		}
 
-		/* let all processes assigned to this job object
-		 * being killed when the job object closed */
+		// let all processes assigned to this job object
+		// being killed when the job object closed
 		if (!QueryInformationJobObject(FcpJobObject, JobObjectExtendedLimitInformation, &limit, sizeof(limit), NULL)) {
 			CloseHandle(FcpJobObject);
 			return 1;

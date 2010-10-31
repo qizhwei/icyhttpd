@@ -136,7 +136,6 @@ static void CALLBACK FcpProcessTimerProc(void *state, DWORD dwTimerLowValue, DWO
 		process->WaitBlock = NULL;
 		process->State = FCP_STATE_READY;
 		FcpTerminateProcess(process, 0);
-		FcpDereferenceProcess(process);
 
 		// Dereference for the process
 		FcpDereferenceWaitBlock(waitBlock);

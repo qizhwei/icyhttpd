@@ -12,31 +12,28 @@ typedef struct _FcpReadPipeState {
 static void CALLBACK FcpReadPipeComplete(DWORD errorCode, DWORD bytesTransferred, LPOVERLAPPED overlapped);
 static void FcpWriteStdoutCompletion(void *state, size_t size, int error);
 static void FcpWriteStdoutEofCompletion(void *state, size_t size, int error);
-	
+
 int FcpReadPipe(FcProcess *process)
 {
 	FcpReadPipeState *rpstate;
 	
 	// Allocate memory for asynchronous state object
-	rpstate = RtlAllocateHeap(sizeof(FcpReadPipeState), "FcpReadPipe");
+	rpstate = RtlAllocateHeap(sizeof(FcpReadPipeState));
 	if (rpstate == NULL) {
 		return 1;
 	}
 	
 	// Initialize the state object
 	memset(&rpstate->Overlapped, 0, sizeof(OVERLAPPED));
-	rpstate->Process = process;
+	rpstate->Process = ObReferenceObjectByPointer(process, NULL);
 	rpstate->Length = 0;
-	
-	// Increment reference count of the process
-	process->ReferenceCount += 1;
 	
 	// Begin read operation
 	if (!ReadFileEx(process->LocalPipe, rpstate->Buffer, FCGI_HEADER_LEN,
 		&rpstate->Overlapped, &FcpReadPipeComplete))
 	{
 		RtlFreeHeap(rpstate);
-		FcpDereferenceProcess(process);
+		ObDereferenceObject(process);
 		return 1;
 	}
 	
@@ -54,7 +51,7 @@ static void CALLBACK FcpReadPipeComplete(DWORD errorCode, DWORD bytesTransferred
 	if (errorCode != 0) {
 		RtlFreeHeap(rpstate);
 		FcpTerminateProcess(process, 1);
-		FcpDereferenceProcess(process);
+		ObDereferenceObject(process);
 		return;
 	}
 	
@@ -95,7 +92,7 @@ static void CALLBACK FcpReadPipeComplete(DWORD errorCode, DWORD bytesTransferred
 					goto Error;
 				}
 				process->State = FCP_STATE_READY;
-				FcpDereferenceRequest(request);
+				ObDereferenceObject(request);
 				process->RemainingRequests -= 1;
 				if (process->RemainingRequests == 0 || FcpPushPoolProcess(process)) {
 					goto Error;
@@ -104,7 +101,7 @@ static void CALLBACK FcpReadPipeComplete(DWORD errorCode, DWORD bytesTransferred
 		}
 		
 		// Start to read the next packet
-		if (RtlReallocateHeap(&rpstate, sizeof(FcpReadPipeState) + contentSize, "FcpReadPipeComplete.1")) {
+		if (RtlReallocateHeap(&rpstate, sizeof(FcpReadPipeState) + contentSize)) {
 			goto Error;
 		}
 		
@@ -124,7 +121,7 @@ static void CALLBACK FcpReadPipeComplete(DWORD errorCode, DWORD bytesTransferred
 		
 		// We have not received the packet completely
 		// Reallocate the buffer and begin another read operation
-		if (RtlReallocateHeap(&rpstate, sizeof(FcpReadPipeState) + contentSize, "FcpReadPipeComplete.2")) {
+		if (RtlReallocateHeap(&rpstate, sizeof(FcpReadPipeState) + contentSize)) {
 			goto Error;
 		}
 		
@@ -141,7 +138,7 @@ static void CALLBACK FcpReadPipeComplete(DWORD errorCode, DWORD bytesTransferred
 Error:
 	RtlFreeHeap(rpstate);
 	FcpTerminateProcess(process, 1);
-	FcpDereferenceProcess(process);
+	ObDereferenceObject(process);
 }
 
 static void FcpWriteStdoutCompletion(void *state, size_t size, int error)

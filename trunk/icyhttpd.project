@@ -15,8 +15,9 @@
     <File Name="win32.h"/>
     <File Name="rtl.h"/>
     <File Name="sv.h"/>
+    <File Name="ob.h"/>
   </VirtualDirectory>
-  <VirtualDirectory Name="fcgi">
+  <VirtualDirectory Name="fc">
     <File Name="fcp.h"/>
     <File Name="fcpool.c"/>
     <File Name="fcinit.c"/>
@@ -31,13 +32,14 @@
     <File Name="rtlpipe.c"/>
     <File Name="rtlfifo.c"/>
   </VirtualDirectory>
-  <VirtualDirectory Name="server">
+  <VirtualDirectory Name="sv">
     <File Name="svp.h"/>
     <File Name="svinit.c"/>
     <File Name="svsite.c"/>
     <File Name="sventry.c"/>
     <File Name="svlisten.c"/>
     <File Name="svss.c"/>
+    <File Name="svconn.c"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <Configuration Name="Debug" CompilerType="gnu gcc" DebuggerType="GNU gdb debugger" Type="Executable" BuildCmpWithGlobalSettings="append" BuildLnkWithGlobalSettings="append" BuildResWithGlobalSettings="append">
@@ -108,4 +110,9 @@
       <ResourceCompiler Options=""/>
     </GlobalSettings>
   </Settings>
+  <VirtualDirectory Name="ob">
+    <File Name="obp.h"/>
+    <File Name="obtype.c"/>
+    <File Name="obobject.c"/>
+  </VirtualDirectory>
 </CodeLite_Project>

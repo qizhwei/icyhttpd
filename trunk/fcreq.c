@@ -34,7 +34,7 @@ static void FcpBeginTrigger(void *state, size_t size, int error)
 		request = brstate->Request;
 		if (brstate->Error) {
 			FcpTerminateProcess(request->Process, 1);
-			FcpDereferenceRequest(request);
+			ObDereferenceObject(request);
 			brstate->Completion(brstate->CompletionState, NULL, 1);
 		} else {
 			brstate->Completion(brstate->CompletionState, request, 0);
@@ -65,7 +65,7 @@ static void FcpSendParam(FcpBeginRequestState *brstate, const char *key, const c
 	
 	// Allocate buffer if we don't have one
 	if (buffer == NULL) {
-		buffer = RtlAllocateHeap(sizeof(FcpBeginRequestState *) + sizeof(FCGI_Header), "FcpSendParam");
+		buffer = RtlAllocateHeap(sizeof(FcpBeginRequestState *) + sizeof(FCGI_Header));
 		if (buffer == NULL) {
 			brstate->PendingIos += 1;
 			FcpBeginTrigger(brstate, 0, 1);
@@ -124,7 +124,7 @@ static void FcpSendParam(FcpBeginRequestState *brstate, const char *key, const c
 	
 	// Reallocate the buffer to neccessary size
 	buffer -= sizeof(FcpBeginRequestState *);
-	if (RtlReallocateHeap(&buffer, sizeof(FcpBeginRequestState *) + newSize, "FcpSendParam")) {
+	if (RtlReallocateHeap(&buffer, sizeof(FcpBeginRequestState *) + newSize)) {
 		RtlFreeHeap(buffer);
 		brstate->PendingIos += 1;
 		FcpBeginTrigger(brstate, 0, 1);
@@ -171,14 +171,14 @@ int FcBeginRequest(FcPool *pool, const char *scriptPath, FcBeginRequestCompletio
 	FcRequest *request;
 
 	// Allocate memory for request and asynchronous state
-	request = RtlAllocateHeap(sizeof(FcRequest), "FcBeginRequest.request");
+	request = ObCreateObject(&FcpRequestObjectType, sizeof(FcRequest));
 	if (request == NULL) {
 		return 1;
 	}
 	
-	brstate = RtlAllocateHeap(sizeof(FcpBeginRequestState), "FcBeginRequest.brstate");
+	brstate = RtlAllocateHeap(sizeof(FcpBeginRequestState));
 	if (brstate == NULL) {
-		RtlFreeHeap(request);
+		ObDereferenceObject(request);
 		return 1;
 	}
 	
@@ -188,7 +188,7 @@ int FcBeginRequest(FcPool *pool, const char *scriptPath, FcBeginRequestCompletio
 		process = FcpCreateProcess(pool);
 		if (process == NULL) {
 			RtlFreeHeap(brstate);
-			RtlFreeHeap(request);
+			ObDereferenceObject(request);
 			return 1;
 		}
 	}
@@ -198,9 +198,10 @@ int FcBeginRequest(FcPool *pool, const char *scriptPath, FcBeginRequestCompletio
 	if (request->StdinFifo == NULL) {
 		if (FcpPushPoolProcess(process)) {
 			FcpTerminateProcess(process, 1);
+			ObDereferenceObject(process);
 		}
 		RtlFreeHeap(brstate);
-		RtlFreeHeap(request);
+		ObDereferenceObject(request);
 		return 1;
 	}
 	
@@ -208,18 +209,15 @@ int FcBeginRequest(FcPool *pool, const char *scriptPath, FcBeginRequestCompletio
 	if (request->StdoutFifo == NULL) {
 		if (FcpPushPoolProcess(process)) {
 			FcpTerminateProcess(process, 1);
+			ObDereferenceObject(process);
 		}
 		RtlDestroyFifo(request->StdinFifo);
 		RtlFreeHeap(brstate);
-		RtlFreeHeap(request);
+		ObDereferenceObject(request);
 		return 1;
 	}
 	
-	// Add a reference to the process
-	process->ReferenceCount += 1;
-
 	// Initialize request object and asynchronous state
-	request->ReferenceCount = 2;
 	request->Process = process;
 	brstate->Request = request;
 	brstate->PendingIos = 1;
@@ -228,14 +226,14 @@ int FcBeginRequest(FcPool *pool, const char *scriptPath, FcBeginRequestCompletio
 	brstate->Completion = completion;
 	brstate->CompletionState = state;
 	
-	process->Request = request;
+	process->Request = ObReferenceObjectByPointer(request, NULL);
 	process->State = FCP_STATE_INTERACTIVE;
 	
 	// Write the begin request packet
 	if (FcpWriteProcess(process, &FcpBeginRequestPacket, sizeof(FcpBeginRequestPacket), &FcpBeginTrigger, brstate)) {
 		FcpTerminateProcess(process, 1);
-		FcpDereferenceProcess(process);
-		FcpDereferenceRequest(request);
+		ObDereferenceObject(process);
+		ObDereferenceObject(request);
 		RtlFreeHeap(brstate);
 		return 1;
 	}
@@ -247,22 +245,17 @@ int FcBeginRequest(FcPool *pool, const char *scriptPath, FcBeginRequestCompletio
 	return 0;
 }
 
-void FcpDereferenceRequest(FcRequest *request)
+void FcpCloseRequest(void *object)
 {
-	assert(request->ReferenceCount > 0);
-
-	request->ReferenceCount -= 1;
-	if (request->ReferenceCount == 0) {
-		FcpDereferenceProcess(request->Process);
-		RtlDestroyFifo(request->StdinFifo);
-		RtlDestroyFifo(request->StdoutFifo);
-		RtlFreeHeap(request);
-	}
+	FcRequest *request = object;
+	ObDereferenceObject(request->Process);
+	RtlDestroyFifo(request->StdinFifo);
+	RtlDestroyFifo(request->StdoutFifo);
 }
 
 typedef struct _FcpRequestIoState {
 	FcRequest *Request;
-	FcReadWriteCompletion *Completion;
+	RtlIoCompletion *Completion;
 	void *CompletionState;
 } FcpRequestIoState;
 
@@ -270,43 +263,36 @@ static void FcpRequestIoComplete(void *state, size_t size, int error)
 {
 	FcpRequestIoState *ristate = state;
 	ristate->Completion(ristate->CompletionState, size, error);
-	FcpDereferenceRequest(ristate->Request);
+	ObDereferenceObject(ristate->Request);
 	RtlFreeHeap(ristate);
 }
 
-int FcReadRequest(FcRequest *request, char *buffer, size_t size, FcReadWriteCompletion *completion, void *state)
+int FcReadRequest(FcRequest *request, char *buffer, size_t size, RtlIoCompletion *completion, void *state)
 {
-	FcpRequestIoState *ristate = RtlAllocateHeap(sizeof(FcpRequestIoState), "FcReadRequest");
+	FcpRequestIoState *ristate = RtlAllocateHeap(sizeof(FcpRequestIoState));
 	
 	if (ristate == NULL) {
 		return 1;
 	}
 	
-	request->ReferenceCount += 1;
-	ristate->Request = request;
+	ristate->Request = ObReferenceObjectByPointer(request, NULL);
 	ristate->Completion = completion;
 	ristate->CompletionState = state;
 	
 	return RtlReadFifo(request->StdoutFifo, buffer, size, FcpRequestIoComplete, ristate);
 }
 
-int FcWriteRequest(FcRequest *request, char *buffer, size_t size, FcReadWriteCompletion *completion, void *state)
+int FcWriteRequest(FcRequest *request, char *buffer, size_t size, RtlIoCompletion *completion, void *state)
 {
-	FcpRequestIoState *ristate = RtlAllocateHeap(sizeof(FcpRequestIoState), "FcWriteRequest");
+	FcpRequestIoState *ristate = RtlAllocateHeap(sizeof(FcpRequestIoState));
 	
 	if (ristate == NULL) {
 		return 1;
 	}
 	
-	request->ReferenceCount += 1;
-	ristate->Request = request;
+	ristate->Request = ObReferenceObjectByPointer(request, NULL);
 	ristate->Completion = completion;
 	ristate->CompletionState = state;
 
 	return RtlWriteFifo(request->StdinFifo, buffer, size, FcpRequestIoComplete, ristate);
-}
-
-void FcEndRequest(FcRequest *request)
-{
-	FcpDereferenceRequest(request);
 }

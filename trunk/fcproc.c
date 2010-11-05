@@ -1,4 +1,5 @@
 #include "fcp.h"
+#include "ob.h"
 #include <string.h>
 #include <assert.h>
 
@@ -65,7 +66,7 @@ FcProcess * FcpCreateProcess(FcPool *pool)
 	CloseHandle(pi.hThread);
 	
 	// Allocate memory for the object
-	process = RtlAllocateHeap(sizeof(FcProcess), "FcpCreateProcess");
+	process = ObCreateObject(&FcpProcessObjectType, sizeof(FcProcess));
 	if (process == NULL) {
 		TerminateProcess(pi.hProcess, 1);
 		CloseHandle(pi.hProcess);
@@ -73,13 +74,9 @@ FcProcess * FcpCreateProcess(FcPool *pool)
 		return NULL;
 	}
 	
-	// Increment reference count of the pool
-	pool->ReferenceCount += 1;
-	
 	// Initialize the object
-	process->ReferenceCount = 0;
 	process->RemainingRequests = pool->MaxRequests;
-	process->Pool = pool;
+	process->Pool = ObReferenceObjectByPointer(pool, NULL);
 	InsertHeadList(&pool->RunningList, &process->PoolEntry);
 	process->State = FCP_STATE_READY;
 	process->ProcessHandle = pi.hProcess;
@@ -98,7 +95,7 @@ FcProcess * FcpCreateProcess(FcPool *pool)
 
 typedef struct _FcpWriteProcessState {
 	OVERLAPPED Overlapped;
-	FcReadWriteCompletion *Completion;
+	RtlIoCompletion *Completion;
 	void *CompletionState;
 } FcpWriteProcessState;
 
@@ -109,11 +106,11 @@ static void CALLBACK FcpWriteProcessComplete(DWORD errorCode, DWORD bytesTransfe
 	RtlFreeHeap(wpstate);
 }
 
-int FcpWriteProcess(FcProcess *process, const void *buffer, size_t size, FcReadWriteCompletion *completion, void *state)
+int FcpWriteProcess(FcProcess *process, const void *buffer, size_t size, RtlIoCompletion *completion, void *state)
 {
 	FcpWriteProcessState *wpstate;
 	
-	wpstate = RtlAllocateHeap(sizeof(FcpWriteProcessState), "FcpWriteProcess");
+	wpstate = RtlAllocateHeap(sizeof(FcpWriteProcessState));
 	if (wpstate == NULL) {
 		return 1;
 	}
@@ -153,19 +150,12 @@ int FcpTerminateProcess(FcProcess *process, int error)
 	return 0;
 }
 
-void FcpDereferenceProcess(FcProcess *process)
+void FcpCloseProcess(void *object)
 {
-	assert(process->ReferenceCount > 0);
+	FcProcess *process = object;
 	
-	// Decrement reference count
-	process->ReferenceCount -= 1;
-	
-	// If there is no further reference, free all resources
-	if (process->ReferenceCount == 0) {
-		FcpTerminateProcess(process, 0);
-		FcpDereferencePool(process->Pool);
-		CloseHandle(process->ProcessHandle);
-		CloseHandle(process->LocalPipe);
-		RtlFreeHeap(process);
-	}
+	FcpTerminateProcess(process, 0);
+	ObDereferenceObject(process->Pool);
+	CloseHandle(process->ProcessHandle);
+	CloseHandle(process->LocalPipe);
 }

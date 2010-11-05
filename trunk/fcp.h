@@ -3,18 +3,16 @@
 
 #include "fc.h"
 #include "fastcgi.h"
-#include "rtl.h"
+#include "ob.h"
 #include "win32.h"
 
 typedef struct _FcpWaitBlock {
-	int ReferenceCount;
 	FcProcess *Process;
 	HANDLE Timer;
 	int Cancelled;
 } FcpWaitBlock;
 
 struct _FcPool {
-	int ReferenceCount;
 	ListEntry RunningList;
 	ListEntry PoolingList;
 	char *CommandLine;
@@ -23,7 +21,6 @@ struct _FcPool {
 };
 
 struct _FcProcess {
-	int ReferenceCount;
 	int RemainingRequests;
 	FcPool *Pool;
 	ListEntry PoolEntry;
@@ -37,7 +34,6 @@ struct _FcProcess {
 };
 
 struct _FcRequest {
-	int ReferenceCount;
 	FcProcess *Process;
 	RtlFifo *StdinFifo;
 	RtlFifo *StdoutFifo;
@@ -49,17 +45,21 @@ struct _FcRequest {
 #define FCP_STATE_TERMINATED (3)
 
 extern HANDLE FcpJobObject;
-extern int FcpInitialize(void);
+extern ObObjectType FcpPoolObjectType;
+extern ObObjectType FcpProcessObjectType;
+extern ObObjectType FcpRequestObjectType;
+extern ObObjectType FcpWaitBlockObjectType;
+
 extern FcProcess * FcpCreateProcess(FcPool *pool);
 extern int FcpTerminateProcess(FcProcess *process, int error);
 extern int FcpPushPoolProcess(FcProcess *process);
 extern void FcpRemovePoolProcess(FcProcess *process);
 extern FcProcess * FcpPopPoolProcess(FcPool *pool);
 extern int FcpReadPipe(FcProcess *process);
-extern int FcpWriteProcess(FcProcess *process, const void *buffer, size_t size, FcReadWriteCompletion *completion, void *state);
-extern void FcpDereferencePool(FcPool *pool);
-extern void FcpDereferenceProcess(FcProcess *process);
-extern void FcpDereferenceRequest(FcRequest *request);
-extern void FcpDereferenceWaitBlock(FcpWaitBlock *waitBlock);
+extern int FcpWriteProcess(FcProcess *process, const void *buffer, size_t size, RtlIoCompletion *completion, void *state);
+extern void FcpClosePool(void *object);
+extern void FcpCloseProcess(void *object);
+extern void FcpCloseRequest(void *object);
+extern void FcpCloseWaitBlock(void *object);
 
 #endif

@@ -13,7 +13,7 @@ CurrentFileName        :=
 CurrentFilePath        :=
 CurrentFileFullPath    :=
 User                   :=iceboy
-Date                   :=10/31/10
+Date                   :=11/05/10
 CodeLitePath           :="C:\Program Files\CodeLite"
 LinkerName             :=gcc
 ArchiveTool            :=ar rcus
@@ -50,7 +50,7 @@ LibPath                := "$(LibraryPathSwitch)."
 CodeLiteDir:=C:\Program Files\CodeLite
 UNIT_TEST_PP_SRC_DIR:=C:\UnitTest++-1.3
 Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/fcpool$(ObjectSuffix) $(IntermediateDirectory)/fcinit$(ObjectSuffix) $(IntermediateDirectory)/fcproc$(ObjectSuffix) $(IntermediateDirectory)/fcreq$(ObjectSuffix) $(IntermediateDirectory)/fcstd$(ObjectSuffix) $(IntermediateDirectory)/rtlheap$(ObjectSuffix) $(IntermediateDirectory)/rtlstr$(ObjectSuffix) $(IntermediateDirectory)/rtlpipe$(ObjectSuffix) $(IntermediateDirectory)/rtlfifo$(ObjectSuffix) \
-	$(IntermediateDirectory)/svinit$(ObjectSuffix) $(IntermediateDirectory)/svsite$(ObjectSuffix) $(IntermediateDirectory)/sventry$(ObjectSuffix) $(IntermediateDirectory)/svlisten$(ObjectSuffix) $(IntermediateDirectory)/svss$(ObjectSuffix) 
+	$(IntermediateDirectory)/svinit$(ObjectSuffix) $(IntermediateDirectory)/svsite$(ObjectSuffix) $(IntermediateDirectory)/sventry$(ObjectSuffix) $(IntermediateDirectory)/svlisten$(ObjectSuffix) $(IntermediateDirectory)/svss$(ObjectSuffix) $(IntermediateDirectory)/svconn$(ObjectSuffix) $(IntermediateDirectory)/obtype$(ObjectSuffix) $(IntermediateDirectory)/obobject$(ObjectSuffix) 
 
 ##
 ## Main Build Targets 
@@ -190,6 +190,30 @@ $(IntermediateDirectory)/svss$(DependSuffix): svss.c
 $(IntermediateDirectory)/svss$(PreprocessSuffix): svss.c
 	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/svss$(PreprocessSuffix) "D:/CodeLite/icyhttpd/svss.c"
 
+$(IntermediateDirectory)/svconn$(ObjectSuffix): svconn.c $(IntermediateDirectory)/svconn$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd/svconn.c" $(CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/svconn$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/svconn$(DependSuffix): svconn.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) -MT$(IntermediateDirectory)/svconn$(ObjectSuffix) -MF$(IntermediateDirectory)/svconn$(DependSuffix) -MM "D:/CodeLite/icyhttpd/svconn.c"
+
+$(IntermediateDirectory)/svconn$(PreprocessSuffix): svconn.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/svconn$(PreprocessSuffix) "D:/CodeLite/icyhttpd/svconn.c"
+
+$(IntermediateDirectory)/obtype$(ObjectSuffix): obtype.c $(IntermediateDirectory)/obtype$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd/obtype.c" $(CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/obtype$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/obtype$(DependSuffix): obtype.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) -MT$(IntermediateDirectory)/obtype$(ObjectSuffix) -MF$(IntermediateDirectory)/obtype$(DependSuffix) -MM "D:/CodeLite/icyhttpd/obtype.c"
+
+$(IntermediateDirectory)/obtype$(PreprocessSuffix): obtype.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/obtype$(PreprocessSuffix) "D:/CodeLite/icyhttpd/obtype.c"
+
+$(IntermediateDirectory)/obobject$(ObjectSuffix): obobject.c $(IntermediateDirectory)/obobject$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd/obobject.c" $(CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/obobject$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/obobject$(DependSuffix): obobject.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) -MT$(IntermediateDirectory)/obobject$(ObjectSuffix) -MF$(IntermediateDirectory)/obobject$(DependSuffix) -MM "D:/CodeLite/icyhttpd/obobject.c"
+
+$(IntermediateDirectory)/obobject$(PreprocessSuffix): obobject.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/obobject$(PreprocessSuffix) "D:/CodeLite/icyhttpd/obobject.c"
+
 
 -include $(IntermediateDirectory)/*$(DependSuffix)
 ##
@@ -241,6 +265,15 @@ clean:
 	$(RM) $(IntermediateDirectory)/svss$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/svss$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/svss$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/svconn$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/svconn$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/svconn$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/obtype$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/obtype$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/obtype$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/obobject$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/obobject$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/obobject$(PreprocessSuffix)
 	$(RM) $(OutputFile)
 	$(RM) $(OutputFile).exe
 

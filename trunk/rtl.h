@@ -48,17 +48,17 @@ typedef struct _ListEntry {
 #endif
 
 typedef struct _RtlFifo RtlFifo;
-typedef void RtlReadWriteCompletion(void *state, size_t size, int error);
+typedef void RtlIoCompletion(void *state, size_t size, int error);
 
-extern void * RtlAllocateHeap(size_t size, char *tag);
-extern int RtlReallocateHeap(void *pPointer, size_t newSize, char *tag);
+extern void * RtlAllocateHeap(size_t size);
+extern int RtlReallocateHeap(void *pPointer, size_t newSize);
 extern void RtlFreeHeap(void *pointer);
 extern void RtlTraceHeap(void);
 extern char * RtlDuplicateString(const char *string);
 extern int RtlCreatePipe(HANDLE *pipeServer, HANDLE *pipeClient);
 extern RtlFifo * RtlCreateFifo(void);
 extern void RtlDestroyFifo(RtlFifo *fifo);
-extern int RtlReadFifo(RtlFifo *fifo, char *buffer, size_t size, RtlReadWriteCompletion *completion, void *state);
-extern int RtlWriteFifo(RtlFifo *fifo, char *buffer, size_t size, RtlReadWriteCompletion *completion, void *state);
+extern int RtlReadFifo(RtlFifo *fifo, char *buffer, size_t size, RtlIoCompletion *completion, void *state);
+extern int RtlWriteFifo(RtlFifo *fifo, char *buffer, size_t size, RtlIoCompletion *completion, void *state);
 
 #endif

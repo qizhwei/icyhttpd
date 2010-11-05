@@ -9,7 +9,7 @@ SvSite * SvCreateSite(const char *host)
 		return NULL;
 	}
 	
-	site = RtlAllocateHeap(sizeof(SvSite), "SvCreateSite");
+	site = RtlAllocateHeap(sizeof(SvSite));
 	if (site == NULL) {
 		return NULL;
 	}
@@ -42,7 +42,7 @@ int SvBindEndpointIpv4(SvSite *site, const char *ip, int port)
 		}
 	}
 	
-	endpoint = RtlAllocateHeap(sizeof(SvpEndpointIpv4), "SvBindEndpointIpv4");
+	endpoint = RtlAllocateHeap(sizeof(SvpEndpointIpv4));
 	if (endpoint == NULL) {
 		return 1;
 	}

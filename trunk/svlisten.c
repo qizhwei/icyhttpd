@@ -73,7 +73,7 @@ static SvpListener * SvpCreateListener(SvpEndpoint *endpoint)
 	SvpListener *listener;
 	SOCKET socketHandle;
 	
-	listener = RtlAllocateHeap(sizeof(SvpListener), "SvpCreateListener");
+	listener = RtlAllocateHeap(sizeof(SvpListener));
 	if (listener == NULL) {
 		return NULL;
 	}
@@ -127,7 +127,7 @@ int SvpCreateListeners(void)
 				RtlFreeHeap(endpoint);
 			}
 			
-			siteBlock = RtlAllocateHeap(sizeof(SvpSiteBlock), "SvpCreateListeners");
+			siteBlock = RtlAllocateHeap(sizeof(SvpSiteBlock));
 			if (siteBlock == NULL) {
 				// Deliberately leak resources
 				return 1;
@@ -157,7 +157,7 @@ int SvpStartListeners(void)
 			return 1;
 		}
 		
-		if (SvpAcceptSession(listener)) {
+		if (SvpAcceptConnection(listener)) {
 			return 1;
 		}
 	}
@@ -178,7 +178,7 @@ int SvpAcceptListeners(void)
 			return 1;
 		}
 		
-		if ((events.lNetworkEvents & FD_ACCEPT) && SvpAcceptSession(listener)) {
+		if ((events.lNetworkEvents & FD_ACCEPT) && SvpAcceptConnection(listener)) {
 			return 1;
 		}
 	}

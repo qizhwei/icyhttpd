@@ -7,7 +7,7 @@ typedef struct _RtlpFifoBlock {
 	size_t Size;
 	size_t Transferred;
 	int Error;
-	RtlReadWriteCompletion *Completion;
+	RtlIoCompletion *Completion;
 	void *CompletionState;
 } RtlpFifoBlock;
 
@@ -23,7 +23,7 @@ static void RtlpCancelFifo(RtlFifo *fifo);
 
 RtlFifo * RtlCreateFifo(void)
 {
-	RtlFifo *fifo = RtlAllocateHeap(sizeof(RtlFifo), "RtlCreateFifo");
+	RtlFifo *fifo = RtlAllocateHeap(sizeof(RtlFifo));
 	
 	if (fifo == NULL) {
 		return NULL;
@@ -41,7 +41,7 @@ void RtlDestroyFifo(RtlFifo *fifo)
 	RtlFreeHeap(fifo);
 }
 
-int RtlReadFifo(RtlFifo *fifo, char *buffer, size_t size, RtlReadWriteCompletion *completion, void *state)
+int RtlReadFifo(RtlFifo *fifo, char *buffer, size_t size, RtlIoCompletion *completion, void *state)
 {
 	RtlpFifoBlock *block;
 	
@@ -49,7 +49,7 @@ int RtlReadFifo(RtlFifo *fifo, char *buffer, size_t size, RtlReadWriteCompletion
 		return 1;
 	}
 	
-	block = RtlAllocateHeap(sizeof(RtlpFifoBlock), "RtlReadFifo");
+	block = RtlAllocateHeap(sizeof(RtlpFifoBlock));
 	if (block == NULL) {
 		return 1;
 	}
@@ -67,7 +67,7 @@ int RtlReadFifo(RtlFifo *fifo, char *buffer, size_t size, RtlReadWriteCompletion
 	return 0;
 }
 
-int RtlWriteFifo(RtlFifo *fifo, char *buffer, size_t size, RtlReadWriteCompletion *completion, void *state)
+int RtlWriteFifo(RtlFifo *fifo, char *buffer, size_t size, RtlIoCompletion *completion, void *state)
 {
 	RtlpFifoBlock *block;
 	
@@ -75,7 +75,7 @@ int RtlWriteFifo(RtlFifo *fifo, char *buffer, size_t size, RtlReadWriteCompletio
 		return 1;
 	}
 	
-	block = RtlAllocateHeap(sizeof(RtlpFifoBlock), "RtlWriteFifo");
+	block = RtlAllocateHeap(sizeof(RtlpFifoBlock));
 	if (block == NULL) {
 		return 1;
 	}

@@ -1,4 +1,5 @@
 #include "fcp.h"
+#include "ob.h"
 #include <assert.h>
 
 static void CALLBACK FcpProcessTimerProc(void *state, DWORD dwTimerLowValue, DWORD dwTimerHighValue);
@@ -7,25 +8,19 @@ FcPool * FcCreatePool(const char *commandLine, int idleTime, int maxRequests)
 {
 	FcPool *pool;
 	
-	// Perform global initialization
-	if (FcpInitialize() != 0) {
-		return NULL;
-	}
-	
 	// Allocate memory for the object
-	pool = RtlAllocateHeap(sizeof(FcPool), "FcCreatePool");
+	pool = ObCreateObject(&FcpPoolObjectType, sizeof(FcPool));
 	if (pool == NULL) {
 		return NULL;
 	}
 	
 	// Initialize the object
-	pool->ReferenceCount = 1;
 	InitializeListHead(&pool->RunningList);
 	InitializeListHead(&pool->PoolingList);
 	pool->CommandLine = RtlDuplicateString(commandLine);
 	
 	if (pool->CommandLine == NULL) {
-		RtlFreeHeap(pool);
+		ObDereferenceObject(pool);
 		return NULL;
 	}
 	
@@ -35,11 +30,8 @@ FcPool * FcCreatePool(const char *commandLine, int idleTime, int maxRequests)
 	return pool;
 }
 
-void FcpDereferencePool(FcPool *pool)
+void FcpClosePool(void *object)
 {
-	assert(pool->ReferenceCount > 0);
-	
-	pool->ReferenceCount -= 1;
 	// TODO: Not implemented
 }
 
@@ -53,7 +45,7 @@ int FcpPushPoolProcess(FcProcess *process)
 	assert(process->State == FCP_STATE_READY);
 	
 	// Allocate memory for the wait block
-	waitBlock = RtlAllocateHeap(sizeof(FcpWaitBlock), "FcpPushPoolProcess");
+	waitBlock = ObCreateObject(&FcpWaitBlockObjectType, sizeof(FcpWaitBlock));
 	if (waitBlock == NULL) {
 		return 1;
 	}
@@ -61,31 +53,33 @@ int FcpPushPoolProcess(FcProcess *process)
 	// Create a waitable timer
 	timer = CreateWaitableTimer(NULL, TRUE, NULL);
 	if (timer == NULL) {
-		RtlFreeHeap(waitBlock);
+		ObDereferenceObject(waitBlock);
 		return 1;
 	}
 	
 	// Set the waitable timer
 	dueTime.QuadPart = -10000LL * pool->IdleTime;
 	if (!SetWaitableTimer(timer, &dueTime, 0, &FcpProcessTimerProc, waitBlock, FALSE)) {
-		RtlFreeHeap(waitBlock);
+		ObDereferenceObject(waitBlock);
 		CloseHandle(timer);
 		return 1;
 	}
 
 	// Initialize the wait block
-	waitBlock->ReferenceCount = 2;
 	waitBlock->Process = process;
 	waitBlock->Timer = timer;
 	waitBlock->Cancelled = 0;
 	
 	// Assign the wait block to the process
 	process->State = FCP_STATE_POOLING;
-	process->WaitBlock = waitBlock;
+	process->WaitBlock = ObReferenceObjectByPointer(waitBlock, NULL);
 	
 	// Switch the process to the pooling list
 	RemoveEntryList(&process->PoolEntry);
 	InsertHeadList(&pool->PoolingList, &process->PoolEntry);
+	
+	// Dereference the process
+	ObDereferenceObject(process);
 	
 	return 0;
 }
@@ -97,7 +91,7 @@ void FcpRemovePoolProcess(FcProcess *process)
 	
 	// Cancel the waitable timer
 	if (CancelWaitableTimer(waitBlock->Timer)) {
-		FcpDereferenceWaitBlock(waitBlock);
+		ObDereferenceObject(waitBlock);
 	} else {
 		waitBlock->Cancelled = 1;
 	}
@@ -107,7 +101,7 @@ void FcpRemovePoolProcess(FcProcess *process)
 	InsertHeadList(&process->Pool->RunningList, &process->PoolEntry);
 	process->WaitBlock = NULL;
 	process->State = FCP_STATE_READY;
-	FcpDereferenceWaitBlock(waitBlock);
+	ObDereferenceObject(waitBlock);
 }
 
 FcProcess * FcpPopPoolProcess(FcPool *pool)
@@ -120,7 +114,7 @@ FcProcess * FcpPopPoolProcess(FcPool *pool)
 	
 	process = CONTAINING_RECORD(pool->PoolingList.Flink, FcProcess, PoolEntry);
 	FcpRemovePoolProcess(process);
-	return process;
+	return ObReferenceObjectByPointer(process, NULL);
 }
 
 static void CALLBACK FcpProcessTimerProc(void *state, DWORD dwTimerLowValue, DWORD dwTimerHighValue)
@@ -138,20 +132,15 @@ static void CALLBACK FcpProcessTimerProc(void *state, DWORD dwTimerLowValue, DWO
 		FcpTerminateProcess(process, 0);
 
 		// Dereference for the process
-		FcpDereferenceWaitBlock(waitBlock);
+		ObDereferenceObject(waitBlock);
 	}
 	
 	// Dereference for the callback routine
-	FcpDereferenceWaitBlock(waitBlock);
+	ObDereferenceObject(waitBlock);
 }
 
-void FcpDereferenceWaitBlock(FcpWaitBlock *waitBlock)
+void FcpCloseWaitBlock(void *object)
 {
-	assert(waitBlock->ReferenceCount > 0);
-
-	waitBlock->ReferenceCount -= 1;
-	if (waitBlock->ReferenceCount == 0) {
-		CloseHandle(waitBlock->Timer);
-		RtlFreeHeap(waitBlock);
-	}
+	FcpWaitBlock *waitBlock = object;
+	CloseHandle(waitBlock->Timer);
 }

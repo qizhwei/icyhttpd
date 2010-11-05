@@ -9,10 +9,18 @@ extern ListEntry SvpSiteList;
 extern ListEntry SvpListenerList;
 extern HANDLE SvpAcceptEvent;
 
+typedef struct _SvpNode {
+	char *Name;
+	char *Path;
+	ListEntry Entry;
+	ListEntry ChildList;
+} SvpNode;
+
 struct _SvSite {
 	char *Host;
 	ListEntry Entry;
 	ListEntry EndpointList;
+	SvpNode Node;
 };
 
 typedef struct _SvpEndpoint {
@@ -40,9 +48,15 @@ typedef struct _SvpSiteBlock {
 	ListEntry Entry;
 } SvpSiteBlock;
 
+typedef struct _SvpConnection {
+	int ReferenceCount;
+	SOCKET Socket;
+	
+} SvpConnection;
+
 extern int SvpCreateListeners(void);
 extern int SvpStartListeners(void);
 extern int SvpAcceptListeners(void);
-extern int SvpAcceptSession(SvpListener *listener);
+extern int SvpAcceptConnection(SvpListener *listener);
 
 #endif

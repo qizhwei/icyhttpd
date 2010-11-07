@@ -6,8 +6,6 @@ typedef struct _FcpBeginRequestState {
 	int PendingIos;
 	int Error;
 	void *Buffer;
-	FcBeginRequestCompletion *Completion;
-	void *CompletionState;
 } FcpBeginRequestState;
 
 static const FCGI_BeginRequestRecord FcpBeginRequestPacket = {
@@ -34,12 +32,9 @@ static void FcpBeginTrigger(void *state, size_t size, int error)
 		request = brstate->Request;
 		if (brstate->Error) {
 			FcpTerminateProcess(request->Process, 1);
-			ObDereferenceObject(request);
-			brstate->Completion(brstate->CompletionState, NULL, 1);
-		} else {
-			brstate->Completion(brstate->CompletionState, request, 0);
 		}
 		RtlFreeHeap(brstate);
+		ObDereferenceObject(request);
 	}
 }
 
@@ -164,7 +159,7 @@ static void FcpSendParam(FcpBeginRequestState *brstate, const char *key, const c
 	memcpy(&buffer[offset + keyLength], value, valueLength);
 }
 
-int FcBeginRequest(FcPool *pool, const char *scriptPath, FcBeginRequestCompletion *completion, void *state)
+FcRequest * FcBeginRequest(FcPool *pool, const char *scriptPath)
 {
 	FcpBeginRequestState *brstate;
 	FcProcess *process;
@@ -173,13 +168,13 @@ int FcBeginRequest(FcPool *pool, const char *scriptPath, FcBeginRequestCompletio
 	// Allocate memory for request and asynchronous state
 	request = ObCreateObject(&FcpRequestObjectType, sizeof(FcRequest));
 	if (request == NULL) {
-		return 1;
+		return NULL;
 	}
 	
 	brstate = RtlAllocateHeap(sizeof(FcpBeginRequestState));
 	if (brstate == NULL) {
 		ObDereferenceObject(request);
-		return 1;
+		return NULL;
 	}
 	
 	// Get an process instance from the pool or by creation
@@ -189,7 +184,7 @@ int FcBeginRequest(FcPool *pool, const char *scriptPath, FcBeginRequestCompletio
 		if (process == NULL) {
 			RtlFreeHeap(brstate);
 			ObDereferenceObject(request);
-			return 1;
+			return NULL;
 		}
 	}
 	
@@ -202,7 +197,7 @@ int FcBeginRequest(FcPool *pool, const char *scriptPath, FcBeginRequestCompletio
 		}
 		RtlFreeHeap(brstate);
 		ObDereferenceObject(request);
-		return 1;
+		return NULL;
 	}
 	
 	request->StdoutFifo = RtlCreateFifo();
@@ -214,17 +209,15 @@ int FcBeginRequest(FcPool *pool, const char *scriptPath, FcBeginRequestCompletio
 		RtlDestroyFifo(request->StdinFifo);
 		RtlFreeHeap(brstate);
 		ObDereferenceObject(request);
-		return 1;
+		return NULL;
 	}
 	
 	// Initialize request object and asynchronous state
 	request->Process = process;
-	brstate->Request = request;
+	brstate->Request = ObReferenceObjectByPointer(request, NULL);
 	brstate->PendingIos = 1;
 	brstate->Error = 0;
 	brstate->Buffer = NULL;
-	brstate->Completion = completion;
-	brstate->CompletionState = state;
 	
 	process->Request = ObReferenceObjectByPointer(request, NULL);
 	process->State = FCP_STATE_INTERACTIVE;
@@ -235,14 +228,16 @@ int FcBeginRequest(FcPool *pool, const char *scriptPath, FcBeginRequestCompletio
 		ObDereferenceObject(process);
 		ObDereferenceObject(request);
 		RtlFreeHeap(brstate);
-		return 1;
+		return NULL;
 	}
 	
 	// Send parameters
 	FcpSendParam(brstate, "SCRIPT_FILENAME", scriptPath);
+	FcpSendParam(brstate, "REQUEST_METHOD", "GET");
+	FcpSendParam(brstate, "HTTP_CONNECTION", "Keep-Alive");
 	FcpSendParam(brstate, NULL, NULL);
 		
-	return 0;
+	return request;
 }
 
 void FcpCloseRequest(void *object)

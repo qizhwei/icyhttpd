@@ -24,13 +24,14 @@
     <File Name="fcproc.c"/>
     <File Name="fastcgi.h"/>
     <File Name="fcreq.c"/>
-    <File Name="fcstd.c"/>
+    <File Name="fcdisp.c"/>
   </VirtualDirectory>
   <VirtualDirectory Name="rtl">
     <File Name="rtlheap.c"/>
     <File Name="rtlstr.c"/>
     <File Name="rtlpipe.c"/>
     <File Name="rtlfifo.c"/>
+    <File Name="rtlmap.c"/>
   </VirtualDirectory>
   <VirtualDirectory Name="sv">
     <File Name="svp.h"/>

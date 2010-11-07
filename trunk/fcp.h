@@ -55,7 +55,7 @@ extern int FcpTerminateProcess(FcProcess *process, int error);
 extern int FcpPushPoolProcess(FcProcess *process);
 extern void FcpRemovePoolProcess(FcProcess *process);
 extern FcProcess * FcpPopPoolProcess(FcPool *pool);
-extern int FcpReadPipe(FcProcess *process);
+extern int FcpDispatchProcess(FcProcess *process);
 extern int FcpWriteProcess(FcProcess *process, const void *buffer, size_t size, RtlIoCompletion *completion, void *state);
 extern void FcpClosePool(void *object);
 extern void FcpCloseProcess(void *object);

@@ -2,37 +2,37 @@
 #include "rtl.h"
 #include <assert.h>
 
-typedef struct _FcpReadPipeState {
+typedef struct _FcpDispatchProcessState {
 	OVERLAPPED Overlapped;
 	FcProcess *Process;
 	size_t Length;
 	unsigned char Buffer[FCGI_HEADER_LEN];
-} FcpReadPipeState;
+} FcpDispatchProcessState;
 
-static void CALLBACK FcpReadPipeComplete(DWORD errorCode, DWORD bytesTransferred, LPOVERLAPPED overlapped);
+static void CALLBACK FcpDispatchProcessComplete(DWORD errorCode, DWORD bytesTransferred, LPOVERLAPPED overlapped);
 static void FcpWriteStdoutCompletion(void *state, size_t size, int error);
 static void FcpWriteStdoutEofCompletion(void *state, size_t size, int error);
 
-int FcpReadPipe(FcProcess *process)
+int FcpDispatchProcess(FcProcess *process)
 {
-	FcpReadPipeState *rpstate;
+	FcpDispatchProcessState *dpstate;
 	
 	// Allocate memory for asynchronous state object
-	rpstate = RtlAllocateHeap(sizeof(FcpReadPipeState));
-	if (rpstate == NULL) {
+	dpstate = RtlAllocateHeap(sizeof(FcpDispatchProcessState));
+	if (dpstate == NULL) {
 		return 1;
 	}
 	
 	// Initialize the state object
-	memset(&rpstate->Overlapped, 0, sizeof(OVERLAPPED));
-	rpstate->Process = ObReferenceObjectByPointer(process, NULL);
-	rpstate->Length = 0;
+	memset(&dpstate->Overlapped, 0, sizeof(OVERLAPPED));
+	dpstate->Process = ObReferenceObjectByPointer(process, NULL);
+	dpstate->Length = 0;
 	
 	// Begin read operation
-	if (!ReadFileEx(process->LocalPipe, rpstate->Buffer, FCGI_HEADER_LEN,
-		&rpstate->Overlapped, &FcpReadPipeComplete))
+	if (!ReadFileEx(process->LocalPipe, dpstate->Buffer, FCGI_HEADER_LEN,
+		&dpstate->Overlapped, &FcpDispatchProcessComplete))
 	{
-		RtlFreeHeap(rpstate);
+		RtlFreeHeap(dpstate);
 		ObDereferenceObject(process);
 		return 1;
 	}
@@ -40,34 +40,34 @@ int FcpReadPipe(FcProcess *process)
 	return 0;
 }
 
-static void CALLBACK FcpReadPipeComplete(DWORD errorCode, DWORD bytesTransferred, LPOVERLAPPED overlapped)
+static void CALLBACK FcpDispatchProcessComplete(DWORD errorCode, DWORD bytesTransferred, LPOVERLAPPED overlapped)
 {
-	FcpReadPipeState *rpstate = (FcpReadPipeState *)overlapped;
-	FcProcess *process = rpstate->Process;
+	FcpDispatchProcessState *dpstate = (FcpDispatchProcessState *)overlapped;
+	FcProcess *process = dpstate->Process;
 	FcRequest *request;
 	FCGI_Header *header;
 	size_t contentLength, contentSize;
 	
 	if (errorCode != 0) {
-		RtlFreeHeap(rpstate);
+		RtlFreeHeap(dpstate);
 		FcpTerminateProcess(process, 1);
 		ObDereferenceObject(process);
 		return;
 	}
 	
-	rpstate->Length += bytesTransferred;
+	dpstate->Length += bytesTransferred;
 	
-	if (rpstate->Length >= FCGI_HEADER_LEN) {
-		header = (FCGI_Header *)&rpstate->Buffer[0];
+	if (dpstate->Length >= FCGI_HEADER_LEN) {
+		header = (FCGI_Header *)&dpstate->Buffer[0];
 		contentLength = (header->contentLengthB1 << 8) + header->contentLengthB0;
 		contentSize = contentLength + header->paddingLength;
 	} else {
 		contentSize = 0;
 	}
 	
-	assert(rpstate->Length <= FCGI_HEADER_LEN + contentSize);
+	assert(dpstate->Length <= FCGI_HEADER_LEN + contentSize);
 	
-	if (rpstate->Length == FCGI_HEADER_LEN + contentSize) {
+	if (dpstate->Length == FCGI_HEADER_LEN + contentSize) {
 		
 		// We have received a complete packet
 		if (process->State != FCP_STATE_INTERACTIVE) {
@@ -78,14 +78,14 @@ static void CALLBACK FcpReadPipeComplete(DWORD errorCode, DWORD bytesTransferred
 		
 		switch (header->type) {
 			case FCGI_STDOUT:
-				if (RtlWriteFifo(request->StdoutFifo, &rpstate->Buffer[FCGI_HEADER_LEN],
-					 contentLength, &FcpWriteStdoutCompletion, rpstate))
+				if (RtlWriteFifo(request->StdoutFifo, &dpstate->Buffer[FCGI_HEADER_LEN],
+					 contentLength, &FcpWriteStdoutCompletion, dpstate))
 				{
 					goto Error;
 				}
 				
 				// Since the writing operation has borrowed the state, we must create a new one
-				rpstate = NULL;
+				dpstate = NULL;
 				break;
 			case FCGI_END_REQUEST:
 				if (RtlWriteFifo(request->StdoutFifo, NULL, 0, &FcpWriteStdoutEofCompletion, NULL)) {
@@ -101,19 +101,19 @@ static void CALLBACK FcpReadPipeComplete(DWORD errorCode, DWORD bytesTransferred
 		}
 		
 		// Start to read the next packet
-		if (RtlReallocateHeap(&rpstate, sizeof(FcpReadPipeState) + contentSize)) {
+		if (RtlReallocateHeap(&dpstate, sizeof(FcpDispatchProcessState) + contentSize)) {
 			goto Error;
 		}
 		
-		// Since the rpstate might be a brand new buffer, we must reinitialize it all over
+		// Since the dpstate might be a brand new buffer, we must reinitialize it all over
 		// Leave the reference count of the process unchanged
-		memset(&rpstate->Overlapped, 0, sizeof(OVERLAPPED));
-		rpstate->Process = process;
-		rpstate->Length = 0;
+		memset(&dpstate->Overlapped, 0, sizeof(OVERLAPPED));
+		dpstate->Process = process;
+		dpstate->Length = 0;
 		
 		// Begin read operation
-		if (!ReadFileEx(process->LocalPipe, rpstate->Buffer, FCGI_HEADER_LEN,
-			&rpstate->Overlapped, &FcpReadPipeComplete))
+		if (!ReadFileEx(process->LocalPipe, dpstate->Buffer, FCGI_HEADER_LEN,
+			&dpstate->Overlapped, &FcpDispatchProcessComplete))
 		{
 			goto Error;
 		}
@@ -121,14 +121,14 @@ static void CALLBACK FcpReadPipeComplete(DWORD errorCode, DWORD bytesTransferred
 		
 		// We have not received the packet completely
 		// Reallocate the buffer and begin another read operation
-		if (RtlReallocateHeap(&rpstate, sizeof(FcpReadPipeState) + contentSize)) {
+		if (RtlReallocateHeap(&dpstate, sizeof(FcpDispatchProcessState) + contentSize)) {
 			goto Error;
 		}
 		
-		memset(&rpstate->Overlapped, 0, sizeof(OVERLAPPED));
-		if (!ReadFileEx(process->LocalPipe, &rpstate->Buffer[rpstate->Length],
-			FCGI_HEADER_LEN + contentSize - rpstate->Length,
-			&rpstate->Overlapped, &FcpReadPipeComplete))
+		memset(&dpstate->Overlapped, 0, sizeof(OVERLAPPED));
+		if (!ReadFileEx(process->LocalPipe, &dpstate->Buffer[dpstate->Length],
+			FCGI_HEADER_LEN + contentSize - dpstate->Length,
+			&dpstate->Overlapped, &FcpDispatchProcessComplete))
 		{
 			goto Error;
 		}
@@ -136,7 +136,7 @@ static void CALLBACK FcpReadPipeComplete(DWORD errorCode, DWORD bytesTransferred
 	
 	return;
 Error:
-	RtlFreeHeap(rpstate);
+	RtlFreeHeap(dpstate);
 	FcpTerminateProcess(process, 1);
 	ObDereferenceObject(process);
 }

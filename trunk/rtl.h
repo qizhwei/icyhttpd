@@ -53,12 +53,33 @@ typedef void RtlIoCompletion(void *state, size_t size, int error);
 extern void * RtlAllocateHeap(size_t size);
 extern int RtlReallocateHeap(void *pPointer, size_t newSize);
 extern void RtlFreeHeap(void *pointer);
-extern void RtlTraceHeap(void);
 extern char * RtlDuplicateString(const char *string);
 extern int RtlCreatePipe(HANDLE *pipeServer, HANDLE *pipeClient);
 extern RtlFifo * RtlCreateFifo(void);
 extern void RtlDestroyFifo(RtlFifo *fifo);
 extern int RtlReadFifo(RtlFifo *fifo, char *buffer, size_t size, RtlIoCompletion *completion, void *state);
 extern int RtlWriteFifo(RtlFifo *fifo, char *buffer, size_t size, RtlIoCompletion *completion, void *state);
+
+typedef size_t RtlHashFunc(void *key);
+typedef int RtlEqualFunc(void *key0, void *key1); // returning zero means equal
+
+typedef struct _RtlMapRecord {
+	struct _RtlMapRecord *Next;
+	void *Key;
+	void *Value;
+} RtlMapRecord;
+
+typedef struct _RtlMap {
+	RtlHashFunc *Hash;
+	RtlEqualFunc *Equal;
+	size_t SlotCount;
+	size_t ElementCount;
+	RtlMapRecord *Slot[0];
+} RtlMap;
+
+extern RtlMap * RtlCreateMap(RtlHashFunc *hash, RtlEqualFunc *equal);
+extern RtlMap * RtlCreateStringMap(int caseInsensitive);
+extern int RtlAddMap(RtlMap **map, void *key, void *value);
+extern int RtlQueryMap(RtlMap **map, void *key, void **value, int remove);
 
 #endif

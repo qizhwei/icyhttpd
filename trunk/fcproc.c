@@ -85,7 +85,7 @@ FcProcess * FcpCreateProcess(FcPool *pool)
 	process->WaitBlock = NULL;
 	
 	// Start reading the process
-	if (FcpReadPipe(process)) {
+	if (FcpDispatchProcess(process)) {
 		FcpTerminateProcess(process, 1);
 		return NULL;
 	}
@@ -136,6 +136,7 @@ int FcpTerminateProcess(FcProcess *process, int error)
 	if (process->State == FCP_STATE_POOLING) {
 		FcpRemovePoolProcess(process);
 	} else if (process->State == FCP_STATE_INTERACTIVE) {
+		RtlWriteFifo(process->Request->StdinFifo, NULL, 0, FcpWriteEofComplete, NULL);
 		RtlWriteFifo(process->Request->StdoutFifo, NULL, 0, FcpWriteEofComplete, NULL);
 	} else if (process->State == FCP_STATE_TERMINATED) {
 		return 1;

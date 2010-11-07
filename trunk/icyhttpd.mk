@@ -13,7 +13,7 @@ CurrentFileName        :=
 CurrentFilePath        :=
 CurrentFileFullPath    :=
 User                   :=iceboy
-Date                   :=11/05/10
+Date                   :=11/07/10
 CodeLitePath           :="C:\Program Files\CodeLite"
 LinkerName             :=gcc
 ArchiveTool            :=ar rcus
@@ -49,8 +49,8 @@ LibPath                := "$(LibraryPathSwitch)."
 ##
 CodeLiteDir:=C:\Program Files\CodeLite
 UNIT_TEST_PP_SRC_DIR:=C:\UnitTest++-1.3
-Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/fcpool$(ObjectSuffix) $(IntermediateDirectory)/fcinit$(ObjectSuffix) $(IntermediateDirectory)/fcproc$(ObjectSuffix) $(IntermediateDirectory)/fcreq$(ObjectSuffix) $(IntermediateDirectory)/fcstd$(ObjectSuffix) $(IntermediateDirectory)/rtlheap$(ObjectSuffix) $(IntermediateDirectory)/rtlstr$(ObjectSuffix) $(IntermediateDirectory)/rtlpipe$(ObjectSuffix) $(IntermediateDirectory)/rtlfifo$(ObjectSuffix) \
-	$(IntermediateDirectory)/svinit$(ObjectSuffix) $(IntermediateDirectory)/svsite$(ObjectSuffix) $(IntermediateDirectory)/sventry$(ObjectSuffix) $(IntermediateDirectory)/svlisten$(ObjectSuffix) $(IntermediateDirectory)/svss$(ObjectSuffix) $(IntermediateDirectory)/svconn$(ObjectSuffix) $(IntermediateDirectory)/obtype$(ObjectSuffix) $(IntermediateDirectory)/obobject$(ObjectSuffix) 
+Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/fcpool$(ObjectSuffix) $(IntermediateDirectory)/fcinit$(ObjectSuffix) $(IntermediateDirectory)/fcproc$(ObjectSuffix) $(IntermediateDirectory)/fcreq$(ObjectSuffix) $(IntermediateDirectory)/fcdisp$(ObjectSuffix) $(IntermediateDirectory)/rtlheap$(ObjectSuffix) $(IntermediateDirectory)/rtlstr$(ObjectSuffix) $(IntermediateDirectory)/rtlpipe$(ObjectSuffix) $(IntermediateDirectory)/rtlfifo$(ObjectSuffix) \
+	$(IntermediateDirectory)/rtlmap$(ObjectSuffix) $(IntermediateDirectory)/svinit$(ObjectSuffix) $(IntermediateDirectory)/svsite$(ObjectSuffix) $(IntermediateDirectory)/sventry$(ObjectSuffix) $(IntermediateDirectory)/svlisten$(ObjectSuffix) $(IntermediateDirectory)/svss$(ObjectSuffix) $(IntermediateDirectory)/svconn$(ObjectSuffix) $(IntermediateDirectory)/obtype$(ObjectSuffix) $(IntermediateDirectory)/obobject$(ObjectSuffix) 
 
 ##
 ## Main Build Targets 
@@ -110,13 +110,13 @@ $(IntermediateDirectory)/fcreq$(DependSuffix): fcreq.c
 $(IntermediateDirectory)/fcreq$(PreprocessSuffix): fcreq.c
 	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/fcreq$(PreprocessSuffix) "D:/CodeLite/icyhttpd/fcreq.c"
 
-$(IntermediateDirectory)/fcstd$(ObjectSuffix): fcstd.c $(IntermediateDirectory)/fcstd$(DependSuffix)
-	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd/fcstd.c" $(CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/fcstd$(ObjectSuffix) $(IncludePath)
-$(IntermediateDirectory)/fcstd$(DependSuffix): fcstd.c
-	@$(C_CompilerName) $(CmpOptions) $(IncludePath) -MT$(IntermediateDirectory)/fcstd$(ObjectSuffix) -MF$(IntermediateDirectory)/fcstd$(DependSuffix) -MM "D:/CodeLite/icyhttpd/fcstd.c"
+$(IntermediateDirectory)/fcdisp$(ObjectSuffix): fcdisp.c $(IntermediateDirectory)/fcdisp$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd/fcdisp.c" $(CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/fcdisp$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/fcdisp$(DependSuffix): fcdisp.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) -MT$(IntermediateDirectory)/fcdisp$(ObjectSuffix) -MF$(IntermediateDirectory)/fcdisp$(DependSuffix) -MM "D:/CodeLite/icyhttpd/fcdisp.c"
 
-$(IntermediateDirectory)/fcstd$(PreprocessSuffix): fcstd.c
-	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/fcstd$(PreprocessSuffix) "D:/CodeLite/icyhttpd/fcstd.c"
+$(IntermediateDirectory)/fcdisp$(PreprocessSuffix): fcdisp.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/fcdisp$(PreprocessSuffix) "D:/CodeLite/icyhttpd/fcdisp.c"
 
 $(IntermediateDirectory)/rtlheap$(ObjectSuffix): rtlheap.c $(IntermediateDirectory)/rtlheap$(DependSuffix)
 	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd/rtlheap.c" $(CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/rtlheap$(ObjectSuffix) $(IncludePath)
@@ -149,6 +149,14 @@ $(IntermediateDirectory)/rtlfifo$(DependSuffix): rtlfifo.c
 
 $(IntermediateDirectory)/rtlfifo$(PreprocessSuffix): rtlfifo.c
 	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/rtlfifo$(PreprocessSuffix) "D:/CodeLite/icyhttpd/rtlfifo.c"
+
+$(IntermediateDirectory)/rtlmap$(ObjectSuffix): rtlmap.c $(IntermediateDirectory)/rtlmap$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd/rtlmap.c" $(CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/rtlmap$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/rtlmap$(DependSuffix): rtlmap.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) -MT$(IntermediateDirectory)/rtlmap$(ObjectSuffix) -MF$(IntermediateDirectory)/rtlmap$(DependSuffix) -MM "D:/CodeLite/icyhttpd/rtlmap.c"
+
+$(IntermediateDirectory)/rtlmap$(PreprocessSuffix): rtlmap.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/rtlmap$(PreprocessSuffix) "D:/CodeLite/icyhttpd/rtlmap.c"
 
 $(IntermediateDirectory)/svinit$(ObjectSuffix): svinit.c $(IntermediateDirectory)/svinit$(DependSuffix)
 	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd/svinit.c" $(CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/svinit$(ObjectSuffix) $(IncludePath)
@@ -235,9 +243,9 @@ clean:
 	$(RM) $(IntermediateDirectory)/fcreq$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/fcreq$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/fcreq$(PreprocessSuffix)
-	$(RM) $(IntermediateDirectory)/fcstd$(ObjectSuffix)
-	$(RM) $(IntermediateDirectory)/fcstd$(DependSuffix)
-	$(RM) $(IntermediateDirectory)/fcstd$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/fcdisp$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/fcdisp$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/fcdisp$(PreprocessSuffix)
 	$(RM) $(IntermediateDirectory)/rtlheap$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/rtlheap$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/rtlheap$(PreprocessSuffix)
@@ -250,6 +258,9 @@ clean:
 	$(RM) $(IntermediateDirectory)/rtlfifo$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/rtlfifo$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/rtlfifo$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/rtlmap$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/rtlmap$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/rtlmap$(PreprocessSuffix)
 	$(RM) $(IntermediateDirectory)/svinit$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/svinit$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/svinit$(PreprocessSuffix)

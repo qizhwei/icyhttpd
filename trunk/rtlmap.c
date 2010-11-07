@@ -1,18 +1,36 @@
 #include "rtl.h"
+#include <ctype.h>
 #include <assert.h>
 
 #define INITIAL_SLOTS (1)
+#define OFFSET_BASIS (2166136261U)
 
 static size_t RtlpStringHash(void *string)
 {
-	// TODO: Not implemented
-	return 0;
+	char *p = string;
+	size_t hash = OFFSET_BASIS;
+	
+	while (*p) {
+		hash ^= (size_t)*p;
+		hash += (hash<<1) + (hash<<4) + (hash<<7) + (hash<<8) + (hash<<24);
+		p += 1;
+	}
+
+	return hash;
 }
 
 static size_t RtlpStringHashInsensitive(void *string)
 {
-	// TODO: Not implemented
-	return 0;
+	char *p = string;
+	size_t hash = OFFSET_BASIS;
+	
+	while (*p) {
+		hash ^= (size_t)tolower(*p);
+		hash += (hash<<1) + (hash<<4) + (hash<<7) + (hash<<8) + (hash<<24);
+		p += 1;
+	}
+
+	return hash;
 }
 
 static int RtlpStringEqual(void *string0, void *string1)

@@ -134,7 +134,7 @@ static RtlMapRecord * RtlpConvertMapToList(RtlMap *map)
 	return head.Next;
 }
 
-int RtlAddMap(RtlMap **map, void *key, void *value)
+int RtlInsertMap(RtlMap **map, void *key, void *value)
 {
 	RtlMapRecord *record = RtlAllocateHeap(sizeof(RtlMapRecord));
 	if (record == NULL) {

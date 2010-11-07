@@ -4,12 +4,12 @@
 
 static void CALLBACK FcpProcessTimerProc(void *state, DWORD dwTimerLowValue, DWORD dwTimerHighValue);
 
-FcPool * FcCreatePool(const char *commandLine, int idleTime, int maxRequests)
+FcPool * FcCreatePool(const char *name, const char *commandLine, int idleTime, int maxRequests)
 {
 	FcPool *pool;
 	
 	// Allocate memory for the object
-	pool = ObCreateObject(&FcpPoolObjectType, sizeof(FcPool));
+	pool = ObCreateObject(&FcpPoolObjectType, sizeof(FcPool), FcpPoolDirectory, name);
 	if (pool == NULL) {
 		return NULL;
 	}
@@ -30,11 +30,6 @@ FcPool * FcCreatePool(const char *commandLine, int idleTime, int maxRequests)
 	return pool;
 }
 
-void FcpClosePool(void *object)
-{
-	// TODO: Not implemented
-}
-
 int FcpPushPoolProcess(FcProcess *process)
 {
 	FcPool *pool = process->Pool;
@@ -45,7 +40,7 @@ int FcpPushPoolProcess(FcProcess *process)
 	assert(process->State == FCP_STATE_READY);
 	
 	// Allocate memory for the wait block
-	waitBlock = ObCreateObject(&FcpWaitBlockObjectType, sizeof(FcpWaitBlock));
+	waitBlock = ObCreateObject(&FcpWaitBlockObjectType, sizeof(FcpWaitBlock), NULL, NULL);
 	if (waitBlock == NULL) {
 		return 1;
 	}

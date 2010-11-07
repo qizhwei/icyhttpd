@@ -79,7 +79,7 @@ typedef struct _RtlMap {
 
 extern RtlMap * RtlCreateMap(RtlHashFunc *hash, RtlEqualFunc *equal);
 extern RtlMap * RtlCreateStringMap(int caseInsensitive);
-extern int RtlAddMap(RtlMap **map, void *key, void *value);
+extern int RtlInsertMap(RtlMap **map, void *key, void *value);
 extern int RtlQueryMap(RtlMap **map, void *key, void **value, int remove);
 
 #endif

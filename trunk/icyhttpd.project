@@ -115,5 +115,7 @@
     <File Name="obp.h"/>
     <File Name="obtype.c"/>
     <File Name="obobject.c"/>
+    <File Name="obdir.c"/>
+    <File Name="obinit.c"/>
   </VirtualDirectory>
 </CodeLite_Project>

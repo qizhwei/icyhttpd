@@ -166,7 +166,7 @@ FcRequest * FcBeginRequest(FcPool *pool, const char *scriptPath)
 	FcRequest *request;
 
 	// Allocate memory for request and asynchronous state
-	request = ObCreateObject(&FcpRequestObjectType, sizeof(FcRequest));
+	request = ObCreateObject(&FcpRequestObjectType, sizeof(FcRequest), NULL, NULL);
 	if (request == NULL) {
 		return NULL;
 	}

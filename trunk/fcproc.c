@@ -66,7 +66,7 @@ FcProcess * FcpCreateProcess(FcPool *pool)
 	CloseHandle(pi.hThread);
 	
 	// Allocate memory for the object
-	process = ObCreateObject(&FcpProcessObjectType, sizeof(FcProcess));
+	process = ObCreateObject(&FcpProcessObjectType, sizeof(FcProcess), NULL, NULL);
 	if (process == NULL) {
 		TerminateProcess(pi.hProcess, 1);
 		CloseHandle(pi.hProcess);

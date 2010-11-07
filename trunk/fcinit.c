@@ -6,16 +6,17 @@ ObObjectType FcpPoolObjectType;
 ObObjectType FcpProcessObjectType;
 ObObjectType FcpRequestObjectType;
 ObObjectType FcpWaitBlockObjectType;
+void * FcpPoolDirectory;
 
 int FcInitializeSystem(void)
 {
 	JOBOBJECT_EXTENDED_LIMIT_INFORMATION limit;
 	
 	// Initialize object types
-	ObInitializeObjectType(&FcpPoolObjectType, &FcpClosePool, NULL);
-	ObInitializeObjectType(&FcpProcessObjectType, &FcpCloseProcess, NULL);
-	ObInitializeObjectType(&FcpRequestObjectType, &FcpCloseRequest, NULL);
-	ObInitializeObjectType(&FcpWaitBlockObjectType, &FcpCloseWaitBlock, NULL);
+	ObInitializeObjectType(&FcpPoolObjectType, NULL, NULL, NULL);
+	ObInitializeObjectType(&FcpProcessObjectType, &FcpCloseProcess, NULL, NULL);
+	ObInitializeObjectType(&FcpRequestObjectType, &FcpCloseRequest, NULL, NULL);
+	ObInitializeObjectType(&FcpWaitBlockObjectType, &FcpCloseWaitBlock, NULL, NULL);
 	
 	// create a job object
 	FcpJobObject = CreateJobObject(NULL, NULL);
@@ -33,6 +34,12 @@ int FcInitializeSystem(void)
 	limit.BasicLimitInformation.LimitFlags |= JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
 
 	if (!SetInformationJobObject(FcpJobObject, JobObjectExtendedLimitInformation, &limit, sizeof(limit))) {
+		CloseHandle(FcpJobObject);
+		return 1;
+	}
+	
+	FcpPoolDirectory = ObCreateDirectoryObject(NULL, "\\FastCgiPool");
+	if (FcpPoolDirectory == NULL) {
 		CloseHandle(FcpJobObject);
 		return 1;
 	}

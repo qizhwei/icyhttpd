@@ -49,6 +49,7 @@ extern ObObjectType FcpPoolObjectType;
 extern ObObjectType FcpProcessObjectType;
 extern ObObjectType FcpRequestObjectType;
 extern ObObjectType FcpWaitBlockObjectType;
+extern void * FcpPoolDirectory;
 
 extern FcProcess * FcpCreateProcess(FcPool *pool);
 extern int FcpTerminateProcess(FcProcess *process, int error);
@@ -57,7 +58,6 @@ extern void FcpRemovePoolProcess(FcProcess *process);
 extern FcProcess * FcpPopPoolProcess(FcPool *pool);
 extern int FcpDispatchProcess(FcProcess *process);
 extern int FcpWriteProcess(FcProcess *process, const void *buffer, size_t size, RtlIoCompletion *completion, void *state);
-extern void FcpClosePool(void *object);
 extern void FcpCloseProcess(void *object);
 extern void FcpCloseRequest(void *object);
 extern void FcpCloseWaitBlock(void *object);

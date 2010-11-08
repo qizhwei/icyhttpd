@@ -11,3 +11,16 @@ char * RtlDuplicateString(const char *string)
 	
 	return (char *)result;
 }
+
+int RtlConcatString(char **string, const char *source)
+{
+	size_t targetLength = strlen(*string);
+	size_t sourceLength = strlen(source);
+	
+	if (RtlReallocateHeap((void *)string, sourceLength + targetLength + 1)) {
+		return 1;
+	}
+	
+	memcpy(&(*string)[targetLength], source, sourceLength + 1);
+	return 0;
+}

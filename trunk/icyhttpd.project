@@ -16,6 +16,7 @@
     <File Name="rtl.h"/>
     <File Name="sv.h"/>
     <File Name="ob.h"/>
+    <File Name="fs.h"/>
   </VirtualDirectory>
   <VirtualDirectory Name="fc">
     <File Name="fcp.h"/>
@@ -117,5 +118,11 @@
     <File Name="obobject.c"/>
     <File Name="obdir.c"/>
     <File Name="obinit.c"/>
+  </VirtualDirectory>
+  <VirtualDirectory Name="fs">
+    <File Name="fsinit.c"/>
+    <File Name="fsp.h"/>
+    <File Name="fsfile.c"/>
+    <File Name="fsvd.c"/>
   </VirtualDirectory>
 </CodeLite_Project>

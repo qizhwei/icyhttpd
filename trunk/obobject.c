@@ -48,8 +48,8 @@ void * ObCreateObject(ObObjectType *type, size_t size, void *root, const char *p
 					RtlFreeHeap(dupPath);
 					return NULL;
 				}
-				assert(header->ReferenceCount == 2);
 				header->Parent = curRoot;
+				assert(header->ReferenceCount == 2);
 				break;
 			} else {
 				nextRoot = ObParseObject(curRoot, curPath);
@@ -67,14 +67,24 @@ void * ObCreateObject(ObObjectType *type, size_t size, void *root, const char *p
 		RtlFreeHeap(dupPath);
 	}
 	
+	memset(&header[1], 0, size);
 	return &header[1];
 }
 
 void * ObReferenceObjectByPointer(void *object, ObObjectType *type)
 {
 	ObpObjectHeader *header = ObpGetObjectHeader(object);
+	ObObjectType *objectType;
 	
-	if (type != NULL && header->ObjectType != type) {
+	if (type != NULL) {
+		objectType = header->ObjectType;
+		do {
+			if (objectType == type) {
+				header->ReferenceCount += 1;
+				return object;
+			}
+			objectType = objectType->ParentType;
+		} while (objectType != NULL);
 		return NULL;
 	}
 	
@@ -86,6 +96,7 @@ void * ObReferenceObjectByName(void *root, const char *path, ObObjectType *type)
 {
 	char *curPath, *dupPath;
 	void *curRoot, *nextRoot;
+	ObObjectType *objectType;
 	
 	curPath = dupPath = RtlDuplicateString(path);
 	
@@ -119,6 +130,21 @@ void * ObReferenceObjectByName(void *root, const char *path, ObObjectType *type)
 	} while (curPath != NULL);
 	
 	RtlFreeHeap(dupPath);
+	
+	if (type != NULL) {
+		
+		objectType = ObpGetObjectHeader(curRoot)->ObjectType;
+		do {
+			if (objectType == type) {
+				return curRoot;
+			}
+			objectType = objectType->ParentType;
+		} while (objectType != NULL);
+		
+		ObDereferenceObject(curRoot);
+		return NULL;
+	}
+	
 	return curRoot;
 }
 

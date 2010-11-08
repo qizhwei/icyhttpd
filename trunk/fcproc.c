@@ -3,12 +3,12 @@
 #include <string.h>
 #include <assert.h>
 
-FcProcess * FcpCreateProcess(FcPool *pool)
+FcpProcess * FcpCreateProcess(FcPool *pool)
 {
 	HANDLE localPipe, remotePipe;
 	STARTUPINFOA si;
 	PROCESS_INFORMATION pi;
-	FcProcess *process;
+	FcpProcess *process;
 	
 	// Create a pair of pipe
 	if (RtlCreatePipe(&remotePipe, &localPipe)) {
@@ -66,7 +66,7 @@ FcProcess * FcpCreateProcess(FcPool *pool)
 	CloseHandle(pi.hThread);
 	
 	// Allocate memory for the object
-	process = ObCreateObject(&FcpProcessObjectType, sizeof(FcProcess), NULL, NULL);
+	process = ObCreateObject(&FcpProcessObjectType, sizeof(FcpProcess), NULL, NULL);
 	if (process == NULL) {
 		TerminateProcess(pi.hProcess, 1);
 		CloseHandle(pi.hProcess);
@@ -106,7 +106,7 @@ static void CALLBACK FcpWriteProcessComplete(DWORD errorCode, DWORD bytesTransfe
 	RtlFreeHeap(wpstate);
 }
 
-int FcpWriteProcess(FcProcess *process, const void *buffer, size_t size, RtlIoCompletion *completion, void *state)
+int FcpWriteProcess(FcpProcess *process, const void *buffer, size_t size, RtlIoCompletion *completion, void *state)
 {
 	FcpWriteProcessState *wpstate;
 	
@@ -131,7 +131,7 @@ static void FcpWriteEofComplete(void *state, size_t size, int error)
 {
 }
 
-int FcpTerminateProcess(FcProcess *process, int error)
+int FcpTerminateProcess(FcpProcess *process, int error)
 {
 	if (process->State == FCP_STATE_POOLING) {
 		FcpRemovePoolProcess(process);
@@ -153,7 +153,7 @@ int FcpTerminateProcess(FcProcess *process, int error)
 
 void FcpCloseProcess(void *object)
 {
-	FcProcess *process = object;
+	FcpProcess *process = object;
 	
 	FcpTerminateProcess(process, 0);
 	ObDereferenceObject(process->Pool);

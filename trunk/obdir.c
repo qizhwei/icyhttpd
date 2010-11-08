@@ -1,8 +1,8 @@
 #include "obp.h"
 
-ObpDirectoryObject * ObCreateDirectoryObject(void *root, const char *path)
+ObDirectoryObject * ObCreateDirectoryObject(void *root, const char *path)
 {
-	ObpDirectoryObject *dir = ObCreateObject(&ObpDirectoryObjectType, sizeof(ObpDirectoryObject), root, path);
+	ObDirectoryObject *dir = ObCreateObject(&ObDirectoryObjectType, sizeof(ObDirectoryObject), root, path);
 	if (dir == NULL) {
 		return NULL;
 	}
@@ -18,7 +18,7 @@ ObpDirectoryObject * ObCreateDirectoryObject(void *root, const char *path)
 
 void * ObpDirectoryParse(void *object, const char *name)
 {
-	ObpDirectoryObject *dir = object;
+	ObDirectoryObject *dir = object;
 	void *value;
 	
 	if (RtlQueryMap(&dir->NameMap, (void *)name, &value, 0)) {
@@ -30,7 +30,7 @@ void * ObpDirectoryParse(void *object, const char *name)
 
 int ObpDirectoryInsert(void *object, const char *name, void *target)
 {
-	ObpDirectoryObject *dir = object;
+	ObDirectoryObject *dir = object;
 	char *dupName = RtlDuplicateString(name);
 	
 	if (dupName == NULL) {

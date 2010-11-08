@@ -6,17 +6,17 @@ ObObjectType FcpPoolObjectType;
 ObObjectType FcpProcessObjectType;
 ObObjectType FcpRequestObjectType;
 ObObjectType FcpWaitBlockObjectType;
-void * FcpPoolDirectory;
+ObDirectoryObject * FcpPoolDirectory;
 
 int FcInitializeSystem(void)
 {
 	JOBOBJECT_EXTENDED_LIMIT_INFORMATION limit;
 	
 	// Initialize object types
-	ObInitializeObjectType(&FcpPoolObjectType, NULL, NULL, NULL);
-	ObInitializeObjectType(&FcpProcessObjectType, &FcpCloseProcess, NULL, NULL);
-	ObInitializeObjectType(&FcpRequestObjectType, &FcpCloseRequest, NULL, NULL);
-	ObInitializeObjectType(&FcpWaitBlockObjectType, &FcpCloseWaitBlock, NULL, NULL);
+	ObInitializeObjectType(&FcpPoolObjectType, NULL, NULL, NULL, NULL);
+	ObInitializeObjectType(&FcpProcessObjectType, NULL, &FcpCloseProcess, NULL, NULL);
+	ObInitializeObjectType(&FcpRequestObjectType, NULL, &FcpCloseRequest, NULL, NULL);
+	ObInitializeObjectType(&FcpWaitBlockObjectType, NULL, &FcpCloseWaitBlock, NULL, NULL);
 	
 	// create a job object
 	FcpJobObject = CreateJobObject(NULL, NULL);

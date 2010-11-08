@@ -49,7 +49,7 @@ static void FcpSendParamComplete(void *state, size_t size, int error)
 static void FcpSendParam(FcpBeginRequestState *brstate, const char *key, const char *value)
 {
 	FcRequest *request = brstate->Request;
-	FcProcess *process = request->Process;
+	FcpProcess *process = request->Process;
 	unsigned char *buffer = brstate->Buffer;
 	FCGI_Header *header;
 	size_t oldLength, oldSize;
@@ -162,7 +162,7 @@ static void FcpSendParam(FcpBeginRequestState *brstate, const char *key, const c
 FcRequest * FcBeginRequest(FcPool *pool, const char *scriptPath)
 {
 	FcpBeginRequestState *brstate;
-	FcProcess *process;
+	FcpProcess *process;
 	FcRequest *request;
 
 	// Allocate memory for request and asynchronous state

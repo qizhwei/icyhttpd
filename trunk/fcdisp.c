@@ -4,7 +4,7 @@
 
 typedef struct _FcpDispatchProcessState {
 	OVERLAPPED Overlapped;
-	FcProcess *Process;
+	FcpProcess *Process;
 	size_t Length;
 	unsigned char Buffer[FCGI_HEADER_LEN];
 } FcpDispatchProcessState;
@@ -13,7 +13,7 @@ static void CALLBACK FcpDispatchProcessComplete(DWORD errorCode, DWORD bytesTran
 static void FcpWriteStdoutCompletion(void *state, size_t size, int error);
 static void FcpWriteStdoutEofCompletion(void *state, size_t size, int error);
 
-int FcpDispatchProcess(FcProcess *process)
+int FcpDispatchProcess(FcpProcess *process)
 {
 	FcpDispatchProcessState *dpstate;
 	
@@ -43,7 +43,7 @@ int FcpDispatchProcess(FcProcess *process)
 static void CALLBACK FcpDispatchProcessComplete(DWORD errorCode, DWORD bytesTransferred, LPOVERLAPPED overlapped)
 {
 	FcpDispatchProcessState *dpstate = (FcpDispatchProcessState *)overlapped;
-	FcProcess *process = dpstate->Process;
+	FcpProcess *process = dpstate->Process;
 	FcRequest *request;
 	FCGI_Header *header;
 	size_t contentLength, contentSize;

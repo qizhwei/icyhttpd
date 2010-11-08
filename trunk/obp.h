@@ -15,12 +15,12 @@ static inline ObpObjectHeader * ObpGetObjectHeader(void *object)
 	return (ObpObjectHeader *)(((char *)object) - sizeof(ObpObjectHeader));
 }
 
-struct _ObpDirectoryObject {
+struct _ObDirectoryObject {
 	RtlMap *NameMap;
 };
 
-extern ObObjectType ObpDirectoryObjectType;
-extern ObpDirectoryObject *ObpRootDirectory;
+extern ObObjectType ObDirectoryObjectType;
+extern ObDirectoryObject *ObpRootDirectory;
 extern void * ObpDirectoryParse(void *object, const char *name);
 extern int ObpDirectoryInsert(void *object, const char *name, void *target);
 

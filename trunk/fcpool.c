@@ -30,7 +30,7 @@ FcPool * FcCreatePool(const char *name, const char *commandLine, int idleTime, i
 	return pool;
 }
 
-int FcpPushPoolProcess(FcProcess *process)
+int FcpPushPoolProcess(FcpProcess *process)
 {
 	FcPool *pool = process->Pool;
 	FcpWaitBlock *waitBlock;
@@ -79,7 +79,7 @@ int FcpPushPoolProcess(FcProcess *process)
 	return 0;
 }
 
-void FcpRemovePoolProcess(FcProcess *process)
+void FcpRemovePoolProcess(FcpProcess *process)
 {
 	FcpWaitBlock *waitBlock = process->WaitBlock;
 	assert(process->State = FCP_STATE_POOLING);
@@ -99,15 +99,15 @@ void FcpRemovePoolProcess(FcProcess *process)
 	ObDereferenceObject(waitBlock);
 }
 
-FcProcess * FcpPopPoolProcess(FcPool *pool)
+FcpProcess * FcpPopPoolProcess(FcPool *pool)
 {
-	FcProcess *process;
+	FcpProcess *process;
 	
 	if (IsListEmpty(&pool->PoolingList)) {
 		return NULL;
 	}
 	
-	process = CONTAINING_RECORD(pool->PoolingList.Flink, FcProcess, PoolEntry);
+	process = CONTAINING_RECORD(pool->PoolingList.Flink, FcpProcess, PoolEntry);
 	FcpRemovePoolProcess(process);
 	return ObReferenceObjectByPointer(process, NULL);
 }
@@ -115,7 +115,7 @@ FcProcess * FcpPopPoolProcess(FcPool *pool)
 static void CALLBACK FcpProcessTimerProc(void *state, DWORD dwTimerLowValue, DWORD dwTimerHighValue)
 {
 	FcpWaitBlock *waitBlock = state;
-	FcProcess *process;
+	FcpProcess *process;
 	
 	if (!waitBlock->Cancelled) {
 		process = waitBlock->Process;

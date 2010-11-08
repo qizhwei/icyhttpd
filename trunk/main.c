@@ -1,8 +1,10 @@
 #include "fc.h"
+#include "fs.h"
 #include "ob.h"
 #include <windows.h>
 #include <stdio.h>
 
+FsFileObject *file;
 FcPool *pool;
 FcRequest *request;
 char buffer[1024];
@@ -17,13 +19,17 @@ void init(void)
 {
 	ObInitializeSystem();
 	FcInitializeSystem();
+	FsInitializeSystem();
 	ObDereferenceObject(FcCreatePool("php-cgi", "php-cgi", 0, 500));
+	ObDereferenceObject(FsCreateVirtualDirectory("wwwroot", "d:\\wwwroot"));
 }
 
 int main(int argc, char **argv)
 {
 	init();
+	file = ObReferenceObjectByName(NULL, "\\FileSystem\\wwwroot\\foobar.php", &FsFileObjectType);
 	pool = ObReferenceObjectByName(NULL, "\\FastCgiPool\\php-cgi", NULL);
+	// TODO: FileObject.Handler, DirectoryHandler, NotExistHandler
 	request = FcBeginRequest(pool, "d:\\wwwroot\\foobar.php");
 	ObDereferenceObject(pool);
 

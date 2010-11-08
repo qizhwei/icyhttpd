@@ -6,8 +6,10 @@
 #include "ob.h"
 #include "win32.h"
 
+typedef struct _FcpProcess FcpProcess;
+
 typedef struct _FcpWaitBlock {
-	FcProcess *Process;
+	FcpProcess *Process;
 	HANDLE Timer;
 	int Cancelled;
 } FcpWaitBlock;
@@ -20,7 +22,7 @@ struct _FcPool {
 	int MaxRequests;
 };
 
-struct _FcProcess {
+struct _FcpProcess {
 	int RemainingRequests;
 	FcPool *Pool;
 	ListEntry PoolEntry;
@@ -34,7 +36,7 @@ struct _FcProcess {
 };
 
 struct _FcRequest {
-	FcProcess *Process;
+	FcpProcess *Process;
 	RtlFifo *StdinFifo;
 	RtlFifo *StdoutFifo;
 };
@@ -49,15 +51,15 @@ extern ObObjectType FcpPoolObjectType;
 extern ObObjectType FcpProcessObjectType;
 extern ObObjectType FcpRequestObjectType;
 extern ObObjectType FcpWaitBlockObjectType;
-extern void * FcpPoolDirectory;
+extern ObDirectoryObject * FcpPoolDirectory;
 
-extern FcProcess * FcpCreateProcess(FcPool *pool);
-extern int FcpTerminateProcess(FcProcess *process, int error);
-extern int FcpPushPoolProcess(FcProcess *process);
-extern void FcpRemovePoolProcess(FcProcess *process);
-extern FcProcess * FcpPopPoolProcess(FcPool *pool);
-extern int FcpDispatchProcess(FcProcess *process);
-extern int FcpWriteProcess(FcProcess *process, const void *buffer, size_t size, RtlIoCompletion *completion, void *state);
+extern FcpProcess * FcpCreateProcess(FcPool *pool);
+extern int FcpTerminateProcess(FcpProcess *process, int error);
+extern int FcpPushPoolProcess(FcpProcess *process);
+extern void FcpRemovePoolProcess(FcpProcess *process);
+extern FcpProcess * FcpPopPoolProcess(FcPool *pool);
+extern int FcpDispatchProcess(FcpProcess *process);
+extern int FcpWriteProcess(FcpProcess *process, const void *buffer, size_t size, RtlIoCompletion *completion, void *state);
 extern void FcpCloseProcess(void *object);
 extern void FcpCloseRequest(void *object);
 extern void FcpCloseWaitBlock(void *object);

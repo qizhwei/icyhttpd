@@ -13,7 +13,7 @@ CurrentFileName        :=
 CurrentFilePath        :=
 CurrentFileFullPath    :=
 User                   :=iceboy
-Date                   :=11/07/10
+Date                   :=11/08/10
 CodeLitePath           :="C:\Program Files\CodeLite"
 LinkerName             :=gcc
 ArchiveTool            :=ar rcus
@@ -51,7 +51,7 @@ CodeLiteDir:=C:\Program Files\CodeLite
 UNIT_TEST_PP_SRC_DIR:=C:\UnitTest++-1.3
 Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/fcpool$(ObjectSuffix) $(IntermediateDirectory)/fcinit$(ObjectSuffix) $(IntermediateDirectory)/fcproc$(ObjectSuffix) $(IntermediateDirectory)/fcreq$(ObjectSuffix) $(IntermediateDirectory)/fcdisp$(ObjectSuffix) $(IntermediateDirectory)/rtlheap$(ObjectSuffix) $(IntermediateDirectory)/rtlstr$(ObjectSuffix) $(IntermediateDirectory)/rtlpipe$(ObjectSuffix) $(IntermediateDirectory)/rtlfifo$(ObjectSuffix) \
 	$(IntermediateDirectory)/rtlmap$(ObjectSuffix) $(IntermediateDirectory)/svinit$(ObjectSuffix) $(IntermediateDirectory)/svsite$(ObjectSuffix) $(IntermediateDirectory)/sventry$(ObjectSuffix) $(IntermediateDirectory)/svlisten$(ObjectSuffix) $(IntermediateDirectory)/svss$(ObjectSuffix) $(IntermediateDirectory)/svconn$(ObjectSuffix) $(IntermediateDirectory)/obtype$(ObjectSuffix) $(IntermediateDirectory)/obobject$(ObjectSuffix) $(IntermediateDirectory)/obdir$(ObjectSuffix) \
-	$(IntermediateDirectory)/obinit$(ObjectSuffix) 
+	$(IntermediateDirectory)/obinit$(ObjectSuffix) $(IntermediateDirectory)/fsinit$(ObjectSuffix) $(IntermediateDirectory)/fsfile$(ObjectSuffix) $(IntermediateDirectory)/fsvd$(ObjectSuffix) 
 
 ##
 ## Main Build Targets 
@@ -239,6 +239,30 @@ $(IntermediateDirectory)/obinit$(DependSuffix): obinit.c
 $(IntermediateDirectory)/obinit$(PreprocessSuffix): obinit.c
 	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/obinit$(PreprocessSuffix) "D:/CodeLite/icyhttpd/obinit.c"
 
+$(IntermediateDirectory)/fsinit$(ObjectSuffix): fsinit.c $(IntermediateDirectory)/fsinit$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd/fsinit.c" $(CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/fsinit$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/fsinit$(DependSuffix): fsinit.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) -MT$(IntermediateDirectory)/fsinit$(ObjectSuffix) -MF$(IntermediateDirectory)/fsinit$(DependSuffix) -MM "D:/CodeLite/icyhttpd/fsinit.c"
+
+$(IntermediateDirectory)/fsinit$(PreprocessSuffix): fsinit.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/fsinit$(PreprocessSuffix) "D:/CodeLite/icyhttpd/fsinit.c"
+
+$(IntermediateDirectory)/fsfile$(ObjectSuffix): fsfile.c $(IntermediateDirectory)/fsfile$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd/fsfile.c" $(CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/fsfile$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/fsfile$(DependSuffix): fsfile.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) -MT$(IntermediateDirectory)/fsfile$(ObjectSuffix) -MF$(IntermediateDirectory)/fsfile$(DependSuffix) -MM "D:/CodeLite/icyhttpd/fsfile.c"
+
+$(IntermediateDirectory)/fsfile$(PreprocessSuffix): fsfile.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/fsfile$(PreprocessSuffix) "D:/CodeLite/icyhttpd/fsfile.c"
+
+$(IntermediateDirectory)/fsvd$(ObjectSuffix): fsvd.c $(IntermediateDirectory)/fsvd$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd/fsvd.c" $(CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/fsvd$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/fsvd$(DependSuffix): fsvd.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) -MT$(IntermediateDirectory)/fsvd$(ObjectSuffix) -MF$(IntermediateDirectory)/fsvd$(DependSuffix) -MM "D:/CodeLite/icyhttpd/fsvd.c"
+
+$(IntermediateDirectory)/fsvd$(PreprocessSuffix): fsvd.c
+	@$(C_CompilerName) $(CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/fsvd$(PreprocessSuffix) "D:/CodeLite/icyhttpd/fsvd.c"
+
 
 -include $(IntermediateDirectory)/*$(DependSuffix)
 ##
@@ -308,6 +332,15 @@ clean:
 	$(RM) $(IntermediateDirectory)/obinit$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/obinit$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/obinit$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/fsinit$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/fsinit$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/fsinit$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/fsfile$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/fsfile$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/fsfile$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/fsvd$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/fsvd$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/fsvd$(PreprocessSuffix)
 	$(RM) $(OutputFile)
 	$(RM) $(OutputFile).exe
 

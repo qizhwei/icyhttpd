@@ -4,7 +4,6 @@
 #include "rtl.h"
 
 typedef struct _FcPool FcPool;
-typedef struct _FcProcess FcProcess;
 typedef struct _FcRequest FcRequest;
 
 extern int FcInitializeSystem(void);

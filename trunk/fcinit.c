@@ -14,9 +14,9 @@ int FcInitializeSystem(void)
 	
 	// Initialize object types
 	ObInitializeObjectType(&FcpPoolObjectType, NULL, NULL, NULL, NULL);
-	ObInitializeObjectType(&FcpProcessObjectType, NULL, &FcpCloseProcess, NULL, NULL);
-	ObInitializeObjectType(&FcpRequestObjectType, NULL, &FcpCloseRequest, NULL, NULL);
-	ObInitializeObjectType(&FcpWaitBlockObjectType, NULL, &FcpCloseWaitBlock, NULL, NULL);
+	ObInitializeObjectType(&FcpProcessObjectType, NULL, &FcpProcessClose, NULL, NULL);
+	ObInitializeObjectType(&FcpRequestObjectType, NULL, &FcpRequestClose, NULL, NULL);
+	ObInitializeObjectType(&FcpWaitBlockObjectType, NULL, &FcpWaitBlockClose, NULL, NULL);
 	
 	// create a job object
 	FcpJobObject = CreateJobObject(NULL, NULL);

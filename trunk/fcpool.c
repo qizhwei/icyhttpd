@@ -134,8 +134,11 @@ static void CALLBACK FcpProcessTimerProc(void *state, DWORD dwTimerLowValue, DWO
 	ObDereferenceObject(waitBlock);
 }
 
-void FcpCloseWaitBlock(void *object)
+void FcpWaitBlockClose(void *object)
 {
 	FcpWaitBlock *waitBlock = object;
-	CloseHandle(waitBlock->Timer);
+	
+	if (waitBlock->Timer != NULL) {
+		CloseHandle(waitBlock->Timer);
+	}
 }

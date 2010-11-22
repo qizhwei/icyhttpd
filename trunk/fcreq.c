@@ -17,13 +17,18 @@ static const FCGI_Header FcpParamsPacketInitialHeader = {
 	FCGI_VERSION_1, FCGI_PARAMS,
 };
 
+static const FCGI_Header FcpStdinPacketInitialHeader = {
+	FCGI_VERSION_1, FCGI_STDIN,
+};
+
 static void FcpBeginTrigger(void *state, size_t size, int error)
 {
 	FcpBeginRequestState *brstate = (FcpBeginRequestState *)state;
 	FcRequest *request;
 	
-	if (error)
+	if (error) {
 		brstate->Error = 1;
+	}
 	
 	assert(brstate->PendingIos > 0);
 	brstate->PendingIos -= 1;
@@ -159,13 +164,143 @@ static void FcpSendParam(FcpBeginRequestState *brstate, const char *key, const c
 	memcpy(&buffer[offset + keyLength], value, valueLength);
 }
 
-FcRequest * FcBeginRequest(FcPool *pool, const char *scriptPath)
+#define FCP_BLOCK_COUNT (2)
+#define FCP_BLOCK_STATE_FREE (0)
+#define FCP_BLOCK_STATE_ACTIVE (1)
+#define FCP_BLOCK_STATE_BUSY (2)
+#define FCP_BUFFER_SIZE (4096)
+
+typedef struct _FcpTransferBlock {
+	char Index;
+	char State;
+	char Buffer[FCP_BUFFER_SIZE];
+} FcpTransferBlock;
+
+typedef struct _FcpTransferState {
+	FcRequest *Request;
+	int PendingIos;
+	int Error;
+	FcpTransferBlock Block[FCP_BLOCK_COUNT];
+	char EofIndex;
+	char EofState;
+} FcpTransferState;
+
+static void FcpTransferFifo(RtlFifo *fifo, FcpTransferState *tstate, RtlIoCompletion *completion);
+
+static void FcpTransferStdinCompletion(void *state, size_t size, int error)
+{
+	FcpTransferBlock *block = state;
+	FcpTransferState *tstate = CONTAINING_RECORD(block, FcpTransferState, Block[block->Index]);
+	FcRequest *request = tstate->Request;
+	FCGI_Header *header;
+	
+	if (error) {
+		tstate->Error = 1;
+	}
+	
+	assert(tstate->PendingIos >= 1);
+	
+	switch (block->State) {
+		case FCP_BLOCK_STATE_ACTIVE:
+		
+			if (!error) {
+				// Switch the state
+				block->State = FCP_BLOCK_STATE_BUSY;
+				
+				// Fill in the header
+				header = (FCGI_Header *)block->Buffer;
+				*header = FcpStdinPacketInitialHeader;
+				header->contentLengthB0 = size;
+				header->contentLengthB1 = size >> 8;
+				
+				// Write to the process
+				if (FcpWriteProcess(request->Process, block->Buffer, FCGI_HEADER_LEN + size, &FcpTransferStdinCompletion, block)) {
+					FcpTransferStdinCompletion(block, 0, 1);
+				}
+			}
+
+			if (size != FCP_BUFFER_SIZE - FCGI_HEADER_LEN || error) {
+				
+				// End the stream
+				tstate->PendingIos += 1;
+				tstate->EofState = FCP_BLOCK_STATE_BUSY;
+				if (FcpWriteProcess(request->Process, &FcpStdinPacketInitialHeader, FCGI_HEADER_LEN, &FcpTransferStdinCompletion, &tstate->EofIndex)) {
+					FcpTransferStdinCompletion(&tstate->EofIndex, 0, 1);
+				}
+				
+				return;
+			}
+			
+			break;
+			
+		case FCP_BLOCK_STATE_BUSY:
+		
+			// Switch the state
+			block->State = FCP_BLOCK_STATE_FREE;
+			
+			// Decrement the reference count
+			tstate->PendingIos -= 1;
+			if (tstate->PendingIos == 0) {
+				if (tstate->Error) {
+					FcpTerminateProcess(request->Process, 1);
+				}
+				ObDereferenceObject(request);
+				RtlFreeHeap(tstate);
+				return;
+			}
+			
+			break;
+		default:
+			assert(0);
+	}
+	
+	// Start transferring another block if not EOF
+	if (tstate->EofState == FCP_BLOCK_STATE_FREE) {
+		FcpTransferFifo(request->StdinFifo, tstate, &FcpTransferStdinCompletion);
+	}
+}
+
+static void FcpTransferFifo(RtlFifo *fifo, FcpTransferState *tstate, RtlIoCompletion *completion)
+{
+	int index;
+	int free = -1;
+	
+	for (index = 0; index < FCP_BLOCK_COUNT; ++index) {
+		
+		switch (tstate->Block[index].State) {
+			case FCP_BLOCK_STATE_FREE:
+				if (free == -1) {
+					free = index;
+				}
+				break;
+			case FCP_BLOCK_STATE_ACTIVE:
+				// There should be only one active block
+				return;
+		}
+	}
+	
+	if (free == -1) {
+		return;
+	}
+	
+	tstate->PendingIos += 1;
+	tstate->Block[free].State = FCP_BLOCK_STATE_ACTIVE;
+	if (RtlReadFifo(fifo, &tstate->Block[free].Buffer[FCGI_HEADER_LEN],
+		FCP_BUFFER_SIZE - FCGI_HEADER_LEN, completion, &tstate->Block[free]))
+	{
+		completion(&tstate->Block[free], 0, 1);
+	}
+}
+
+FcRequest * FcBeginRequest(FcPool *pool, FcRequestParam *param)
 {
 	FcpBeginRequestState *brstate;
 	FcpProcess *process;
 	FcRequest *request;
+	FcpTransferState *tstate;
+	int index;
 
-	// Allocate memory for request and asynchronous state
+	// Allocate memory for request and asynchronous states
 	request = ObCreateObject(&FcpRequestObjectType, sizeof(FcRequest), NULL, NULL);
 	if (request == NULL) {
 		return NULL;
@@ -177,47 +312,57 @@ FcRequest * FcBeginRequest(FcPool *pool, const char *scriptPath)
 		return NULL;
 	}
 	
+	tstate = RtlAllocateHeap(sizeof(FcpTransferState));
+	if (tstate == NULL) {
+		ObDereferenceObject(request);
+		RtlFreeHeap(brstate);
+	}
+	
 	// Get an process instance from the pool or by creation
 	process = FcpPopPoolProcess(pool);
 	if (process == NULL) {
 		process = FcpCreateProcess(pool);
 		if (process == NULL) {
-			RtlFreeHeap(brstate);
 			ObDereferenceObject(request);
+			RtlFreeHeap(tstate);
+			RtlFreeHeap(brstate);
 			return NULL;
 		}
 	}
 	
 	// Create fifo for stdin and stdout
 	request->StdinFifo = RtlCreateFifo();
-	if (request->StdinFifo == NULL) {
-		if (FcpPushPoolProcess(process)) {
-			FcpTerminateProcess(process, 1);
-			ObDereferenceObject(process);
-		}
-		RtlFreeHeap(brstate);
-		ObDereferenceObject(request);
-		return NULL;
-	}
-	
 	request->StdoutFifo = RtlCreateFifo();
-	if (request->StdoutFifo == NULL) {
+
+	if (request->StdinFifo == NULL || request->StdoutFifo == NULL) {
 		if (FcpPushPoolProcess(process)) {
 			FcpTerminateProcess(process, 1);
 			ObDereferenceObject(process);
 		}
-		RtlDestroyFifo(request->StdinFifo);
-		RtlFreeHeap(brstate);
 		ObDereferenceObject(request);
+		RtlFreeHeap(tstate);
+		RtlFreeHeap(brstate);
 		return NULL;
 	}
 	
-	// Initialize request object and asynchronous state
+	// Initialize request object and asynchronous states
 	request->Process = process;
 	brstate->Request = ObReferenceObjectByPointer(request, NULL);
 	brstate->PendingIos = 1;
 	brstate->Error = 0;
 	brstate->Buffer = NULL;
+	tstate->Request = ObReferenceObjectByPointer(request, NULL);
+	tstate->PendingIos = 0;
+	tstate->Error = 0;
+	
+	for (index = 0; index < FCP_BLOCK_COUNT; ++index) {
+		FcpTransferBlock *block = &tstate->Block[index];
+		block->Index = index;
+		block->State = FCP_BLOCK_STATE_FREE;
+	}
+	
+	tstate->EofIndex = FCP_BLOCK_COUNT;
+	tstate->EofState = FCP_BLOCK_STATE_FREE;
 	
 	process->Request = ObReferenceObjectByPointer(request, NULL);
 	process->State = FCP_STATE_INTERACTIVE;
@@ -227,25 +372,39 @@ FcRequest * FcBeginRequest(FcPool *pool, const char *scriptPath)
 		FcpTerminateProcess(process, 1);
 		ObDereferenceObject(process);
 		ObDereferenceObject(request);
+		RtlFreeHeap(tstate);
 		RtlFreeHeap(brstate);
 		return NULL;
 	}
 	
 	// Send parameters
-	FcpSendParam(brstate, "SCRIPT_FILENAME", scriptPath);
-	FcpSendParam(brstate, "REQUEST_METHOD", "GET");
-	FcpSendParam(brstate, "HTTP_CONNECTION", "Keep-Alive");
+	FcpSendParam(brstate, "SCRIPT_FILENAME", param->ScriptFilename);
+	FcpSendParam(brstate, "REQUEST_METHOD", param->RequestMethod);
+	FcpSendParam(brstate, "CONTENT_LENGTH", param->ContentLength);
+	FcpSendParam(brstate, "CONTENT_TYPE", param->ContentType);
 	FcpSendParam(brstate, NULL, NULL);
+	
+	// Transfer fifos
+	FcpTransferFifo(request->StdinFifo, tstate, &FcpTransferStdinCompletion);
 		
 	return request;
 }
 
-void FcpCloseRequest(void *object)
+void FcpRequestClose(void *object)
 {
 	FcRequest *request = object;
-	ObDereferenceObject(request->Process);
-	RtlDestroyFifo(request->StdinFifo);
-	RtlDestroyFifo(request->StdoutFifo);
+	
+	if (request->Process != NULL) {
+		ObDereferenceObject(request->Process);
+	}
+	
+	if (request->StdinFifo != NULL) {
+		RtlDestroyFifo(request->StdinFifo);
+	}
+	
+	if (request->StdoutFifo != NULL) {
+		RtlDestroyFifo(request->StdoutFifo);
+	}
 }
 
 typedef struct _FcpRequestIoState {

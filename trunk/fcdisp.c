@@ -28,7 +28,7 @@ int FcpDispatchProcess(FcpProcess *process)
 	dpstate->Process = ObReferenceObjectByPointer(process, NULL);
 	dpstate->Length = 0;
 	
-	// Begin read operation
+	// Begin reading from the process pipe
 	if (!ReadFileEx(process->LocalPipe, dpstate->Buffer, FCGI_HEADER_LEN,
 		&dpstate->Overlapped, &FcpDispatchProcessComplete))
 	{

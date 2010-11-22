@@ -60,8 +60,8 @@ extern void FcpRemovePoolProcess(FcpProcess *process);
 extern FcpProcess * FcpPopPoolProcess(FcPool *pool);
 extern int FcpDispatchProcess(FcpProcess *process);
 extern int FcpWriteProcess(FcpProcess *process, const void *buffer, size_t size, RtlIoCompletion *completion, void *state);
-extern void FcpCloseProcess(void *object);
-extern void FcpCloseRequest(void *object);
-extern void FcpCloseWaitBlock(void *object);
+extern void FcpProcessClose(void *object);
+extern void FcpRequestClose(void *object);
+extern void FcpWaitBlockClose(void *object);
 
 #endif

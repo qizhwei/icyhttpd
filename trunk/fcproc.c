@@ -151,7 +151,7 @@ int FcpTerminateProcess(FcpProcess *process, int error)
 	return 0;
 }
 
-void FcpCloseProcess(void *object)
+void FcpProcessClose(void *object)
 {
 	FcpProcess *process = object;
 	

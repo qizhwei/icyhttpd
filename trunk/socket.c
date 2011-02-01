@@ -13,7 +13,7 @@ typedef struct async_accept {
 typedef struct async_io {
 	OVERLAPPED overlapped;
 	handle_t shrimp;
-	ssize_t result;
+	size_t result;
 } async_io_t;
 
 struct socket {
@@ -146,14 +146,14 @@ static void CALLBACK io_proc(DWORD error, DWORD size, LPWSAOVERLAPPED overlapped
 	async_io_t *async = CONTAINER_OF(overlapped, async_io_t, overlapped);
 
 	if (error)
-		async->result = -1;
+		async->result = 0;
 	else
 		async->result = size;
 
 	shrimp_switch(async->shrimp);
 }
 
-ssize_t socket_read(socket_t *s, char *buffer, size_t size)
+size_t socket_read(socket_t *s, char *buffer, size_t size)
 {
 	WSABUF buf = {size, buffer};
 	DWORD flags = 0;
@@ -162,7 +162,7 @@ ssize_t socket_read(socket_t *s, char *buffer, size_t size)
 	memset(&async.overlapped, 0, sizeof(WSAOVERLAPPED));
 	if (WSARecv(s->os_socket, &buf, 1, NULL, &flags, &async.overlapped, &io_proc)) {
 		if (GetLastError() != WSA_IO_PENDING)
-			return -1;
+			return 0;
 	}
 
 	async.shrimp = shrimp_current();
@@ -170,7 +170,7 @@ ssize_t socket_read(socket_t *s, char *buffer, size_t size)
 	return async.result;
 }
 
-ssize_t socket_write(socket_t *s, char *buffer, size_t size)
+size_t socket_write(socket_t *s, char *buffer, size_t size)
 {
 	WSABUF buf = {size, buffer};
 	async_io_t async;
@@ -178,7 +178,7 @@ ssize_t socket_write(socket_t *s, char *buffer, size_t size)
 	memset(&async.overlapped, 0, sizeof(WSAOVERLAPPED));
 	if (WSASend(s->os_socket, &buf, 1, NULL, 0, &async.overlapped, &io_proc)) {
 		if (GetLastError() != WSA_IO_PENDING)
-			return -1;
+			return 0;
 	}
 
 	async.shrimp = shrimp_current();

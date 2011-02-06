@@ -15,22 +15,30 @@
 
 a server has:
   * multiple endpoints (ipv4, ipv6, etc.)
-  * multiple virtual_dirs
+  * multiple nodes
   * multiple handlers
 
 an endpoint has:
-  * multiple bindings <host, virtual_dir>
+  * multiple bindings <host, node>
   * at most one non-host binding
   * at most one proxy
 
-a virtual_dir has:
+a node is:
+  * a real directory on file system, or
+  * a virtual directory, or
+  * a handler
+
+a virtual directory has:
   * multiple bindings <name, virtual_dir>
   * a handler list, sorted by priority (which can be filesystem, fastcgi, etc.)
   * an error handler (if needed?)
 
 a handler is a component implements an specified interface
 
-== handler interface ==
+== interface ==
 
-  * can_handle(virtual_dir, request) -> bool
-  * handle(virtual_dir, request, response)
+node:
+  * parse(node, parse_context, request) -> node
+  * is_handler() -> bool
+  * can_handle(node, request) -> bool
+  * handle(node, request) -> response

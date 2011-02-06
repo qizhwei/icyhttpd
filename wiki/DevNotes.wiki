@@ -41,6 +41,8 @@ a handler is a component implements an specified interface, which can be (at lea
 
 node:
   * parse(node, parse_context, request) -> node
-  * is_handler() -> bool
-  * can_handle(node, request) -> bool
-  * handle(node, request) -> response
+  * is_handler(node) -> bool
+
+handler:
+  * can_handle(handler, request) -> bool
+  * handle(handler, request) -> response

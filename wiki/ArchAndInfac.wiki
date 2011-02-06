@@ -37,3 +37,16 @@ a handler is a component implements an specified interface, which can be (at lea
 
   * can_handle(handler, request) -> bool
   * handle(handler, request) -> response
+
+== request ==
+
+  * rel_url: string
+  * get_header(request, name) -> value
+  * set_header(request, name, value)
+  * ???
+
+== response ==
+
+  * write_header(response, http_code, ???)
+  * write(response, buffer, size)
+  * where does write_chunk belong ???

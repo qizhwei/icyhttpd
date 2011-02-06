@@ -14,13 +14,17 @@ a server has:
   * multiple endpoints (ipv4, ipv6, etc.)
   * multiple websites
   * multiple handlers
+
 an endpoint has:
   * multiple host bindings (<host, website> pair)
-  *  at most one non-host binding
+  * at most one non-host binding
   * at most one proxy
+
 a website is a virtual directory
+
 a virtual directory has:
   * multiple virtual directory bindings (<name, virtual_dir>)
   * a handler list, sorted by priority (which can be filesystem, fastcgi, etc.)
   * an error handler (if needed?)
+
 a handler is a component implements an specified interface

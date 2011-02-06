@@ -2,12 +2,12 @@
 #labels Phase-Design
 
 == TODOs ==
-fatal error
-process local storage (alloc many times, free once on process termination)
-implement http protocol (by using getline, hash table to store headers, arch should be able to serve as server, gateway and proxy)
-fastcgi pool (migrate)
-hash table (migrate)
-fifo pipe (migrate, if needed)
+  * fatal error
+  * process local storage (alloc many times, free once on process termination)
+  * implement http protocol (by using getline, hash table to store headers, arch should be able to serve as server, gateway and proxy)
+  * fastcgi pool (migrate)
+  * hash table (migrate)
+  * fifo pipe (migrate, if needed)
 
 == server arch ==
 a server has:

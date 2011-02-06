@@ -5,9 +5,9 @@
   * fatal error
   * process local storage (alloc many times, free once on process termination)
   * implement http protocol (by using getline, hash table to store headers, arch should be able to serve as server, gateway and proxy)
-  * fastcgi pool (migrate)
-  * hash table (migrate)
-  * fifo pipe (migrate, if needed)
+  * fastcgi pool (migrate from [http://code.google.com/p/icyhttpd/source/browse/?r=13 rev 13])
+  * hash table (migrate from [http://code.google.com/p/icyhttpd/source/browse/?r=13 rev 13])
+  * fifo pipe (migrate from [http://code.google.com/p/icyhttpd/source/browse/?r=13 rev 13], if needed)
 
 == server arch ==
 a server has:

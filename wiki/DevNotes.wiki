@@ -14,36 +14,8 @@
 
 == server arch ==
 
-a server has:
-  * multiple endpoints (ipv4, ipv6, etc.)
-  * multiple nodes
-  * multiple handlers
-
-an endpoint has:
-  * multiple bindings <host, node>
-  * at most one non-host binding
-  * at most one proxy
-
-a node is:
-  * a real directory on file system, or
-  * a virtual directory, or
-  * a handler
-
-a virtual directory has:
-  * multiple bindings <name, virtual_dir>
-  * a handler list, sorted by priority (which can be filesystem, fastcgi, etc.)
-  * an error handler (if needed?)
-
-a handler is a component implements an specified interface, which can be (at least):
-  * a real file on file system (maybe buffered?)
-  * a fastcgi handler
+see [http://code.google.com/p/icyhttpd/wiki/ArchAndInfac]
 
 == interface ==
 
-node:
-  * parse(node, parse_context, request) -> node
-  * is_handler(node) -> bool
-
-handler:
-  * can_handle(handler, request) -> bool
-  * handle(handler, request) -> response
+see [http://code.google.com/p/icyhttpd/wiki/ArchAndInfac]

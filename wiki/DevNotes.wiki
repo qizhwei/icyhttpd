@@ -2,14 +2,17 @@
 #labels Phase-Design
 
 == TODOs ==
+
   * fatal error
   * process local storage (alloc many times, free once on process termination)
   * implement http protocol (by using getline, hash table to store headers, arch should be able to serve as server, gateway and proxy)
   * fastcgi pool (migrate from [http://code.google.com/p/icyhttpd/source/browse/?r=13 rev 13])
   * hash table (migrate from [http://code.google.com/p/icyhttpd/source/browse/?r=13 rev 13])
   * fifo pipe (migrate from [http://code.google.com/p/icyhttpd/source/browse/?r=13 rev 13], if needed)
+  * utf8 string data structure (do we need size field?)
 
 == server arch ==
+
 a server has:
   * multiple endpoints (ipv4, ipv6, etc.)
   * multiple websites
@@ -28,3 +31,8 @@ a virtual directory has:
   * an error handler (if needed?)
 
 a handler is a component implements an specified interface
+
+== handler interface ==
+
+can_handle(virtual_dir, request) -> bool
+handle(virtual_dir, request, response)

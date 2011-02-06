@@ -9,14 +9,13 @@
   <Dependencies/>
   <VirtualDirectory Name="src">
     <File Name="main.c"/>
-    <File Name="shrimp.c"/>
     <File Name="semaphore.c"/>
     <File Name="timer.c"/>
     <File Name="server.c"/>
     <File Name="socket.c"/>
+    <File Name="process.c"/>
   </VirtualDirectory>
   <VirtualDirectory Name="inc">
-    <File Name="shrimp.h"/>
     <File Name="semaphore.h"/>
     <File Name="list.h"/>
     <File Name="timer.h"/>
@@ -24,6 +23,7 @@
     <File Name="server.h"/>
     <File Name="win32.h"/>
     <File Name="socket.h"/>
+    <File Name="process.h"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>

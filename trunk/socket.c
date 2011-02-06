@@ -1,18 +1,18 @@
 #include "socket.h"
 #include "win32.h"
-#include "shrimp.h"
+#include "process.h"
 #include "list.h"
 #include <stdlib.h>
 
 typedef struct async_accept {
 	socket_t *socket;
-	handle_t shrimp;
+	handle_t process;
 	SOCKET accept_socket;
 } async_accept_t;
 
 typedef struct async_io {
 	OVERLAPPED overlapped;
-	handle_t shrimp;
+	handle_t process;
 	size_t result;
 } async_io_t;
 
@@ -82,7 +82,7 @@ static void event_proc(void *param)
 
 	if (events.lNetworkEvents & FD_ACCEPT) {
 		async->accept_socket = accept(s->os_socket, NULL, NULL);
-		shrimp_switch(async->shrimp);
+		process_switch(async->process);
 	}
 }
 
@@ -101,7 +101,7 @@ int socket_bind_ip(socket_t *s, const char *ip, int port)
 	if (listen(s->os_socket, SOMAXCONN))
 		return -1;
 
-	event = shrimp_share_event(&event_proc, s);
+	event = process_share_event(&event_proc, s);
 	if (event == NULL)
 		return -1;
 
@@ -122,9 +122,9 @@ socket_t *socket_accept(socket_t *s)
 			return NULL;
 
 		// blocking operation, event_proc will be called later
-		async.shrimp = shrimp_current();
+		async.process = process_current();
 		s->async_accept = &async;
-		shrimp_block();
+		process_block();
 		s->async_accept = NULL;
 		as = async.accept_socket;
 	}
@@ -150,7 +150,7 @@ static void CALLBACK io_proc(DWORD error, DWORD size, LPWSAOVERLAPPED overlapped
 	else
 		async->result = size;
 
-	shrimp_switch(async->shrimp);
+	process_switch(async->process);
 }
 
 size_t socket_read(socket_t *s, char *buffer, size_t size)
@@ -165,8 +165,8 @@ size_t socket_read(socket_t *s, char *buffer, size_t size)
 			return 0;
 	}
 
-	async.shrimp = shrimp_current();
-	shrimp_block();
+	async.process = process_current();
+	process_block();
 	return async.result;
 }
 
@@ -181,7 +181,7 @@ size_t socket_write(socket_t *s, char *buffer, size_t size)
 			return 0;
 	}
 
-	async.shrimp = shrimp_current();
-	shrimp_block();
+	async.process = process_current();
+	process_block();
 	return async.result;
 }

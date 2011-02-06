@@ -13,7 +13,7 @@ CurrentFileName        :=
 CurrentFilePath        :=
 CurrentFileFullPath    :=
 User                   :=iceboy
-Date                   :=2011/2/1
+Date                   :=2011/2/6
 CodeLitePath           :="C:\Program Files\CodeLite"
 LinkerName             :=gcc
 ArchiveTool            :=ar rcus
@@ -49,7 +49,7 @@ LibPath                := "$(LibraryPathSwitch)."
 ## User defined environment variables
 ##
 CodeLiteDir:=C:\Program Files\CodeLite
-Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/shrimp$(ObjectSuffix) $(IntermediateDirectory)/semaphore$(ObjectSuffix) $(IntermediateDirectory)/timer$(ObjectSuffix) $(IntermediateDirectory)/server$(ObjectSuffix) $(IntermediateDirectory)/socket$(ObjectSuffix) 
+Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/semaphore$(ObjectSuffix) $(IntermediateDirectory)/timer$(ObjectSuffix) $(IntermediateDirectory)/server$(ObjectSuffix) $(IntermediateDirectory)/socket$(ObjectSuffix) $(IntermediateDirectory)/process$(ObjectSuffix) 
 
 ##
 ## Main Build Targets 
@@ -76,14 +76,6 @@ $(IntermediateDirectory)/main$(DependSuffix): main.c
 
 $(IntermediateDirectory)/main$(PreprocessSuffix): main.c
 	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/main$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/main.c"
-
-$(IntermediateDirectory)/shrimp$(ObjectSuffix): shrimp.c $(IntermediateDirectory)/shrimp$(DependSuffix)
-	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd3/shrimp.c" $(C_CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/shrimp$(ObjectSuffix) $(IncludePath)
-$(IntermediateDirectory)/shrimp$(DependSuffix): shrimp.c
-	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/shrimp$(ObjectSuffix) -MF$(IntermediateDirectory)/shrimp$(DependSuffix) -MM "D:/CodeLite/icyhttpd3/shrimp.c"
-
-$(IntermediateDirectory)/shrimp$(PreprocessSuffix): shrimp.c
-	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/shrimp$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/shrimp.c"
 
 $(IntermediateDirectory)/semaphore$(ObjectSuffix): semaphore.c $(IntermediateDirectory)/semaphore$(DependSuffix)
 	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd3/semaphore.c" $(C_CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/semaphore$(ObjectSuffix) $(IncludePath)
@@ -117,6 +109,14 @@ $(IntermediateDirectory)/socket$(DependSuffix): socket.c
 $(IntermediateDirectory)/socket$(PreprocessSuffix): socket.c
 	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/socket$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/socket.c"
 
+$(IntermediateDirectory)/process$(ObjectSuffix): process.c $(IntermediateDirectory)/process$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd3/process.c" $(C_CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/process$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/process$(DependSuffix): process.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/process$(ObjectSuffix) -MF$(IntermediateDirectory)/process$(DependSuffix) -MM "D:/CodeLite/icyhttpd3/process.c"
+
+$(IntermediateDirectory)/process$(PreprocessSuffix): process.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/process$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/process.c"
+
 
 -include $(IntermediateDirectory)/*$(DependSuffix)
 ##
@@ -126,9 +126,6 @@ clean:
 	$(RM) $(IntermediateDirectory)/main$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/main$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/main$(PreprocessSuffix)
-	$(RM) $(IntermediateDirectory)/shrimp$(ObjectSuffix)
-	$(RM) $(IntermediateDirectory)/shrimp$(DependSuffix)
-	$(RM) $(IntermediateDirectory)/shrimp$(PreprocessSuffix)
 	$(RM) $(IntermediateDirectory)/semaphore$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/semaphore$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/semaphore$(PreprocessSuffix)
@@ -141,6 +138,9 @@ clean:
 	$(RM) $(IntermediateDirectory)/socket$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/socket$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/socket$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/process$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/process$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/process$(PreprocessSuffix)
 	$(RM) $(OutputFile)
 	$(RM) $(OutputFile).exe
 

@@ -1,5 +1,5 @@
 #include "server.h"
-#include "shrimp.h"
+#include "process.h"
 #include "socket.h"
 #include <stddef.h>
 #include <string.h>
@@ -89,7 +89,7 @@ static void server_proc(void *param)
 	while (1) {
 		socket_t *t = socket_accept(s);
 
-		if (shrimp_create(&session_proc, t) == NULL)
+		if (process_create(&session_proc, t) == NULL)
 			socket_destroy(t);
 	}
 }
@@ -105,7 +105,7 @@ int server_add_ip(const char *ip, int port)
 		return -1;
 	}
 
-	if (shrimp_create(&server_proc, s) == NULL) {
+	if (process_create(&server_proc, s) == NULL) {
 		socket_destroy(s);
 		return -1;
 	}

@@ -1,10 +1,10 @@
 #include "semaphore.h"
-#include "shrimp.h"
+#include "process.h"
 #include <assert.h>
 #include <stdarg.h>
 
 typedef struct async {
-	shrimp_t *shrimp;
+	process_t *process;
 	int wake_counter;
 	int wake_reason;
 } async_t;
@@ -31,7 +31,7 @@ static void semaphore_test(semaphore_t *s)
 		--(s->available);
 		if (--(async->wake_counter) == 0) {
 			async->wake_reason = wb->wake_reason;
-			shrimp_ready(async->shrimp);
+			process_ready(async->process);
 		}
 	}
 }
@@ -51,7 +51,7 @@ int semaphore_wait(int n, int m, va_list vl)
 
 	assert(0 < m && m <= n && n <= MAX_WAIT_SEMAPHORES);
 
-	async.shrimp = shrimp_current();
+	async.process = process_current();
 	async.wake_counter = m;
 
 	for (i = 0; i < n; ++i) {
@@ -62,6 +62,6 @@ int semaphore_wait(int n, int m, va_list vl)
 		semaphore_test(sema);
 	}
 
-	shrimp_block();
+	process_block();
 	return async.wake_reason;
 }

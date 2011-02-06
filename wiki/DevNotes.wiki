@@ -33,7 +33,9 @@ a virtual directory has:
   * a handler list, sorted by priority (which can be filesystem, fastcgi, etc.)
   * an error handler (if needed?)
 
-a handler is a component implements an specified interface
+a handler is a component implements an specified interface, which can be (at least):
+  * a real file on file system (maybe buffered?)
+  * a fastcgi handler
 
 == interface ==
 

@@ -10,6 +10,7 @@
   * hash table (migrate from [http://code.google.com/p/icyhttpd/source/browse/?r=13 rev 13])
   * fifo pipe (migrate from [http://code.google.com/p/icyhttpd/source/browse/?r=13 rev 13], if needed)
   * utf8 string data structure (do we need size field?)
+  * reduce and restructure semaphore (if don't needed)
 
 == server arch ==
 

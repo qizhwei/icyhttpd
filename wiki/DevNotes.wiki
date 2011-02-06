@@ -1,0 +1,26 @@
+#summary Development notes in free style
+#labels Phase-Design
+
+== TODOs ==
+fatal error
+process local storage (alloc many times, free once on process termination)
+implement http protocol (by using getline, hash table to store headers, arch should be able to serve as server, gateway and proxy)
+fastcgi pool (migrate)
+hash table (migrate)
+fifo pipe (migrate, if needed)
+
+== server arch ==
+a server has:
+  * multiple endpoints (ipv4, ipv6, etc.)
+  * multiple websites
+  * multiple handlers
+an endpoint has:
+  * multiple host bindings (<host, website> pair)
+  *  at most one non-host binding
+  * at most one proxy
+a website is a virtual directory
+a virtual directory has:
+  * multiple virtual directory bindings (<name, virtual_dir>)
+  * a handler list, sorted by priority (which can be filesystem, fastcgi, etc.)
+  * an error handler (if needed?)
+a handler is a component implements an specified interface

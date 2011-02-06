@@ -34,5 +34,5 @@ a handler is a component implements an specified interface
 
 == handler interface ==
 
-can_handle(virtual_dir, request) -> bool
-handle(virtual_dir, request, response)
+  * can_handle(virtual_dir, request) -> bool
+  * handle(virtual_dir, request, response)

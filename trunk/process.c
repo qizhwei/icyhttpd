@@ -1,10 +1,8 @@
 #include "process.h"
+#include "mem.h"
 #include "semaphore.h"
-#include "timer.h"
 #include "win32.h"
 #include <stdlib.h>
-#include <assert.h>
-#include <stdarg.h>
 
 #define STACK_COMMIT_SIZE (4096)
 #define STACK_RESERVE_SIZE (16384)
@@ -13,7 +11,8 @@ struct process {
 	process_proc_t *proc;
 	void *user_param;
 	LPVOID fiber;
-	timer_t timer;
+	HANDLE timer;
+	async_t *async;
 };
 
 typedef struct share {
@@ -23,6 +22,8 @@ typedef struct share {
 
 #define MAX_EVENTS (32)
 #define MAX_CBS_PER_EVENT (7)
+
+static void process_ready(process_t *process);
 
 static process_t g_sched;
 static HANDLE g_event[MAX_EVENTS];
@@ -65,33 +66,35 @@ static void CALLBACK fiber_proc(PVOID param)
 	process_exit();
 }
 
-handle_t process_create(process_proc_t *proc, void *param)
+int process_create(process_proc_t *proc, void *param)
 {
-	process_t *process = malloc(sizeof(process_t));
+	process_t *process = mem_alloc(sizeof(process_t));
 
 	if (process == NULL)
-		return NULL;
+		return -1;
 
 	process->proc = proc;
 	process->user_param = param;
-	process->fiber = CreateFiberEx(STACK_COMMIT_SIZE, STACK_RESERVE_SIZE, 0, &fiber_proc, process);
+	process->async = NULL;
 
+	process->fiber = CreateFiberEx(STACK_COMMIT_SIZE, STACK_RESERVE_SIZE, 0, &fiber_proc, process);
 	if (process->fiber == NULL) {
-		free(process);
-		return NULL;
+		mem_free(process);
+		return -1;
 	}
 
-	if (timer_init(&process->timer)) {
+	process->timer = CreateWaitableTimer(NULL, TRUE, NULL);
+	if (process->timer == NULL) {
 		DeleteFiber(process->fiber);
-		free(process);
-		return NULL;
+		mem_free(process);
+		return -1;
 	}
 
 	process_ready(process);
-	return process;
+	return 0;
 }
 
-handle_t process_current(void)
+process_t *process_current(void)
 {
 	return GetFiberData();
 }
@@ -103,72 +106,51 @@ static void CALLBACK exit_proc(ULONG_PTR param)
 
 void process_exit(void)
 {
-	process_t *s = process_current();
+	process_t *process = process_current();
 
 	// queue an APC to free the fiber, this call should not fail
-	if (!QueueUserAPC(&exit_proc, GetCurrentThread(), (ULONG_PTR)s->fiber)) {
+	if (!QueueUserAPC(&exit_proc, GetCurrentThread(), (ULONG_PTR)process->fiber)) {
 		// TODO: fatal error
 	}
 
 	// free all resources allocated other than the fiber
-	timer_uninit(&s->timer);
-	free(s);
+	CloseHandle(&process->timer);
+	mem_free(process);
 
 	// switch to the scheduling process
 	process_switch(&g_sched);
-
-	// never be here
-	assert(0);
 }
 
-void process_switch(handle_t process)
+void process_block(async_t *async)
 {
-	process_t *s = process;
-	SwitchToFiber(s->fiber);
+	process_t *process = process_current();
+	async->process = process;
+	process->async = async;
+	process_switch(&g_sched);
+
+	if (!CancelWaitableTimer(process->timer)) {
+		// TODO: fatal error
+	}
+}
+
+void process_switch(process_t *process)
+{
+	SwitchToFiber(process->fiber);
 }
 
 static void CALLBACK switch_proc(ULONG_PTR param)
 {
-	process_switch((handle_t)param);
+	process_switch((process_t *)param);
 }
 
-void process_ready(handle_t process)
+static void process_ready(process_t *process)
 {
 	if (!QueueUserAPC(&switch_proc, GetCurrentThread(), (ULONG_PTR)process)) {
 		// TODO: fatal error
 	}
 }
 
-void process_block(void)
-{
-	process_switch(&g_sched);
-}
-
-handle_t process_timer(int milliseconds)
-{
-	process_t *s = process_current();
-	handle_t timer = &s->timer;
-
-	if (timer_set(timer, milliseconds)) {
-		// TODO: fatal error
-	}
-
-	return timer;
-}
-
-int process_wait(int n, int m, ...)
-{
-	va_list vl;
-	int result;
-
-	va_start(vl, m);
-	result = semaphore_wait(n, m, vl);
-	va_end(vl);
-
-	return result;
-}
-
-void * process_share_event(process_proc_t *callback, void *param)
+void *process_share_event(process_proc_t *callback, void *param)
 {
 	HANDLE event;
 
@@ -194,4 +176,23 @@ void * process_share_event(process_proc_t *callback, void *param)
 	}
 
 	return event;
+}
+
+static void CALLBACK timer_proc(void *param, DWORD low, DWORD high)
+{
+	process_t *process = param;
+	process->async->process = NULL;
+	process_switch(process);
+}
+
+int process_timeout(int milliseconds)
+{
+	process_t *process = process_current();
+	LARGE_INTEGER due;
+	due.QuadPart = -10000LL * milliseconds;
+
+	if (!SetWaitableTimer(process->timer, &due, 0, &timer_proc, process, FALSE))
+		return -1;
+
+	return 0;
 }

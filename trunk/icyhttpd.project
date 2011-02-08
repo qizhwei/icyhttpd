@@ -9,21 +9,20 @@
   <Dependencies/>
   <VirtualDirectory Name="src">
     <File Name="main.c"/>
-    <File Name="semaphore.c"/>
-    <File Name="timer.c"/>
     <File Name="server.c"/>
     <File Name="socket.c"/>
     <File Name="process.c"/>
+    <File Name="mem.c"/>
+    <File Name="conn.c"/>
   </VirtualDirectory>
   <VirtualDirectory Name="inc">
-    <File Name="semaphore.h"/>
     <File Name="list.h"/>
-    <File Name="timer.h"/>
-    <File Name="handle.h"/>
     <File Name="server.h"/>
     <File Name="win32.h"/>
     <File Name="socket.h"/>
     <File Name="process.h"/>
+    <File Name="mem.h"/>
+    <File Name="conn.h"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>

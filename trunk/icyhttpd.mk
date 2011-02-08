@@ -13,7 +13,7 @@ CurrentFileName        :=
 CurrentFilePath        :=
 CurrentFileFullPath    :=
 User                   :=iceboy
-Date                   :=2011/2/6
+Date                   :=2011/2/7
 CodeLitePath           :="C:\Program Files\CodeLite"
 LinkerName             :=gcc
 ArchiveTool            :=ar rcus
@@ -49,7 +49,7 @@ LibPath                := "$(LibraryPathSwitch)."
 ## User defined environment variables
 ##
 CodeLiteDir:=C:\Program Files\CodeLite
-Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/semaphore$(ObjectSuffix) $(IntermediateDirectory)/timer$(ObjectSuffix) $(IntermediateDirectory)/server$(ObjectSuffix) $(IntermediateDirectory)/socket$(ObjectSuffix) $(IntermediateDirectory)/process$(ObjectSuffix) 
+Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/server$(ObjectSuffix) $(IntermediateDirectory)/socket$(ObjectSuffix) $(IntermediateDirectory)/process$(ObjectSuffix) $(IntermediateDirectory)/mem$(ObjectSuffix) $(IntermediateDirectory)/conn$(ObjectSuffix) 
 
 ##
 ## Main Build Targets 
@@ -77,22 +77,6 @@ $(IntermediateDirectory)/main$(DependSuffix): main.c
 $(IntermediateDirectory)/main$(PreprocessSuffix): main.c
 	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/main$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/main.c"
 
-$(IntermediateDirectory)/semaphore$(ObjectSuffix): semaphore.c $(IntermediateDirectory)/semaphore$(DependSuffix)
-	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd3/semaphore.c" $(C_CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/semaphore$(ObjectSuffix) $(IncludePath)
-$(IntermediateDirectory)/semaphore$(DependSuffix): semaphore.c
-	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/semaphore$(ObjectSuffix) -MF$(IntermediateDirectory)/semaphore$(DependSuffix) -MM "D:/CodeLite/icyhttpd3/semaphore.c"
-
-$(IntermediateDirectory)/semaphore$(PreprocessSuffix): semaphore.c
-	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/semaphore$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/semaphore.c"
-
-$(IntermediateDirectory)/timer$(ObjectSuffix): timer.c $(IntermediateDirectory)/timer$(DependSuffix)
-	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd3/timer.c" $(C_CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/timer$(ObjectSuffix) $(IncludePath)
-$(IntermediateDirectory)/timer$(DependSuffix): timer.c
-	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/timer$(ObjectSuffix) -MF$(IntermediateDirectory)/timer$(DependSuffix) -MM "D:/CodeLite/icyhttpd3/timer.c"
-
-$(IntermediateDirectory)/timer$(PreprocessSuffix): timer.c
-	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/timer$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/timer.c"
-
 $(IntermediateDirectory)/server$(ObjectSuffix): server.c $(IntermediateDirectory)/server$(DependSuffix)
 	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd3/server.c" $(C_CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/server$(ObjectSuffix) $(IncludePath)
 $(IntermediateDirectory)/server$(DependSuffix): server.c
@@ -117,6 +101,22 @@ $(IntermediateDirectory)/process$(DependSuffix): process.c
 $(IntermediateDirectory)/process$(PreprocessSuffix): process.c
 	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/process$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/process.c"
 
+$(IntermediateDirectory)/mem$(ObjectSuffix): mem.c $(IntermediateDirectory)/mem$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd3/mem.c" $(C_CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/mem$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/mem$(DependSuffix): mem.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/mem$(ObjectSuffix) -MF$(IntermediateDirectory)/mem$(DependSuffix) -MM "D:/CodeLite/icyhttpd3/mem.c"
+
+$(IntermediateDirectory)/mem$(PreprocessSuffix): mem.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/mem$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/mem.c"
+
+$(IntermediateDirectory)/conn$(ObjectSuffix): conn.c $(IntermediateDirectory)/conn$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd3/conn.c" $(C_CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/conn$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/conn$(DependSuffix): conn.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/conn$(ObjectSuffix) -MF$(IntermediateDirectory)/conn$(DependSuffix) -MM "D:/CodeLite/icyhttpd3/conn.c"
+
+$(IntermediateDirectory)/conn$(PreprocessSuffix): conn.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/conn$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/conn.c"
+
 
 -include $(IntermediateDirectory)/*$(DependSuffix)
 ##
@@ -126,12 +126,6 @@ clean:
 	$(RM) $(IntermediateDirectory)/main$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/main$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/main$(PreprocessSuffix)
-	$(RM) $(IntermediateDirectory)/semaphore$(ObjectSuffix)
-	$(RM) $(IntermediateDirectory)/semaphore$(DependSuffix)
-	$(RM) $(IntermediateDirectory)/semaphore$(PreprocessSuffix)
-	$(RM) $(IntermediateDirectory)/timer$(ObjectSuffix)
-	$(RM) $(IntermediateDirectory)/timer$(DependSuffix)
-	$(RM) $(IntermediateDirectory)/timer$(PreprocessSuffix)
 	$(RM) $(IntermediateDirectory)/server$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/server$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/server$(PreprocessSuffix)
@@ -141,6 +135,12 @@ clean:
 	$(RM) $(IntermediateDirectory)/process$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/process$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/process$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/mem$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/mem$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/mem$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/conn$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/conn$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/conn$(PreprocessSuffix)
 	$(RM) $(OutputFile)
 	$(RM) $(OutputFile).exe
 

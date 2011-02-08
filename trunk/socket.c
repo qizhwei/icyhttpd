@@ -1,18 +1,19 @@
 #include "socket.h"
+#include "mem.h"
 #include "win32.h"
 #include "process.h"
 #include "list.h"
 #include <stdlib.h>
 
 typedef struct async_accept {
+	async_t async;
 	socket_t *socket;
-	handle_t process;
 	SOCKET accept_socket;
 } async_accept_t;
 
 typedef struct async_io {
+	async_t async;
 	OVERLAPPED overlapped;
-	handle_t process;
 	size_t result;
 } async_io_t;
 
@@ -35,7 +36,7 @@ int socket_init(void)
 
 static socket_t *socket_create_from(SOCKET os_socket)
 {
-	socket_t *s = malloc(sizeof(socket_t));
+	socket_t *s = mem_alloc(sizeof(socket_t));
 	if (s == NULL)
 		return NULL;
 
@@ -65,7 +66,7 @@ socket_t *socket_create(void)
 void socket_destroy(socket_t *s)
 {
 	closesocket(s->os_socket);
-	free(s);
+	mem_free(s);
 }
 
 static void event_proc(void *param)
@@ -82,7 +83,7 @@ static void event_proc(void *param)
 
 	if (events.lNetworkEvents & FD_ACCEPT) {
 		async->accept_socket = accept(s->os_socket, NULL, NULL);
-		process_switch(async->process);
+		process_switch(async->async.process);
 	}
 }
 
@@ -113,20 +114,29 @@ int socket_bind_ip(socket_t *s, const char *ip, int port)
 
 socket_t *socket_accept(socket_t *s)
 {
-	SOCKET as = accept(s->os_socket, NULL, NULL);
+	async_accept_t *async = mem_alloc(sizeof(async_accept_t));
+	SOCKET as;
 	socket_t *result;
-	async_accept_t async;
 
+	if (async == NULL)
+		return NULL;
+
+	as = accept(s->os_socket, NULL, NULL);
 	if (as == INVALID_SOCKET) {
 		if (GetLastError() != WSAEWOULDBLOCK)
 			return NULL;
 
 		// blocking operation, event_proc will be called later
-		async.process = process_current();
-		s->async_accept = &async;
-		process_block();
+		s->async_accept = async;
+		process_block(&async->async);
 		s->async_accept = NULL;
-		as = async.accept_socket;
+
+		if (async->async.process) {
+			as = async->accept_socket;
+			mem_free(async);
+		} else {
+			as = INVALID_SOCKET;
+		}
 	}
 
 	if (as == INVALID_SOCKET)
@@ -144,44 +154,70 @@ socket_t *socket_accept(socket_t *s)
 static void CALLBACK io_proc(DWORD error, DWORD size, LPWSAOVERLAPPED overlapped, DWORD flags)
 {
 	async_io_t *async = CONTAINER_OF(overlapped, async_io_t, overlapped);
+	process_t *process = async->async.process;
 
 	if (error)
 		async->result = 0;
 	else
 		async->result = size;
 
-	process_switch(async->process);
+	if (process)
+		process_switch(process);
 }
 
 size_t socket_read(socket_t *s, char *buffer, size_t size)
 {
 	WSABUF buf = {size, buffer};
 	DWORD flags = 0;
-	async_io_t async;
+	async_io_t *async = mem_alloc(sizeof(async_io_t));
+	size_t result;
 
-	memset(&async.overlapped, 0, sizeof(WSAOVERLAPPED));
-	if (WSARecv(s->os_socket, &buf, 1, NULL, &flags, &async.overlapped, &io_proc)) {
+	if (async == NULL)
+		return 0;
+
+	memset(&async->overlapped, 0, sizeof(WSAOVERLAPPED));
+	if (WSARecv(s->os_socket, &buf, 1, NULL, &flags, &async->overlapped, &io_proc)) {
 		if (GetLastError() != WSA_IO_PENDING)
 			return 0;
 	}
 
-	async.process = process_current();
-	process_block();
-	return async.result;
+	process_block(&async->async);
+	if (async->async.process) {
+		result = async->result;
+		mem_free(async);
+		return result;
+	} else {
+		// TODO: cancel pending IO and free async
+		// and async can be put back to stack because
+		// it's freed on every return path
+		return 0;
+	}
 }
 
 size_t socket_write(socket_t *s, char *buffer, size_t size)
 {
 	WSABUF buf = {size, buffer};
-	async_io_t async;
+	async_io_t *async = mem_alloc(sizeof(async_io_t));
+	size_t result;
 
-	memset(&async.overlapped, 0, sizeof(WSAOVERLAPPED));
-	if (WSASend(s->os_socket, &buf, 1, NULL, 0, &async.overlapped, &io_proc)) {
+	if (async == NULL)
+		return 0;
+
+	memset(&async->overlapped, 0, sizeof(WSAOVERLAPPED));
+	if (WSASend(s->os_socket, &buf, 1, NULL, 0, &async->overlapped, &io_proc)) {
 		if (GetLastError() != WSA_IO_PENDING)
 			return 0;
 	}
 
-	async.process = process_current();
-	process_block();
-	return async.result;
+	process_block(&async->async);
+	if (async->async.process) {
+		result = async->result;
+		mem_free(async);
+		return result;
+	} else {
+		// TODO: cancel pending IO and free async
+		// and async can be put back to stack because
+		// it's freed on every return path
+		return 0;
+	}
 }

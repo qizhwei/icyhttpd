@@ -69,6 +69,12 @@ void socket_destroy(socket_t *s)
 	mem_free(s);
 }
 
+void socket_abort(socket_t *s)
+{
+	closesocket(s->os_socket);
+	s->os_socket = INVALID_SOCKET;
+}
+
 static void event_proc(void *param)
 {
 	socket_t *s = param;
@@ -83,7 +89,7 @@ static void event_proc(void *param)
 
 	if (events.lNetworkEvents & FD_ACCEPT) {
 		async->accept_socket = accept(s->os_socket, NULL, NULL);
-		process_switch(async->async.process);
+		process_unblock(&async->async);
 	}
 }
 
@@ -114,12 +120,9 @@ int socket_bind_ip(socket_t *s, const char *ip, int port)
 
 socket_t *socket_accept(socket_t *s)
 {
-	async_accept_t *async = mem_alloc(sizeof(async_accept_t));
+	async_accept_t async;
 	SOCKET as;
 	socket_t *result;
-
-	if (async == NULL)
-		return NULL;
 
 	as = accept(s->os_socket, NULL, NULL);
 	if (as == INVALID_SOCKET) {
@@ -127,16 +130,11 @@ socket_t *socket_accept(socket_t *s)
 			return NULL;
 
 		// blocking operation, event_proc will be called later
-		s->async_accept = async;
-		process_block(&async->async);
+		s->async_accept = &async;
+		process_block(&async.async);
 		s->async_accept = NULL;
 
-		if (async->async.process) {
-			as = async->accept_socket;
-			mem_free(async);
-		} else {
-			as = INVALID_SOCKET;
-		}
+		as = async.accept_socket;
 	}
 
 	if (as == INVALID_SOCKET)
@@ -162,62 +160,38 @@ static void CALLBACK io_proc(DWORD error, DWORD size, LPWSAOVERLAPPED overlapped
 		async->result = size;
 
 	if (process)
-		process_switch(process);
+		process_unblock(&async->async);
 }
 
 size_t socket_read(socket_t *s, char *buffer, size_t size)
 {
 	WSABUF buf = {size, buffer};
 	DWORD flags = 0;
-	async_io_t *async = mem_alloc(sizeof(async_io_t));
+	async_io_t async;
 	size_t result;
 
-	if (async == NULL)
-		return 0;
-
-	memset(&async->overlapped, 0, sizeof(WSAOVERLAPPED));
-	if (WSARecv(s->os_socket, &buf, 1, NULL, &flags, &async->overlapped, &io_proc)) {
+	memset(&async.overlapped, 0, sizeof(WSAOVERLAPPED));
+	if (WSARecv(s->os_socket, &buf, 1, NULL, &flags, &async.overlapped, &io_proc)) {
 		if (GetLastError() != WSA_IO_PENDING)
 			return 0;
 	}
 
-	process_block(&async->async);
-	if (async->async.process) {
-		result = async->result;
-		mem_free(async);
-		return result;
-	} else {
-		// TODO: cancel pending IO and free async
-		// and async can be put back to stack because
-		// it's freed on every return path
-		return 0;
-	}
+	process_block(&async.async);
+	return async.result;
 }
 
 size_t socket_write(socket_t *s, char *buffer, size_t size)
 {
 	WSABUF buf = {size, buffer};
-	async_io_t *async = mem_alloc(sizeof(async_io_t));
+	async_io_t async;
 	size_t result;
 
-	if (async == NULL)
-		return 0;
-
-	memset(&async->overlapped, 0, sizeof(WSAOVERLAPPED));
-	if (WSASend(s->os_socket, &buf, 1, NULL, 0, &async->overlapped, &io_proc)) {
+	memset(&async.overlapped, 0, sizeof(WSAOVERLAPPED));
+	if (WSASend(s->os_socket, &buf, 1, NULL, 0, &async.overlapped, &io_proc)) {
 		if (GetLastError() != WSA_IO_PENDING)
 			return 0;
 	}
 
-	process_block(&async->async);
-	if (async->async.process) {
-		result = async->result;
-		mem_free(async);
-		return result;
-	} else {
-		// TODO: cancel pending IO and free async
-		// and async can be put back to stack because
-		// it's freed on every return path
-		return 0;
-	}
+	process_block(&async.async);
+	return async.result;
 }

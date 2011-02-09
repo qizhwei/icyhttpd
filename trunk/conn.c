@@ -5,6 +5,7 @@
 #include <string.h>
 
 #define HTTP_MAX_LINE (8192)
+#define GETS_TIMEOUT (120000)
 
 typedef struct conn {
 	socket_t *socket;
@@ -48,6 +49,9 @@ static char *conn_gets(conn_t *conn)
 
 	while (1) {
 		if (cur_size == HTTP_MAX_LINE)
+			return NULL;
+
+		if (process_timeout(GETS_TIMEOUT, (proc_t *)&socket_abort, conn->socket))
 			return NULL;
 
 		read_size = socket_read(conn->socket, last, HTTP_MAX_LINE - cur_size);

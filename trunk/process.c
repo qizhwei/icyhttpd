@@ -1,6 +1,5 @@
 #include "process.h"
 #include "mem.h"
-#include "semaphore.h"
 #include "win32.h"
 #include <stdlib.h>
 
@@ -8,27 +7,31 @@
 #define STACK_RESERVE_SIZE (16384)
 
 struct process {
-	process_proc_t *proc;
+	proc_t *proc;
 	void *user_param;
 	LPVOID fiber;
 	HANDLE timer;
-	async_t *async;
+	proc_t *abort_proc;
+	void *abort_param;
 };
 
 typedef struct share {
-	process_proc_t *callback;
+	proc_t *callback;
 	void *param;
 } share_t;
 
 #define MAX_EVENTS (32)
 #define MAX_CBS_PER_EVENT (7)
 
-static void process_ready(process_t *process);
-
 static process_t g_sched;
 static HANDLE g_event[MAX_EVENTS];
 static share_t g_share[MAX_EVENTS][MAX_CBS_PER_EVENT + 1] = {0};
 static int g_idx_event = 0, g_idx_cb = 0;
+
+static void process_switch(process_t *process)
+{
+	SwitchToFiber(process->fiber);
+}
 
 int process_init(void)
 {
@@ -66,7 +69,12 @@ static void CALLBACK fiber_proc(PVOID param)
 	process_exit();
 }
 
-int process_create(process_proc_t *proc, void *param)
+static void CALLBACK switch_proc(ULONG_PTR param)
+{
+	process_switch((process_t *)param);
+}
+
+int process_create(proc_t *proc, void *param)
 {
 	process_t *process = mem_alloc(sizeof(process_t));
 
@@ -75,7 +83,7 @@ int process_create(process_proc_t *proc, void *param)
 
 	process->proc = proc;
 	process->user_param = param;
-	process->async = NULL;
+	process->abort_proc = NULL;
 
 	process->fiber = CreateFiberEx(STACK_COMMIT_SIZE, STACK_RESERVE_SIZE, 0, &fiber_proc, process);
 	if (process->fiber == NULL) {
@@ -90,7 +98,10 @@ int process_create(process_proc_t *proc, void *param)
 		return -1;
 	}
 
-	process_ready(process);
+	if (!QueueUserAPC(&switch_proc, GetCurrentThread(), (ULONG_PTR)process)) {
+		// TODO: fatal error
+	}
+
 	return 0;
 }
 
@@ -121,36 +132,7 @@ void process_exit(void)
 	process_switch(&g_sched);
 }
 
-void process_block(async_t *async)
-{
-	process_t *process = process_current();
-	async->process = process;
-	process->async = async;
-	process_switch(&g_sched);
-
-	if (!CancelWaitableTimer(process->timer)) {
-		// TODO: fatal error
-	}
-}
-
-void process_switch(process_t *process)
-{
-	SwitchToFiber(process->fiber);
-}
-
-static void CALLBACK switch_proc(ULONG_PTR param)
-{
-	process_switch((process_t *)param);
-}
-
-static void process_ready(process_t *process)
-{
-	if (!QueueUserAPC(&switch_proc, GetCurrentThread(), (ULONG_PTR)process)) {
-		// TODO: fatal error
-	}
-}
-
-void *process_share_event(process_proc_t *callback, void *param)
+void *process_share_event(proc_t *callback, void *param)
 {
 	HANDLE event;
 
@@ -178,21 +160,48 @@ void *process_share_event(process_proc_t *callback, void *param)
 	return event;
 }
 
+void process_block(async_t *async)
+{
+	process_t *process = process_current();
+	async->process = process;
+	process_switch(&g_sched);
+
+	printf("process is unblocked\n");
+	if (process->abort_proc) {
+		if (!CancelWaitableTimer(process->timer)) {
+			// TODO: fatal error
+		}
+		process->abort_proc = NULL;
+		printf("timer is cancelled\n");
+	}
+}
+
+void process_unblock(async_t *async)
+{
+	printf("process is being unblocked\n");
+	process_switch(async->process);
+}
+
 static void CALLBACK timer_proc(void *param, DWORD low, DWORD high)
 {
 	process_t *process = param;
-	process->async->process = NULL;
-	process_switch(process);
+	process->abort_proc(process->abort_param);
+	process->abort_proc = NULL;
+	printf("in timer proc\n");
 }
 
-int process_timeout(int milliseconds)
+int process_timeout(int milliseconds, proc_t *abort_proc, void *param)
 {
 	process_t *process = process_current();
 	LARGE_INTEGER due;
+
 	due.QuadPart = -10000LL * milliseconds;
+	process->abort_proc = abort_proc;
+	process->abort_param = param;
 
 	if (!SetWaitableTimer(process->timer, &due, 0, &timer_proc, process, FALSE))
 		return -1;
 
+	printf("timer is set\n");
 	return 0;
 }

@@ -13,7 +13,7 @@ CurrentFileName        :=
 CurrentFilePath        :=
 CurrentFileFullPath    :=
 User                   :=iceboy
-Date                   :=2011/2/8
+Date                   :=2011/2/10
 CodeLitePath           :="C:\Program Files\CodeLite"
 LinkerName             :=gcc
 ArchiveTool            :=ar rcus
@@ -49,7 +49,7 @@ LibPath                := "$(LibraryPathSwitch)."
 ## User defined environment variables
 ##
 CodeLiteDir:=C:\Program Files\CodeLite
-Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/server$(ObjectSuffix) $(IntermediateDirectory)/socket$(ObjectSuffix) $(IntermediateDirectory)/process$(ObjectSuffix) $(IntermediateDirectory)/mem$(ObjectSuffix) $(IntermediateDirectory)/conn$(ObjectSuffix) 
+Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/server$(ObjectSuffix) $(IntermediateDirectory)/socket$(ObjectSuffix) $(IntermediateDirectory)/process$(ObjectSuffix) $(IntermediateDirectory)/mem$(ObjectSuffix) $(IntermediateDirectory)/conn$(ObjectSuffix) $(IntermediateDirectory)/dict$(ObjectSuffix) 
 
 ##
 ## Main Build Targets 
@@ -117,6 +117,14 @@ $(IntermediateDirectory)/conn$(DependSuffix): conn.c
 $(IntermediateDirectory)/conn$(PreprocessSuffix): conn.c
 	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/conn$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/conn.c"
 
+$(IntermediateDirectory)/dict$(ObjectSuffix): dict.c $(IntermediateDirectory)/dict$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd3/dict.c" $(C_CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/dict$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/dict$(DependSuffix): dict.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/dict$(ObjectSuffix) -MF$(IntermediateDirectory)/dict$(DependSuffix) -MM "D:/CodeLite/icyhttpd3/dict.c"
+
+$(IntermediateDirectory)/dict$(PreprocessSuffix): dict.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/dict$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/dict.c"
+
 
 -include $(IntermediateDirectory)/*$(DependSuffix)
 ##
@@ -141,6 +149,9 @@ clean:
 	$(RM) $(IntermediateDirectory)/conn$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/conn$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/conn$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/dict$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/dict$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/dict$(PreprocessSuffix)
 	$(RM) $(OutputFile)
 	$(RM) $(OutputFile).exe
 

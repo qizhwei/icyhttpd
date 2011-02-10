@@ -1,13 +1,15 @@
 #include <stdio.h>
-#include "process.h"
-#include "server.h"
+#include "dict.h"
+#include "mem.h"
 
 int main(void)
 {
-	printf("mem_init = %d\n", mem_init());
-	printf("process_init = %d\n", process_init());
-	printf("socket_init = %d\n", socket_init());
-	printf("server_add_ip = %d\n", server_add_ip("0.0.0.0", 88));
-	process_loop();
-	printf("should not be here\n");
+	dict_t dict;
+	int i;
+	mem_init();
+	dict_init(&dict);
+
+	for (i = 0; i < 70514; ++i)
+		if (dict_add_ptr(&dict, (void *)i, (void *)i))
+			printf("err\n");
 }

@@ -6,10 +6,16 @@ int main(void)
 {
 	dict_t dict;
 	int i;
+	void *value;
+
 	mem_init();
 	dict_init(&dict);
 
-	for (i = 0; i < 70514; ++i)
-		if (dict_add_ptr(&dict, (void *)i, (void *)i))
-			printf("err\n");
+	if (dict_add_str(&dict, "HIso1", (void *)70514))
+		printf("err\n");
+
+	printf("%d\n", dict_query_stri(&dict, "hiso1", &value, 1));
+	printf("%d\n", (int)value);
+	printf("%d\n", dict_query_stri(&dict, "hiso1", &value, 1));
+	printf("%d\n", (int)value);
 }

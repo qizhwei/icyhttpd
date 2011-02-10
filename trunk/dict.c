@@ -1,12 +1,12 @@
 #include "dict.h"
 #include "mem.h"
 #include <string.h>
-#include <assert.h>
 
-#define MIN_BUCKETS (8)
-#define MIN_ENTRIES (MIN_BUCKETS * 2)
+#define MIN_BUCKETS (16)
+#define MIN_ENTRIES (16)
 
-typedef int hash_func_t(void *key);
+typedef unsigned int hash_func_t(void *key);
+typedef int equal_func_t(void *key0, void *key1);
 
 struct dict_entry {
 	int next;
@@ -38,7 +38,6 @@ static inline int expand_entries(dict_t *dict)
 		entries[entry] = dict->entries[entry];
 
 	// link new entries
-	assert(dict->free_list == -1);
 	dict->free_list = entry;
 	for (; entry != new_size - 1; ++entry)
 		entries[entry].next = entry + 1;
@@ -50,9 +49,43 @@ static inline int expand_entries(dict_t *dict)
 	return 0;
 }
 
-static inline int expand_buckets(dict_t *dict, hash_func_t *hash_func)
+static inline int reduce_entries(dict_t *dict)
 {
-	size_t new_size = dict->bucket_size ? dict->bucket_size * 2 : MIN_BUCKETS;
+	size_t new_size = dict->entry_size / 2;
+	dict_entry_t *entries = mem_alloc(sizeof(dict_entry_t) * new_size);
+	int bucket, old_entry, entry, *entry_ptr;
+
+	if (entries == NULL)
+		return -1;
+
+	// copy entries by iterate through buckets
+	entry = 0;
+	for (bucket = 0; bucket != dict->bucket_size; ++bucket) {
+		entry_ptr = &dict->buckets[bucket];
+		for (old_entry = *entry_ptr; old_entry != -1; old_entry = dict->entries[old_entry].next) {
+			*entry_ptr = entry;
+			entry_ptr = &entries[entry].next;
+			entries[entry].key = dict->entries[old_entry].key;
+			entries[entry].value = dict->entries[old_entry].value;
+			++entry;
+		}
+		*entry_ptr = -1;
+	}
+
+	// rebuild free list
+	dict->free_list = entry;
+	for (; entry != new_size - 1; ++entry)
+		entries[entry].next = entry + 1;
+	entries[entry].next = -1;
+
+	mem_free(dict->entries);
+	dict->entries = entries;
+	dict->entry_size = new_size;
+	return 0;
+}
+
+static inline int resize_buckets(dict_t *dict, size_t new_size, hash_func_t *hash_func)
+{
 	dict_bucket_t *buckets = mem_alloc(sizeof(dict_bucket_t) * new_size);
 	int bucket, entry, next_entry, new_bucket;
 
@@ -100,19 +133,24 @@ static inline void free_entry(dict_t *dict, int entry)
 	dict->entries[entry].next = dict->free_list;
 	dict->free_list = entry;
 
-	// TODO: reduce entries if too many items in free_list
+	if (dict->entry_size > MIN_ENTRIES
+		&& dict->entry_used * 4 < dict->entry_size)
+		reduce_entries(dict);
 }
 
 static inline int dict_add(dict_t *dict, void *key, void *value, hash_func_t *hash_func)
 {
 	int entry = alloc_entry(dict);
 	int bucket;
+	size_t new_size;
 
 	if (entry == -1)
 		return -1;
 
-	if (dict->entry_used > dict->bucket_size * 2) {
-		if (expand_buckets(dict, hash_func)) {
+	if (dict->entry_used * 2 >= dict->bucket_size) {
+		new_size = dict->bucket_size ? dict->bucket_size * 2 : MIN_BUCKETS;
+
+		if (resize_buckets(dict, new_size, hash_func)) {
 			free_entry(dict, entry);
 			return -1;
 		}
@@ -126,15 +164,98 @@ static inline int dict_add(dict_t *dict, void *key, void *value, hash_func_t *ha
 	return 0;
 }
 
-static inline void *dict_query(dict_t *dict, void *key, int remove, hash_func_t *hash_func)
+static inline int dict_query(dict_t *dict, void *key, void **value, int remove,
+	hash_func_t *hash_func, equal_func_t *equal_func)
 {
-	// TODO
+	int bucket = hash_func(key) & (dict->bucket_size - 1);
+	int *entry_ptr = &dict->buckets[bucket];
+	int entry = *entry_ptr;
+
+	while (entry != -1) {
+		if (!equal_func(key, dict->entries[entry].key)) {
+
+			if (value != NULL)
+				*value = dict->entries[entry].value;
+
+			if (remove) {
+				*entry_ptr = dict->entries[entry].next;
+				free_entry(dict, entry);
+
+				if (dict->bucket_size > MIN_BUCKETS
+					&& dict->entry_used / 2 < dict->bucket_size)
+					resize_buckets(dict, dict->bucket_size / 2, hash_func);
+			}
+
+			return 0;
+		}
+
+		entry_ptr = &dict->entries[entry].next;
+		entry = *entry_ptr;
+	}
+
+	return -1;
 }
 
-static inline int ptr_hash(void *ptr)
+static inline unsigned int ptr_hash(void *ptr)
 {
-	// TODO
-	return 0;
+	unsigned int a = (unsigned int)ptr;
+	a = (a ^ 61) ^ (a >> 16);
+	a = a + (a << 3);
+	a = a ^ (a >> 4);
+	a = a * 0x27d4eb2d;
+	a = a ^ (a >> 15);
+	return a;
+}
+
+static inline int ptr_equal(void *ptr0, void *ptr1)
+{
+	return !(ptr0 == ptr1);
+}
+
+// TODO: FNV hashing algorithm seems have high collision rate on lower bits
+#define OFFSET_BASIS (2166136261U)
+static inline unsigned int str_hash(void *str)
+{
+	char *p = str;
+	unsigned int hash = OFFSET_BASIS;
+
+	while (*p) {
+		hash ^= (unsigned int)*p++;
+		hash += (hash<<1) + (hash<<4) + (hash<<7) + (hash<<8) + (hash<<24);
+	}
+
+	return hash;
+}
+
+static inline char stri_tolower(char c)
+{
+	if (c >= 'A' && c <= 'Z')
+		return c + ('a' - 'A');
+	else
+		return c;
+}
+
+static inline unsigned int stri_hash(void *str)
+{
+	char *p = str;
+	unsigned int hash = OFFSET_BASIS;
+
+	while (*p) {
+		hash ^= (unsigned int)stri_tolower(*p++);
+		hash += (hash<<1) + (hash<<4) + (hash<<7) + (hash<<8) + (hash<<24);
+	}
+
+	return hash;
+}
+
+static inline int str_equal(void *str0, void *str1)
+{
+	return strcmp(str0, str1);
+}
+
+static inline int stri_equal(void *str0, void *str1)
+{
+	return stricmp(str0, str1);
 }
 
 int dict_add_ptr(dict_t *dict, void *key, void *value)
@@ -142,7 +263,27 @@ int dict_add_ptr(dict_t *dict, void *key, void *value)
 	return dict_add(dict, key, value, ptr_hash);
 }
 
-void *dict_query_ptr(dict_t *dict, void *key, int remove)
+int dict_query_ptr(dict_t *dict, void *key, void **value, int remove)
 {
-	return dict_query(dict, key, remove, ptr_hash);
+	return dict_query(dict, key, value, remove, ptr_hash, ptr_equal);
+}
+
+int dict_add_str(dict_t *dict, char *key, void *value)
+{
+	return dict_add(dict, key, value, str_hash);
+}
+
+int dict_query_str(dict_t *dict, char *key, void **value, int remove)
+{
+	return dict_query(dict, key, value, remove, str_hash, str_equal);
+}
+
+int dict_add_stri(dict_t *dict, char *key, void *value)
+{
+	return dict_add(dict, key, value, stri_hash);
+}
+
+int dict_query_stri(dict_t *dict, char *key, void **value, int remove)
+{
+	return dict_query(dict, key, value, remove, stri_hash, stri_equal);
 }

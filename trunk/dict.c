@@ -195,10 +195,14 @@ static inline int dict_add(dict_t *dict, void *key, void *value, hash_func_t *ha
 static inline int dict_query(dict_t *dict, void *key, void **value, int remove,
 	hash_func_t *hash_func, equal_func_t *equal_func)
 {
-	int bucket = hash_func(key) % dict->bucket_size;
-	int *entry_ptr = &dict->buckets[bucket];
-	int entry = *entry_ptr;
+	int bucket, *entry_ptr, entry;
 
+	if (!dict->bucket_size)
+		return -1;
+
+	bucket = hash_func(key) % dict->bucket_size;
+	entry_ptr = &dict->buckets[bucket];
+	entry = *entry_ptr;
 	while (entry != -1) {
 		if (!equal_func(key, dict->entries[entry].key)) {
 

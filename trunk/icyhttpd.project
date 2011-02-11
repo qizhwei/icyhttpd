@@ -15,6 +15,7 @@
     <File Name="mem.c"/>
     <File Name="conn.c"/>
     <File Name="dict.c"/>
+    <File Name="str.c"/>
   </VirtualDirectory>
   <VirtualDirectory Name="inc">
     <File Name="list.h"/>
@@ -25,6 +26,7 @@
     <File Name="mem.h"/>
     <File Name="conn.h"/>
     <File Name="dict.h"/>
+    <File Name="str.h"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>

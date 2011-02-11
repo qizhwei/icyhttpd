@@ -1,21 +1,16 @@
 #include <stdio.h>
-#include "dict.h"
 #include "mem.h"
+#include "str.h"
 
 int main(void)
 {
-	dict_t dict;
-	int i;
-	void *value;
+	char x[] = "hello";
 
 	mem_init();
-	dict_init(&dict);
+	str_init();
 
-	if (dict_add_str(&dict, "HIso1", (void *)70514))
-		printf("err\n");
-
-	printf("%d\n", dict_query_stri(&dict, "hiso1", &value, 1));
-	printf("%d\n", (int)value);
-	printf("%d\n", dict_query_stri(&dict, "hiso1", &value, 1));
-	printf("%d\n", (int)value);
+	printf("%d\n", str_alloc(x) == str_alloc(x));
+	x[0] = '\0';
+	printf("%d\n", str_alloc("hello") == str_literal("hello"));
+	printf("%d\n", str_literal("hello") == str_literal("hello"));
 }

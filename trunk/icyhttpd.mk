@@ -49,7 +49,7 @@ LibPath                := "$(LibraryPathSwitch)."
 ## User defined environment variables
 ##
 CodeLiteDir:=C:\Program Files\CodeLite
-Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/server$(ObjectSuffix) $(IntermediateDirectory)/socket$(ObjectSuffix) $(IntermediateDirectory)/process$(ObjectSuffix) $(IntermediateDirectory)/mem$(ObjectSuffix) $(IntermediateDirectory)/conn$(ObjectSuffix) $(IntermediateDirectory)/dict$(ObjectSuffix) 
+Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/server$(ObjectSuffix) $(IntermediateDirectory)/socket$(ObjectSuffix) $(IntermediateDirectory)/process$(ObjectSuffix) $(IntermediateDirectory)/mem$(ObjectSuffix) $(IntermediateDirectory)/conn$(ObjectSuffix) $(IntermediateDirectory)/dict$(ObjectSuffix) $(IntermediateDirectory)/str$(ObjectSuffix) 
 
 ##
 ## Main Build Targets 
@@ -125,6 +125,14 @@ $(IntermediateDirectory)/dict$(DependSuffix): dict.c
 $(IntermediateDirectory)/dict$(PreprocessSuffix): dict.c
 	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/dict$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/dict.c"
 
+$(IntermediateDirectory)/str$(ObjectSuffix): str.c $(IntermediateDirectory)/str$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd3/str.c" $(C_CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/str$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/str$(DependSuffix): str.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/str$(ObjectSuffix) -MF$(IntermediateDirectory)/str$(DependSuffix) -MM "D:/CodeLite/icyhttpd3/str.c"
+
+$(IntermediateDirectory)/str$(PreprocessSuffix): str.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/str$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/str.c"
+
 
 -include $(IntermediateDirectory)/*$(DependSuffix)
 ##
@@ -152,6 +160,9 @@ clean:
 	$(RM) $(IntermediateDirectory)/dict$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/dict$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/dict$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/str$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/str$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/str$(PreprocessSuffix)
 	$(RM) $(OutputFile)
 	$(RM) $(OutputFile).exe
 

@@ -1,11 +1,12 @@
 #include "dict.h"
 #include "mem.h"
+#include <stdint.h>
 #include <string.h>
 
-#define MIN_BUCKETS (16)
 #define MIN_ENTRIES (16)
+#define MIN_BUCKETS (17)
 
-typedef unsigned int hash_func_t(void *key);
+typedef uint32_t hash_func_t(void *key);
 typedef int equal_func_t(void *key0, void *key1);
 
 struct dict_entry {
@@ -13,6 +14,33 @@ struct dict_entry {
 	void *key;
 	void *value;
 };
+
+static uint32_t primes[] = {
+	17, 37, 67, 131, 257, 521, 1031, 2053,
+	4099, 8209, 16411, 32771, 65537, 131101, 262147, 524309,
+	1048583, 2097169, 4194319, 8388617, 16777259, 33554467, 67108879, 134217757,
+	268435459, 536870923, 1073741827, 2147483659UI
+};
+
+static inline uint32_t next_prime(uint32_t m)
+{
+	uint32_t *p = primes;
+
+	while (*p <= m)
+		++p;
+
+	return *p;
+}
+
+static inline uint32_t prev_prime(uint32_t m)
+{
+	uint32_t *p = primes + 1;
+
+	while (*p < m)
+		++p;
+
+	return *--p;
+}
 
 void dict_init(dict_t *dict)
 {
@@ -26,7 +54,7 @@ void dict_init(dict_t *dict)
 
 static inline int expand_entries(dict_t *dict)
 {
-	size_t new_size = dict->entry_size ? dict->entry_size * 2 : MIN_ENTRIES;
+	uint32_t new_size = dict->entry_size ? (dict->entry_size << 1) : MIN_ENTRIES;
 	dict_entry_t *entries = mem_alloc(sizeof(dict_entry_t) * new_size);
 	int entry;
 
@@ -51,7 +79,7 @@ static inline int expand_entries(dict_t *dict)
 
 static inline int reduce_entries(dict_t *dict)
 {
-	size_t new_size = dict->entry_size / 2;
+	uint32_t new_size = dict->entry_size >> 1;
 	dict_entry_t *entries = mem_alloc(sizeof(dict_entry_t) * new_size);
 	int bucket, old_entry, entry, *entry_ptr;
 
@@ -84,10 +112,12 @@ static inline int reduce_entries(dict_t *dict)
 	return 0;
 }
 
-static inline int resize_buckets(dict_t *dict, size_t new_size, hash_func_t *hash_func)
+static inline int resize_buckets(dict_t *dict, uint32_t new_size, hash_func_t *hash_func)
 {
 	dict_bucket_t *buckets = mem_alloc(sizeof(dict_bucket_t) * new_size);
 	int bucket, entry, next_entry, new_bucket;
+
+	printf("dict size: %d, resize buckets: %d\n", dict->entry_used, new_size);
 
 	if (buckets == NULL)
 		return -1;
@@ -100,7 +130,7 @@ static inline int resize_buckets(dict_t *dict, size_t new_size, hash_func_t *has
 	for (bucket = 0; bucket != dict->bucket_size; ++bucket) {
 		for (entry = dict->buckets[bucket]; entry != -1; entry = next_entry) {
 			next_entry = dict->entries[entry].next;
-			new_bucket = hash_func(dict->entries[entry].key) & (new_size - 1);
+			new_bucket = hash_func(dict->entries[entry].key) % new_size;
 			dict->entries[entry].next = buckets[new_bucket];
 			buckets[new_bucket] = entry;
 		}
@@ -134,7 +164,7 @@ static inline void free_entry(dict_t *dict, int entry)
 	dict->free_list = entry;
 
 	if (dict->entry_size > MIN_ENTRIES
-		&& dict->entry_used * 4 < dict->entry_size)
+		&& dict->entry_used < (dict->entry_size >> 2))
 		reduce_entries(dict);
 }
 
@@ -142,13 +172,13 @@ static inline int dict_add(dict_t *dict, void *key, void *value, hash_func_t *ha
 {
 	int entry = alloc_entry(dict);
 	int bucket;
-	size_t new_size;
+	uint32_t new_size;
 
 	if (entry == -1)
 		return -1;
 
-	if (dict->entry_used * 2 >= dict->bucket_size) {
-		new_size = dict->bucket_size ? dict->bucket_size * 2 : MIN_BUCKETS;
+	if (dict->entry_used >= dict->bucket_size) {
+		new_size = next_prime(dict->bucket_size);
 
 		if (resize_buckets(dict, new_size, hash_func)) {
 			free_entry(dict, entry);
@@ -156,7 +186,7 @@ static inline int dict_add(dict_t *dict, void *key, void *value, hash_func_t *ha
 		}
 	}
 
-	bucket = hash_func(key) & (dict->bucket_size - 1);
+	bucket = hash_func(key) % dict->bucket_size;
 	dict->entries[entry].next = dict->buckets[bucket];
 	dict->entries[entry].key = key;
 	dict->entries[entry].value = value;
@@ -167,7 +197,7 @@ static inline int dict_add(dict_t *dict, void *key, void *value, hash_func_t *ha
 static inline int dict_query(dict_t *dict, void *key, void **value, int remove,
 	hash_func_t *hash_func, equal_func_t *equal_func)
 {
-	int bucket = hash_func(key) & (dict->bucket_size - 1);
+	int bucket = hash_func(key) % dict->bucket_size;
 	int *entry_ptr = &dict->buckets[bucket];
 	int entry = *entry_ptr;
 
@@ -182,8 +212,8 @@ static inline int dict_query(dict_t *dict, void *key, void **value, int remove,
 				free_entry(dict, entry);
 
 				if (dict->bucket_size > MIN_BUCKETS
-					&& dict->entry_used / 2 < dict->bucket_size)
-					resize_buckets(dict, dict->bucket_size / 2, hash_func);
+					&& (dict->entry_used << 2) < dict->bucket_size)
+					resize_buckets(dict, prev_prime(dict->bucket_size), hash_func);
 			}
 
 			return 0;
@@ -196,15 +226,10 @@ static inline int dict_query(dict_t *dict, void *key, void **value, int remove,
 	return -1;
 }
 
-static inline unsigned int ptr_hash(void *ptr)
+#define GOLDEN (2654435761)
+static inline uint32_t ptr_hash(void *ptr)
 {
-	unsigned int a = (unsigned int)ptr;
-	a = (a ^ 61) ^ (a >> 16);
-	a = a + (a << 3);
-	a = a ^ (a >> 4);
-	a = a * 0x27d4eb2d;
-	a = a ^ (a >> 15);
-	return a;
+	return (uint32_t)ptr * GOLDEN;
 }
 
 static inline int ptr_equal(void *ptr0, void *ptr1)
@@ -212,15 +237,14 @@ static inline int ptr_equal(void *ptr0, void *ptr1)
 	return !(ptr0 == ptr1);
 }
 
-// TODO: FNV hashing algorithm seems have high collision rate on lower bits
 #define OFFSET_BASIS (2166136261U)
-static inline unsigned int str_hash(void *str)
+static inline uint32_t str_hash(void *str)
 {
 	char *p = str;
-	unsigned int hash = OFFSET_BASIS;
+	uint32_t hash = OFFSET_BASIS;
 
 	while (*p) {
-		hash ^= (unsigned int)*p++;
+		hash ^= (uint32_t)*p++;
 		hash += (hash<<1) + (hash<<4) + (hash<<7) + (hash<<8) + (hash<<24);
 	}
 
@@ -235,13 +259,13 @@ static inline char stri_tolower(char c)
 		return c;
 }
 
-static inline unsigned int stri_hash(void *str)
+static inline uint32_t stri_hash(void *str)
 {
 	char *p = str;
-	unsigned int hash = OFFSET_BASIS;
+	uint32_t hash = OFFSET_BASIS;
 
 	while (*p) {
-		hash ^= (unsigned int)stri_tolower(*p++);
+		hash ^= (uint32_t)stri_tolower(*p++);
 		hash += (hash<<1) + (hash<<4) + (hash<<7) + (hash<<8) + (hash<<24);
 	}
 

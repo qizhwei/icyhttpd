@@ -166,19 +166,16 @@ void process_block(async_t *async)
 	async->process = process;
 	process_switch(&g_sched);
 
-	printf("process is unblocked\n");
 	if (process->abort_proc) {
 		if (!CancelWaitableTimer(process->timer)) {
 			// TODO: fatal error
 		}
 		process->abort_proc = NULL;
-		printf("timer is cancelled\n");
 	}
 }
 
 void process_unblock(async_t *async)
 {
-	printf("process is being unblocked\n");
 	process_switch(async->process);
 }
 
@@ -187,7 +184,6 @@ static void CALLBACK timer_proc(void *param, DWORD low, DWORD high)
 	process_t *process = param;
 	process->abort_proc(process->abort_param);
 	process->abort_proc = NULL;
-	printf("in timer proc\n");
 }
 
 int process_timeout(int milliseconds, proc_t *abort_proc, void *param)
@@ -202,6 +198,5 @@ int process_timeout(int milliseconds, proc_t *abort_proc, void *param)
 	if (!SetWaitableTimer(process->timer, &due, 0, &timer_proc, process, FALSE))
 		return -1;
 
-	printf("timer is set\n");
 	return 0;
 }

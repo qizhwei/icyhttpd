@@ -19,7 +19,7 @@ static uint32_t primes[] = {
 	17, 37, 67, 131, 257, 521, 1031, 2053,
 	4099, 8209, 16411, 32771, 65537, 131101, 262147, 524309,
 	1048583, 2097169, 4194319, 8388617, 16777259, 33554467, 67108879, 134217757,
-	268435459, 536870923, 1073741827, 2147483659UI
+	268435459, 536870923, 1073741827, 2147483659U
 };
 
 static inline uint32_t next_prime(uint32_t m)
@@ -116,8 +116,6 @@ static inline int resize_buckets(dict_t *dict, uint32_t new_size, hash_func_t *h
 {
 	dict_bucket_t *buckets = mem_alloc(sizeof(dict_bucket_t) * new_size);
 	int bucket, entry, next_entry, new_bucket;
-
-	printf("dict size: %d, resize buckets: %d\n", dict->entry_used, new_size);
 
 	if (buckets == NULL)
 		return -1;
@@ -226,7 +224,7 @@ static inline int dict_query(dict_t *dict, void *key, void **value, int remove,
 	return -1;
 }
 
-#define GOLDEN (2654435761)
+#define GOLDEN (2654435761U)
 static inline uint32_t ptr_hash(void *ptr)
 {
 	return (uint32_t)ptr * GOLDEN;

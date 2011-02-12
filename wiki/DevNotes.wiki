@@ -19,17 +19,3 @@ see [http://code.google.com/p/icyhttpd/wiki/ArchAndInfac]
 == interface ==
 
 see [http://code.google.com/p/icyhttpd/wiki/ArchAndInfac]
-
-== waitone, waitall and waitany implementation ==
-
-imagining the following arch:
-{{{
-blocking_operation_0();
-blocking_operation_1();
-blocking_operation_2();
-...
-blocking_operation_n-1();
-wait(how_many_signals_waiting_for);
-}}}
-
-it's cool, let's make it real

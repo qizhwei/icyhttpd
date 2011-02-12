@@ -26,7 +26,7 @@ str_t *str_alloc(char *p)
 	void *value;
 	str_t *result;
 
-	if (!dict_query_str(&g_strings, p, &value, 0)) {
+	if (!dict_get_str(&g_strings, p, &value)) {
 		result = value;
 
 		if (result->ref_count)
@@ -59,9 +59,9 @@ str_t *str_literal(char *p)
 	void *value;
 	str_t *result;
 
-	if (!dict_query_ptr(&g_literals, p, &value, 0)) {
+	if (!dict_get_ptr(&g_literals, p, &value)) {
 		result = value;
-	} else if (!dict_query_str(&g_strings, p, &value, 0)) {
+	} else if (!dict_get_str(&g_strings, p, &value)) {
 		result = value;
 
 		if (result->ref_count) {

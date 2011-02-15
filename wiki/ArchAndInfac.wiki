@@ -9,33 +9,30 @@ a server has:
 
 an endpoint has:
   * multiple bindings <host, node>
-  * at most one non-host binding
-  * at most one proxy
+  * single optional default (wildcard) binding
+  * single optional proxy
 
-a node is:
-  * a real directory on file system, or
-  * a virtual directory, or
-  * a handler
-
-a virtual directory has:
-  * multiple bindings <name, virtual_dir>
-  * a handler list, sorted by priority (which can be filesystem, fastcgi, etc.)
-  * an error handler (if needed?)
+a node has:
+  * multiple bindings <name, node>
+  * single optional filesystem path
+  * multiple bindings <extension, handler>
+  * single optional default handler
+  * single optional error handler
 
 a handler is a component implements an specified interface, which can be (at least):
-  * a real file on file system (maybe buffered?)
-  * a fastcgi handler
+  * raw handler (fetch raw data from filesystem and send through)
+  * fastcgi handler (invoke fastcgi application)
 
 = Interface =
+
+this section is deprecated and is about to change
 
 == node ==
 
   * parse(node, parse_context, request) -> node
-  * is_handler(node) -> bool
 
 == handler ==
 
-  * can_handle(handler, request) -> bool
   * handle(handler, request) -> response
 
 == request ==

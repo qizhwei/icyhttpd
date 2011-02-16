@@ -118,6 +118,8 @@ static void conn_proc(void *param)
 			request.method->buffer, request.req_uri->buffer,
 			request.ver.major, request.ver.minor);
 
+		// TODO: do HTTP/0.9 client send headers?
+
 		while (1) {
 			if ((line = conn_gets(conn)) == NULL) {
 				request_uninit(&request);

@@ -52,7 +52,7 @@ str_t *str_literal(char *p)
 
 	if ((value = dict_query_ptr(&g_literals, p, 0)) != NULL) {
 		result = *value;
-	} else if ((value = dict_query_str(&g_strings, p, 0)) != NULL) {
+	} else if ((value = dict_query_str(&g_strings, p, 1)) != NULL) {
 		result = *value;
 
 		if (result->ref_count) {
@@ -61,7 +61,11 @@ str_t *str_literal(char *p)
 			result->buffer = p;
 		}
 
-		dict_add_ptr(&g_literals, p, result);
+		if (dict_add_str(&g_strings, p, result)) {
+			// TODO: fatal error
+		} else {
+			dict_add_ptr(&g_literals, p, result);
+		}
 	} else {
 		result = mem_alloc(sizeof(str_t));
 		if (result != NULL) {

@@ -127,7 +127,7 @@ void process_exit(void)
 	}
 
 	// free all resources allocated other than the fiber
-	CloseHandle(&process->timer);
+	CloseHandle(process->timer);
 	mem_free(process);
 
 	// switch to the scheduling process

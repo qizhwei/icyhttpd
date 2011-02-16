@@ -76,8 +76,17 @@ static char *conn_gets(conn_t *conn)
 
 static size_t conn_read(conn_t *conn, char *buffer, size_t size)
 {
-	// TODO: read conn->buffer first!
-	return socket_read(conn->socket, buffer, size);
+	size_t cur_size = conn->last - conn->current;
+
+	if (cur_size) {
+		if (cur_size < size)
+			size = cur_size;
+		memcpy(buffer, conn->current, size);
+		conn->current += size;
+		return size;
+	} else {
+		return socket_read(conn->socket, buffer, size);
+	}
 }
 
 static size_t conn_write(conn_t *conn, char *buffer, size_t size)
@@ -118,24 +127,33 @@ static void conn_proc(void *param)
 			request.method->buffer, request.req_uri->buffer,
 			request.ver.major, request.ver.minor);
 
-		// TODO: do HTTP/0.9 client send headers?
+		if (request.ver.major >= 1) {
+			while (1) {
+				if ((line = conn_gets(conn)) == NULL) {
+					request_uninit(&request);
+					goto bed;
+				}
 
-		while (1) {
-			if ((line = conn_gets(conn)) == NULL) {
-				request_uninit(&request);
-				goto bed;
-			}
+				if (*line == '\0')
+					break;
 
-			if (*line == '\0')
-				break;
-
-			if (request_parse_header(&request, line)) {
-				request_uninit(&request);
-				goto bed;
+				if (request_parse_header(&request, line)) {
+					request_uninit(&request);
+					goto bed;
+				}
 			}
 		}
 
 		dict_walk(&request.headers, debug_print_headers);
+
+		// TODO
+		if (request.method == str_literal("GET")) {
+
+		} else {
+
+		}
+
+		request_uninit(&request);
 	}
 
 bed:

@@ -8,6 +8,7 @@
 #include "node.h"
 #include <stddef.h>
 #include <string.h>
+#include <stdio.h>
 
 #define CONN_TIMEOUT (120000)
 
@@ -90,6 +91,11 @@ static void conn_destroy(conn_t *conn)
 	mem_free(conn);
 }
 
+static inline void debug_print_headers(void *key, void *value)
+{
+	printf("[header] %s: %s\n", ((str_t *)key)->buffer, ((str_t *)value)->buffer);
+}
+
 static void conn_proc(void *param)
 {
 	conn_t *conn = param;
@@ -106,12 +112,32 @@ static void conn_proc(void *param)
 		} while (line[0] == '\0');
 
 		if (request_init(&request, line))
-			break;
+			goto bed;
 
-		// TODO
+		printf("[request] method:%s url:%s version:%d.%d\n",
+			request.method->buffer, request.req_uri->buffer,
+			request.ver.major, request.ver.minor);
+
+		while (1) {
+			if ((line = conn_gets(conn)) == NULL) {
+				request_uninit(&request);
+				goto bed;
+			}
+
+			if (*line == '\0')
+				break;
+
+			if (request_parse_header(&request, line)) {
+				request_uninit(&request);
+				goto bed;
+			}
+		}
+
+		dict_walk(&request.headers, debug_print_headers);
 	}
 
 bed:
+	printf("connection broken\n");
 	conn_destroy(conn);
 }
 

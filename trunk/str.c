@@ -1,16 +1,7 @@
 #include "str.h"
 #include "dict.h"
 #include "mem.h"
-#include <stdint.h>
 #include <string.h>
-
-struct str {
-	// reference count to the str, or 0 if literal
-	uint32_t ref_count;
-
-	uint32_t length;
-	char *buffer;
-};
 
 static dict_t g_literals;
 static dict_t g_strings;
@@ -23,11 +14,11 @@ void str_init(void)
 
 str_t *str_alloc(char *p)
 {
-	void *value;
+	void **value;
 	str_t *result;
 
-	if (!dict_get_str(&g_strings, p, &value)) {
-		result = value;
+	if ((value = dict_query_str(&g_strings, p, 0)) != NULL) {
+		result = *value;
 
 		if (result->ref_count)
 			++result->ref_count;
@@ -56,13 +47,13 @@ str_t *str_alloc(char *p)
 
 str_t *str_literal(char *p)
 {
-	void *value;
+	void **value;
 	str_t *result;
 
-	if (!dict_get_ptr(&g_literals, p, &value)) {
-		result = value;
-	} else if (!dict_get_str(&g_strings, p, &value)) {
-		result = value;
+	if ((value = dict_query_ptr(&g_literals, p, 0)) != NULL) {
+		result = *value;
+	} else if ((value = dict_query_str(&g_strings, p, 0)) != NULL) {
+		result = *value;
 
 		if (result->ref_count) {
 			result->ref_count = 0;
@@ -90,18 +81,56 @@ str_t *str_literal(char *p)
 	return result;
 }
 
-str_t *str_dup(str_t *str)
+str_t *str_concat_sp(str_t *s, char *p)
 {
-	if (str->ref_count)
-		++str->ref_count;
+	size_t p_size = strlen(p);
+	char *buffer = mem_alloc(s->length + p_size + 1);
+	void **value;
+	str_t *result;
 
-	return str;
+	if (buffer == NULL)
+		return NULL;
+
+	memcpy(buffer, s->buffer, s->length);
+	memcpy(buffer + s->length, p, p_size + 1);
+
+	if ((value = dict_query_str(&g_strings, buffer, 0)) != NULL) {
+		mem_free(buffer);
+		result = *value;
+		if (result->ref_count)
+			++result->ref_count;
+	} else {
+		result = mem_alloc(sizeof(str_t));
+		if (result != NULL) {
+			result->ref_count = 1;
+			result->length = s->length + p_size;
+			result->buffer = buffer;
+			if (dict_add_str(&g_strings, buffer, result)) {
+				mem_free(buffer);
+				mem_free(result);
+				result = NULL;
+			}
+		} else {
+			mem_free(buffer);
+		}
+	}
+
+	return result;
 }
 
-void str_free(str_t *str)
+str_t *str_dup(str_t *s)
 {
-	if (str->ref_count && --str->ref_count == 0) {
-		mem_free(str->buffer);
-		mem_free(str);
+	if (s != NULL && s->ref_count)
+		++s->ref_count;
+
+	return s;
+}
+
+void str_free(str_t *s)
+{
+	if (s != NULL && s->ref_count && --s->ref_count == 0) {
+		dict_query_str(&g_strings, s->buffer, 1);
+		mem_free(s->buffer);
+		mem_free(s);
 	}
 }

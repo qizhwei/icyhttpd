@@ -176,23 +176,21 @@ static inline int dict_add(dict_t *dict, void *key, void *value, hash_func_t *ha
 	return 0;
 }
 
-static inline int dict_query(dict_t *dict, void *key, void **value, int remove,
+static inline void **dict_query(dict_t *dict, void *key, int remove,
 	hash_func_t *hash_func, equal_func_t *equal_func)
 {
+	void **result;
 	int bucket, *entry_ptr, entry;
 
 	if (!dict->bucket_size)
-		return -1;
+		return NULL;
 
 	bucket = hash_func(key) % dict->bucket_size;
 	entry_ptr = &dict->buckets[bucket];
 	entry = *entry_ptr;
 	while (entry != -1) {
 		if (!equal_func(key, dict->entries[entry].key)) {
-
-			if (value != NULL)
-				*value = dict->entries[entry].value;
-
+			result = &dict->entries[entry].value;
 			if (remove) {
 				*entry_ptr = dict->entries[entry].next;
 				free_entry(dict, entry);
@@ -202,14 +200,14 @@ static inline int dict_query(dict_t *dict, void *key, void **value, int remove,
 					resize_buckets(dict, prev_prime(dict->bucket_size), hash_func);
 			}
 
-			return 0;
+			return result;
 		}
 
 		entry_ptr = &dict->entries[entry].next;
 		entry = *entry_ptr;
 	}
 
-	return -1;
+	return NULL;
 }
 
 #define GOLDEN (2654435761U)
@@ -273,19 +271,9 @@ int dict_add_ptr(dict_t *dict, void *key, void *value)
 	return dict_add(dict, key, value, ptr_hash);
 }
 
-static inline int dict_query_ptr(dict_t *dict, void *key, void **value, int remove)
+void **dict_query_ptr(dict_t *dict, void *key, int remove)
 {
-	return dict_query(dict, key, value, remove, ptr_hash, ptr_equal);
-}
-
-int dict_remove_ptr(dict_t *dict, void *key)
-{
-	return dict_query_ptr(dict, key, NULL, 1);
-}
-
-int dict_get_ptr(dict_t *dict, void *key, void **value)
-{
-	return dict_query_ptr(dict, key, value, 0);
+	return dict_query(dict, key, remove, ptr_hash, ptr_equal);
 }
 
 int dict_add_str(dict_t *dict, char *key, void *value)
@@ -293,19 +281,9 @@ int dict_add_str(dict_t *dict, char *key, void *value)
 	return dict_add(dict, key, value, str_hash);
 }
 
-static inline int dict_query_str(dict_t *dict, char *key, void **value, int remove)
+void **dict_query_str(dict_t *dict, char *key, int remove)
 {
-	return dict_query(dict, key, value, remove, str_hash, str_equal);
-}
-
-int dict_remove_str(dict_t *dict, char *key)
-{
-	return dict_query_str(dict, key, NULL, 1);
-}
-
-int dict_get_str(dict_t *dict, char *key, void **value)
-{
-	return dict_query_str(dict, key, value, 0);
+	return dict_query(dict, key, remove, str_hash, str_equal);
 }
 
 int dict_add_stri(dict_t *dict, char *key, void *value)
@@ -313,17 +291,7 @@ int dict_add_stri(dict_t *dict, char *key, void *value)
 	return dict_add(dict, key, value, stri_hash);
 }
 
-static inline int dict_query_stri(dict_t *dict, char *key, void **value, int remove)
+void **dict_query_stri(dict_t *dict, char *key, int remove)
 {
-	return dict_query(dict, key, value, remove, stri_hash, stri_equal);
-}
-
-int dict_remove_stri(dict_t *dict, char *key)
-{
-	return dict_query_stri(dict, key, NULL, 1);
-}
-
-int dict_get_stri(dict_t *dict, char *key, void **value)
-{
-	return dict_query_stri(dict, key, value, 0);
+	return dict_query(dict, key, remove, stri_hash, stri_equal);
 }

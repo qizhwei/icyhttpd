@@ -32,21 +32,18 @@ static inline void dict_init(dict_t *dict)
 	dict->free_list = -1;
 }
 
-static inline void dict_free(dict_t *dict)
+static inline void dict_uninit(dict_t *dict)
 {
 	mem_free(dict->buckets);
 	mem_free(dict->entries);
 }
 
 extern int dict_add_ptr(dict_t *dict, void *key, void *value);
-extern int dict_remove_ptr(dict_t *dict, void *key);
-extern int dict_get_ptr(dict_t *dict, void *key, void **value);
+extern void **dict_query_ptr(dict_t *dict, void *key, int remove);
 extern int dict_add_str(dict_t *dict, char *key, void *value);
-extern int dict_remove_str(dict_t *dict, char *key);
-extern int dict_get_str(dict_t *dict, char *key, void **value);
+extern void **dict_query_str(dict_t *dict, char *key, int remove);
 extern int dict_add_stri(dict_t *dict, char *key, void *value);
-extern int dict_remove_stri(dict_t *dict, char *key);
-extern int dict_get_stri(dict_t *dict, char *key, void **value);
+extern void **dict_query_stri(dict_t *dict, char *key, int remove);
 
 typedef void dict_walk_callback_t(void *key, void *value);
 

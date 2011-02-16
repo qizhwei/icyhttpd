@@ -13,9 +13,9 @@
     <File Name="socket.c"/>
     <File Name="process.c"/>
     <File Name="mem.c"/>
-    <File Name="conn.c"/>
     <File Name="dict.c"/>
     <File Name="str.c"/>
+    <File Name="message.c"/>
   </VirtualDirectory>
   <VirtualDirectory Name="inc">
     <File Name="list.h"/>
@@ -24,9 +24,10 @@
     <File Name="socket.h"/>
     <File Name="process.h"/>
     <File Name="mem.h"/>
-    <File Name="conn.h"/>
     <File Name="dict.h"/>
     <File Name="str.h"/>
+    <File Name="node.h"/>
+    <File Name="message.h"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>

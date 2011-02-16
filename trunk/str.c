@@ -90,6 +90,14 @@ str_t *str_literal(char *p)
 	return result;
 }
 
+str_t *str_dup(str_t *str)
+{
+	if (str->ref_count)
+		++str->ref_count;
+
+	return str;
+}
+
 void str_free(str_t *str)
 {
 	if (str->ref_count && --str->ref_count == 0) {

@@ -1,10 +1,16 @@
 #ifndef _DICT_H
 #define _DICT_H
 
+#include "mem.h"
 #include <stdint.h>
 
 typedef int dict_bucket_t;
-typedef struct dict_entry dict_entry_t;
+
+typedef struct dict_entry {
+	int next;
+	void *key;
+	void *value;
+} dict_entry_t;
 
 typedef struct dict {
 	uint32_t bucket_size;
@@ -16,7 +22,22 @@ typedef struct dict {
 	dict_bucket_t free_list;
 } dict_t;
 
-extern void dict_init(dict_t *dict);
+static inline void dict_init(dict_t *dict)
+{
+	dict->bucket_size = 0;
+	dict->buckets = NULL;
+	dict->entry_size = 0;
+	dict->entry_used = 0;
+	dict->entries = NULL;
+	dict->free_list = -1;
+}
+
+static inline void dict_free(dict_t *dict)
+{
+	mem_free(dict->buckets);
+	mem_free(dict->entries);
+}
+
 extern int dict_add_ptr(dict_t *dict, void *key, void *value);
 extern int dict_remove_ptr(dict_t *dict, void *key);
 extern int dict_get_ptr(dict_t *dict, void *key, void **value);
@@ -26,5 +47,16 @@ extern int dict_get_str(dict_t *dict, char *key, void **value);
 extern int dict_add_stri(dict_t *dict, char *key, void *value);
 extern int dict_remove_stri(dict_t *dict, char *key);
 extern int dict_get_stri(dict_t *dict, char *key, void **value);
+
+typedef void dict_walk_callback_t(void *key, void *value);
+
+static inline void dict_walk(dict_t *dict, dict_walk_callback_t *callback)
+{
+	int bucket, entry;
+
+	for (bucket = 0; bucket != dict->bucket_size; ++bucket)
+		for (entry = dict->buckets[bucket]; entry != -1; entry = dict->entries[entry].next)
+			callback(dict->entries[entry].key, dict->entries[entry].value);
+}
 
 #endif

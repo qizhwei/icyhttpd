@@ -6,6 +6,7 @@ typedef struct str str_t;
 extern void str_init(void);
 extern str_t *str_alloc(char *p);
 extern str_t *str_literal(char *p);
+extern str_t *str_dup(str_t *str);
 extern void str_free(str_t *str);
 
 #endif

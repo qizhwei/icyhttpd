@@ -9,12 +9,6 @@
 typedef uint32_t hash_func_t(void *key);
 typedef int equal_func_t(void *key0, void *key1);
 
-struct dict_entry {
-	int next;
-	void *key;
-	void *value;
-};
-
 static uint32_t primes[] = {
 	17, 37, 67, 131, 257, 521, 1031, 2053,
 	4099, 8209, 16411, 32771, 65537, 131101, 262147, 524309,
@@ -40,16 +34,6 @@ static inline uint32_t prev_prime(uint32_t m)
 		++p;
 
 	return *--p;
-}
-
-void dict_init(dict_t *dict)
-{
-	dict->bucket_size = 0;
-	dict->buckets = NULL;
-	dict->entry_size = 0;
-	dict->entry_used = 0;
-	dict->entries = NULL;
-	dict->free_list = -1;
 }
 
 static inline int expand_entries(dict_t *dict)

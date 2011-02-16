@@ -8,11 +8,13 @@
 
 struct process {
 	proc_t *proc;
-	void *user_param;
 	LPVOID fiber;
 	HANDLE timer;
 	proc_t *abort_proc;
-	void *abort_param;
+	union {
+		void *user_param;
+		void *abort_param;
+	};
 };
 
 typedef struct share {

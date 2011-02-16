@@ -1,16 +1,15 @@
-#include <stdio.h>
 #include "mem.h"
 #include "str.h"
+#include "process.h"
+#include "socket.h"
+#include "server.h"
 
 int main(void)
 {
-	char x[] = "hello";
-
 	mem_init();
 	str_init();
-
-	printf("%d\n", str_alloc(x) == str_alloc(x));
-	x[0] = '\0';
-	printf("%d\n", str_alloc("hello") == str_literal("hello"));
-	printf("%d\n", str_literal("hello") == str_literal("hello"));
+	process_init();
+	socket_init();
+	endpoint_create("127.0.0.1", 88);
+	process_loop();
 }

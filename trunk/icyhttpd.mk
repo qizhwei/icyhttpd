@@ -13,7 +13,7 @@ CurrentFileName        :=
 CurrentFilePath        :=
 CurrentFileFullPath    :=
 User                   :=iceboy
-Date                   :=2011/2/12
+Date                   :=2011/2/16
 CodeLitePath           :="C:\Program Files\CodeLite"
 LinkerName             :=gcc
 ArchiveTool            :=ar rcus
@@ -49,7 +49,7 @@ LibPath                := "$(LibraryPathSwitch)."
 ## User defined environment variables
 ##
 CodeLiteDir:=C:\Program Files\CodeLite
-Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/server$(ObjectSuffix) $(IntermediateDirectory)/socket$(ObjectSuffix) $(IntermediateDirectory)/process$(ObjectSuffix) $(IntermediateDirectory)/mem$(ObjectSuffix) $(IntermediateDirectory)/conn$(ObjectSuffix) $(IntermediateDirectory)/dict$(ObjectSuffix) $(IntermediateDirectory)/str$(ObjectSuffix) 
+Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/server$(ObjectSuffix) $(IntermediateDirectory)/socket$(ObjectSuffix) $(IntermediateDirectory)/process$(ObjectSuffix) $(IntermediateDirectory)/mem$(ObjectSuffix) $(IntermediateDirectory)/dict$(ObjectSuffix) $(IntermediateDirectory)/str$(ObjectSuffix) $(IntermediateDirectory)/message$(ObjectSuffix) 
 
 ##
 ## Main Build Targets 
@@ -109,14 +109,6 @@ $(IntermediateDirectory)/mem$(DependSuffix): mem.c
 $(IntermediateDirectory)/mem$(PreprocessSuffix): mem.c
 	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/mem$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/mem.c"
 
-$(IntermediateDirectory)/conn$(ObjectSuffix): conn.c $(IntermediateDirectory)/conn$(DependSuffix)
-	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd3/conn.c" $(C_CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/conn$(ObjectSuffix) $(IncludePath)
-$(IntermediateDirectory)/conn$(DependSuffix): conn.c
-	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/conn$(ObjectSuffix) -MF$(IntermediateDirectory)/conn$(DependSuffix) -MM "D:/CodeLite/icyhttpd3/conn.c"
-
-$(IntermediateDirectory)/conn$(PreprocessSuffix): conn.c
-	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/conn$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/conn.c"
-
 $(IntermediateDirectory)/dict$(ObjectSuffix): dict.c $(IntermediateDirectory)/dict$(DependSuffix)
 	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd3/dict.c" $(C_CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/dict$(ObjectSuffix) $(IncludePath)
 $(IntermediateDirectory)/dict$(DependSuffix): dict.c
@@ -132,6 +124,14 @@ $(IntermediateDirectory)/str$(DependSuffix): str.c
 
 $(IntermediateDirectory)/str$(PreprocessSuffix): str.c
 	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/str$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/str.c"
+
+$(IntermediateDirectory)/message$(ObjectSuffix): message.c $(IntermediateDirectory)/message$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd3/message.c" $(C_CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/message$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/message$(DependSuffix): message.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/message$(ObjectSuffix) -MF$(IntermediateDirectory)/message$(DependSuffix) -MM "D:/CodeLite/icyhttpd3/message.c"
+
+$(IntermediateDirectory)/message$(PreprocessSuffix): message.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/message$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/message.c"
 
 
 -include $(IntermediateDirectory)/*$(DependSuffix)
@@ -154,15 +154,15 @@ clean:
 	$(RM) $(IntermediateDirectory)/mem$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/mem$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/mem$(PreprocessSuffix)
-	$(RM) $(IntermediateDirectory)/conn$(ObjectSuffix)
-	$(RM) $(IntermediateDirectory)/conn$(DependSuffix)
-	$(RM) $(IntermediateDirectory)/conn$(PreprocessSuffix)
 	$(RM) $(IntermediateDirectory)/dict$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/dict$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/dict$(PreprocessSuffix)
 	$(RM) $(IntermediateDirectory)/str$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/str$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/str$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/message$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/message$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/message$(PreprocessSuffix)
 	$(RM) $(OutputFile)
 	$(RM) $(OutputFile).exe
 

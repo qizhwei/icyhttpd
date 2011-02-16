@@ -26,21 +26,4 @@ a handler is a component implements an specified interface, which can be (at lea
 
 = Interface =
 
-this section is deprecated and is about to change
-
-== handler ==
-
-  * handle(handler, request) -> response
-
-== request ==
-
-  * rel_url: string
-  * get_header(request, name) -> value
-  * set_header(request, name, value)
-  * ???
-
-== response ==
-
-  * write_header(response, http_code, ???)
-  * write(response, buffer, size)
-  * where does write_chunk belong ???
+removed

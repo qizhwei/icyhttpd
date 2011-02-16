@@ -49,7 +49,7 @@ LibPath                := "$(LibraryPathSwitch)."
 ## User defined environment variables
 ##
 CodeLiteDir:=C:\Program Files\CodeLite
-Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/server$(ObjectSuffix) $(IntermediateDirectory)/socket$(ObjectSuffix) $(IntermediateDirectory)/process$(ObjectSuffix) $(IntermediateDirectory)/mem$(ObjectSuffix) $(IntermediateDirectory)/dict$(ObjectSuffix) $(IntermediateDirectory)/str$(ObjectSuffix) $(IntermediateDirectory)/message$(ObjectSuffix) 
+Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/server$(ObjectSuffix) $(IntermediateDirectory)/socket$(ObjectSuffix) $(IntermediateDirectory)/process$(ObjectSuffix) $(IntermediateDirectory)/mem$(ObjectSuffix) $(IntermediateDirectory)/dict$(ObjectSuffix) $(IntermediateDirectory)/str$(ObjectSuffix) $(IntermediateDirectory)/message$(ObjectSuffix) $(IntermediateDirectory)/buf$(ObjectSuffix) 
 
 ##
 ## Main Build Targets 
@@ -133,6 +133,14 @@ $(IntermediateDirectory)/message$(DependSuffix): message.c
 $(IntermediateDirectory)/message$(PreprocessSuffix): message.c
 	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/message$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/message.c"
 
+$(IntermediateDirectory)/buf$(ObjectSuffix): buf.c $(IntermediateDirectory)/buf$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd3/buf.c" $(C_CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/buf$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/buf$(DependSuffix): buf.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/buf$(ObjectSuffix) -MF$(IntermediateDirectory)/buf$(DependSuffix) -MM "D:/CodeLite/icyhttpd3/buf.c"
+
+$(IntermediateDirectory)/buf$(PreprocessSuffix): buf.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/buf$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/buf.c"
+
 
 -include $(IntermediateDirectory)/*$(DependSuffix)
 ##
@@ -163,6 +171,9 @@ clean:
 	$(RM) $(IntermediateDirectory)/message$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/message$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/message$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/buf$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/buf$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/buf$(PreprocessSuffix)
 	$(RM) $(OutputFile)
 	$(RM) $(OutputFile).exe
 

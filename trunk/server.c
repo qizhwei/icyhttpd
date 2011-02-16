@@ -6,8 +6,8 @@
 #include "socket.h"
 #include "message.h"
 #include "node.h"
+#include "buf.h"
 #include <stddef.h>
-#include <string.h>
 #include <stdio.h>
 
 #define CONN_TIMEOUT (120000)
@@ -21,78 +21,9 @@ struct endpoint {
 typedef struct conn {
 	endpoint_t *endpoint;
 	socket_t *socket;
-	char *current, *last;
-	char buffer[HTTP_MAX_LINE];
+	readbuf_t readbuf;
+	writebuf_t writebuf;
 } conn_t;
-
-static char *conn_gets(conn_t *conn)
-{
-	char *buffer = conn->buffer;
-	char *current = conn->current;
-	char *last = conn->last;
-	size_t cur_size = last - current;
-	char *next = memchr(current, '\n', cur_size);
-	size_t read_size;
-
-	if (next != NULL) {
-		if (next[-1] == '\r')
-			next[-1] = '\0';
-		next[0] = '\0';
-		++next;
-		conn->current = next;
-		return current;
-	}
-
-	memmove(buffer, current, cur_size);
-	current = buffer;
-	last = current + cur_size;
-
-	while (1) {
-		if (cur_size == HTTP_MAX_LINE)
-			return NULL;
-
-		if (process_timeout(CONN_TIMEOUT, (proc_t *)&socket_abort, conn->socket))
-			return NULL;
-
-		read_size = socket_read(conn->socket, last, HTTP_MAX_LINE - cur_size);
-		if (read_size == 0)
-			return NULL;
-
-		cur_size += read_size;
-		next = memchr(last, '\n', cur_size);
-		last += read_size;
-
-		if (next != NULL) {
-			if (next[-1] == '\r')
-				next[-1] = '\0';
-			next[0] = '\0';
-			++next;
-			conn->current = next;
-			conn->last = last;
-			return current;
-		}
-	}
-}
-
-static size_t conn_read(conn_t *conn, char *buffer, size_t size)
-{
-	size_t cur_size = conn->last - conn->current;
-
-	if (cur_size) {
-		if (cur_size < size)
-			size = cur_size;
-		memcpy(buffer, conn->current, size);
-		conn->current += size;
-		return size;
-	} else {
-		return socket_read(conn->socket, buffer, size);
-	}
-}
-
-static size_t conn_write(conn_t *conn, char *buffer, size_t size)
-{
-	return socket_write(conn->socket, buffer, size);
-}
 
 static void conn_destroy(conn_t *conn)
 {
@@ -114,7 +45,7 @@ static void conn_proc(void *param)
 
 	while (1) {
 		do {
-			if ((line = conn_gets(conn)) == NULL)
+			if ((line = readbuf_gets(&conn->readbuf)) == NULL)
 				goto bed;
 
 			// ignore empty lines where a Request-Line is expected
@@ -123,13 +54,13 @@ static void conn_proc(void *param)
 		if (request_init(&request, line))
 			goto bed;
 
-		printf("[request] method:%s url:%s version:%d.%d\n",
-			request.method->buffer, request.req_uri->buffer,
+		printf("[request] method:%s req_uri:%s query_str:%s version:%d.%d\n",
+			request.method->buffer, request.req_uri->buffer, request.query_str ? request.query_str->buffer : "(null)",
 			request.ver.major, request.ver.minor);
 
 		if (request.ver.major >= 1) {
 			while (1) {
-				if ((line = conn_gets(conn)) == NULL) {
+				if ((line = readbuf_gets(&conn->readbuf)) == NULL) {
 					request_uninit(&request);
 					goto bed;
 				}
@@ -161,6 +92,14 @@ bed:
 	conn_destroy(conn);
 }
 
+static size_t read_proc(void *u, void *buffer, size_t size)
+{
+	if (process_timeout(CONN_TIMEOUT, (proc_t *)&socket_abort, u))
+		return 0;
+
+	return socket_read(u, buffer, size);
+}
+
 int conn_create(endpoint_t *e, socket_t *s)
 {
 	conn_t *conn = mem_alloc(sizeof(conn_t));
@@ -169,8 +108,7 @@ int conn_create(endpoint_t *e, socket_t *s)
 
 	conn->endpoint = e;
 	conn->socket = s;
-	conn->current = NULL;
-	conn->last = NULL;
+	readbuf_init(&conn->readbuf, read_proc, s);
 
 	if (process_create(&conn_proc, conn)) {
 		mem_free(conn);

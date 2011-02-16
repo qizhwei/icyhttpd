@@ -16,6 +16,7 @@
     <File Name="dict.c"/>
     <File Name="str.c"/>
     <File Name="message.c"/>
+    <File Name="buf.c"/>
   </VirtualDirectory>
   <VirtualDirectory Name="inc">
     <File Name="list.h"/>
@@ -28,6 +29,7 @@
     <File Name="str.h"/>
     <File Name="node.h"/>
     <File Name="message.h"/>
+    <File Name="buf.h"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>

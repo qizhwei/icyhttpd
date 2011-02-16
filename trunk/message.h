@@ -5,8 +5,6 @@
 #include "str.h"
 #include <stdint.h>
 
-#define HTTP_MAX_LINE (8192)
-
 typedef struct http_ver {
 	uint16_t major;
 	uint16_t minor;
@@ -15,6 +13,7 @@ typedef struct http_ver {
 typedef struct request {
 	str_t *method;
 	str_t *req_uri;
+	str_t *query_str;
 	http_ver_t ver;
 	dict_t headers;
 	// TODO: read_func / close_func / context

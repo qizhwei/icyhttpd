@@ -163,7 +163,7 @@ static void CALLBACK io_proc(DWORD error, DWORD size, LPWSAOVERLAPPED overlapped
 		process_unblock(&async->async);
 }
 
-size_t socket_read(socket_t *s, char *buffer, size_t size)
+size_t socket_read(socket_t *s, void *buffer, size_t size)
 {
 	WSABUF buf = {size, buffer};
 	DWORD flags = 0;
@@ -180,7 +180,7 @@ size_t socket_read(socket_t *s, char *buffer, size_t size)
 	return async.result;
 }
 
-size_t socket_write(socket_t *s, char *buffer, size_t size)
+size_t socket_write(socket_t *s, void *buffer, size_t size)
 {
 	WSABUF buf = {size, buffer};
 	async_io_t async;

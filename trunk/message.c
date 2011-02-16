@@ -50,6 +50,7 @@ static inline int http_ver_parse(http_ver_t *v, char *s)
 int request_init(request_t *r, char *line)
 {
 	char *req_uri;
+	char *query_str;
 	char *http_ver;
 
 	if ((req_uri = strchr(line, ' ')) == NULL)
@@ -65,12 +66,23 @@ int request_init(request_t *r, char *line)
 	if ((r->method = str_alloc(line)) == NULL)
 		return -1;
 
-	// TODO: url decode
-	// TODO: url rewrite (./..)
-	// TODO: seperate query string?
+	if ((query_str = strchr(req_uri, '?')) != NULL) {
+		*query_str++ = '\0';
+		if ((r->query_str = str_alloc(query_str)) == NULL) {
+			str_free(r->method);
+			return -1;
+		}
+	} else {
+		r->query_str = NULL;
+	}
+
+	// TODO: what if uri begins with http://
+	// TODO: uri decode
+	// TODO: uri rewrite (dots and slashes)
 
 	if ((r->req_uri = str_alloc(req_uri)) == NULL) {
 		str_free(r->method);
+		str_free(r->query_str);
 		return -1;
 	}
 
@@ -88,6 +100,7 @@ void request_uninit(request_t *r)
 {
 	str_free(r->method);
 	str_free(r->req_uri);
+	str_free(r->query_str);
 	dict_walk(&r->headers, free_proc);
 	dict_uninit(&r->headers);
 }

@@ -1,28 +1,24 @@
 #ifndef _BUF_H
 #define _BUF_H
 
+#include "proc.h"
 #include <stddef.h>
 
-#define BUF_MAX_LINE (8192)
+#define BUFFER_SIZE (8192)
 
-typedef size_t io_proc_t(void *u, void *buffer, size_t size);
-
-typedef struct readbuf {
-	io_proc_t *read_proc;
+typedef struct buf {
+	io_proc_t *io_proc;
 	void *object;
 	char *current, *last;
-	char buffer[BUF_MAX_LINE];
-} readbuf_t;
+	char buffer[BUFFER_SIZE];
+} buf_t;
 
-typedef struct writebuf {
-	// TODO
-} writebuf_t;
-
-// TODO: do we need close_proc?
-// TODO: do we need blockreadbuf?
-
-extern void readbuf_init(readbuf_t *u, io_proc_t *read_proc, void *object);
-extern char *readbuf_gets(readbuf_t *u);
-extern size_t readbuf_read(readbuf_t *u, void *buffer, size_t size);
+extern void buf_init(buf_t *u, io_proc_t *io_proc, void *object);
+extern char *buf_gets(buf_t *u);
+extern size_t buf_read(buf_t *u, void *buffer, size_t size);
+extern int buf_put(buf_t *u, char *s);
+extern int buf_puts(buf_t *u, char *s);
+extern size_t buf_write(buf_t *u, void *buffer, size_t size);
+extern int buf_flush(buf_t *u);
 
 #endif

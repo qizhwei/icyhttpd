@@ -2,15 +2,15 @@
 #include <stddef.h>
 #include <string.h>
 
-void readbuf_init(readbuf_t *u, io_proc_t *read_proc, void *object)
+void buf_init(buf_t *u, io_proc_t *io_proc, void *object)
 {
-	u->read_proc = read_proc;
+	u->io_proc = io_proc;
 	u->object = object;
 	u->current = NULL;
 	u->last = NULL;
 }
 
-char *readbuf_gets(readbuf_t *u)
+char *buf_gets(buf_t *u)
 {
 	char *buffer = u->buffer;
 	char *current = u->current;
@@ -33,10 +33,10 @@ char *readbuf_gets(readbuf_t *u)
 	last = current + cur_size;
 
 	while (1) {
-		if (cur_size == BUF_MAX_LINE)
+		if (cur_size == BUFFER_SIZE)
 			return NULL;
 
-		read_size = u->read_proc(u->object, last, BUF_MAX_LINE - cur_size);
+		read_size = u->io_proc(u->object, last, BUFFER_SIZE - cur_size);
 		if (read_size == 0)
 			return NULL;
 
@@ -56,7 +56,7 @@ char *readbuf_gets(readbuf_t *u)
 	}
 }
 
-size_t readbuf_read(readbuf_t *u, void *buffer, size_t size)
+size_t buf_read(buf_t *u, void *buffer, size_t size)
 {
 	size_t cur_size = u->last - u->current;
 
@@ -67,6 +67,70 @@ size_t readbuf_read(readbuf_t *u, void *buffer, size_t size)
 		u->current += size;
 		return size;
 	} else {
-		return u->read_proc(u->object, buffer, size);
+		return u->io_proc(u->object, buffer, size);
 	}
+}
+
+int buf_put(buf_t *u, char *s)
+{
+	size_t s_size = strlen(s);
+	return (s_size && !buf_write(u, s, s_size)) ? -1 : 0;
+}
+
+int buf_puts(buf_t *u, char *s)
+{
+	return (buf_put(u, s) || !buf_write(u, "\r\n", 2)) ? -1 : 0;
+}
+
+size_t buf_write(buf_t *u, void *buffer, size_t size)
+{
+	size_t cur_size = u->last - u->current;
+	size_t rem_size;
+	size_t result;
+	size_t result0;
+
+	if (cur_size) {
+		rem_size = BUFFER_SIZE - cur_size;
+		if (size < rem_size) {
+			memcpy(u->last, buffer, size);
+			u->last += size;
+			return size;
+		} else {
+			memcpy(u->last, buffer, rem_size);
+			result = u->io_proc(u->object, u->current, BUFFER_SIZE);
+			if (result == 0)
+				return 0;
+			buffer = (char *)buffer + rem_size;
+			size -= rem_size;
+		}
+	} else {
+		result = 0;
+	}
+
+	if (size >= BUFFER_SIZE) {
+		result0 = u->io_proc(u->object, buffer, size);
+		if (result0 == 0)
+			return 0;
+		result += result0;
+	} else {
+		memcpy(u->buffer, buffer, size);
+		u->current = u->buffer;
+		u->last = u->buffer + size;
+		result += size;
+	}
+
+	return result;
+}
+
+int buf_flush(buf_t *u)
+{
+	size_t cur_size = u->last - u->current;
+
+	if (cur_size) {
+		if (!u->io_proc(u->object, u->current, cur_size))
+			return -1;
+		u->current += cur_size;
+	}
+
+	return 0;
 }

@@ -30,6 +30,7 @@
     <File Name="node.h"/>
     <File Name="message.h"/>
     <File Name="buf.h"/>
+    <File Name="proc.h"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>

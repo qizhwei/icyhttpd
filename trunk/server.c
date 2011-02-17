@@ -21,8 +21,8 @@ struct endpoint {
 typedef struct conn {
 	endpoint_t *endpoint;
 	socket_t *socket;
-	readbuf_t readbuf;
-	writebuf_t writebuf;
+	buf_t readbuf;
+	buf_t writebuf;
 } conn_t;
 
 static void conn_destroy(conn_t *conn)
@@ -45,7 +45,7 @@ static void conn_proc(void *param)
 
 	while (1) {
 		do {
-			if ((line = readbuf_gets(&conn->readbuf)) == NULL)
+			if ((line = buf_gets(&conn->readbuf)) == NULL)
 				goto bed;
 
 			// ignore empty lines where a Request-Line is expected
@@ -60,7 +60,7 @@ static void conn_proc(void *param)
 
 		if (request.ver.major >= 1) {
 			while (1) {
-				if ((line = readbuf_gets(&conn->readbuf)) == NULL) {
+				if ((line = buf_gets(&conn->readbuf)) == NULL) {
 					request_uninit(&request);
 					goto bed;
 				}
@@ -79,7 +79,15 @@ static void conn_proc(void *param)
 
 		// TODO
 		if (request.method == str_literal("GET")) {
-
+			buf_puts(&conn->writebuf, "HTTP/1.1 200 OK");
+			buf_puts(&conn->writebuf, "");
+			buf_puts(&conn->writebuf, "<h2>It works!</h2>");
+			buf_put(&conn->writebuf, "<p>url: ");
+			buf_put(&conn->writebuf, request.req_uri->buffer);
+			buf_put(&conn->writebuf, "</p>");
+			buf_flush(&conn->writebuf);
+			request_uninit(&request);
+			break;
 		} else {
 
 		}
@@ -108,7 +116,8 @@ int conn_create(endpoint_t *e, socket_t *s)
 
 	conn->endpoint = e;
 	conn->socket = s;
-	readbuf_init(&conn->readbuf, read_proc, s);
+	buf_init(&conn->readbuf, read_proc, s);
+	buf_init(&conn->writebuf, (io_proc_t *)&socket_write, s);
 
 	if (process_create(&conn_proc, conn)) {
 		mem_free(conn);

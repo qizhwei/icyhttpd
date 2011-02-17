@@ -3,6 +3,7 @@
 
 #include "dict.h"
 #include "str.h"
+#include "proc.h"
 #include <stdint.h>
 
 typedef struct http_ver {
@@ -16,14 +17,18 @@ typedef struct request {
 	str_t *query_str;
 	http_ver_t ver;
 	dict_t headers;
-	// TODO: read_func / close_func / context
 } request_t;
 
 typedef struct response {
 	http_ver_t ver;
-	int status;
+	uint16_t status;
+	uint8_t header_eof;
+	uint8_t must_close;
 	dict_t headers;
-	// TODO: read_func / close_func / context
+	io_proc_t *read_proc;
+	io_proc_t *write_proc;
+	proc_t *close_proc;
+	void *object;
 } response_t;
 
 extern int request_init(request_t *r, char *line);

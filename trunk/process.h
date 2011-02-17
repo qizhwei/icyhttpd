@@ -1,11 +1,12 @@
 #ifndef _PROCESS_H
 #define _PROCESS_H
 
+#include "proc.h"
+
 extern int process_init(void);
 extern void process_loop(void);
 
 typedef struct process process_t;
-typedef void proc_t(void *param);
 
 typedef struct async {
 	process_t *process;

@@ -90,7 +90,7 @@ int request_init(request_t *r, char *line)
 	return 0;
 }
 
-void free_proc(void *key, void *value)
+static inline void free_proc(void *key, void *value)
 {
 	str_free(key);
 	str_free(value);

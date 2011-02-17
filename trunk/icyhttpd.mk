@@ -49,7 +49,8 @@ LibPath                := "$(LibraryPathSwitch)."
 ## User defined environment variables
 ##
 CodeLiteDir:=C:\Program Files\CodeLite
-Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/server$(ObjectSuffix) $(IntermediateDirectory)/socket$(ObjectSuffix) $(IntermediateDirectory)/process$(ObjectSuffix) $(IntermediateDirectory)/mem$(ObjectSuffix) $(IntermediateDirectory)/dict$(ObjectSuffix) $(IntermediateDirectory)/str$(ObjectSuffix) $(IntermediateDirectory)/message$(ObjectSuffix) $(IntermediateDirectory)/buf$(ObjectSuffix) 
+Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/server$(ObjectSuffix) $(IntermediateDirectory)/socket$(ObjectSuffix) $(IntermediateDirectory)/process$(ObjectSuffix) $(IntermediateDirectory)/mem$(ObjectSuffix) $(IntermediateDirectory)/dict$(ObjectSuffix) $(IntermediateDirectory)/str$(ObjectSuffix) $(IntermediateDirectory)/message$(ObjectSuffix) $(IntermediateDirectory)/buf$(ObjectSuffix) $(IntermediateDirectory)/echo_handler$(ObjectSuffix) \
+	$(IntermediateDirectory)/node$(ObjectSuffix) $(IntermediateDirectory)/runtime$(ObjectSuffix) 
 
 ##
 ## Main Build Targets 
@@ -141,6 +142,30 @@ $(IntermediateDirectory)/buf$(DependSuffix): buf.c
 $(IntermediateDirectory)/buf$(PreprocessSuffix): buf.c
 	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/buf$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/buf.c"
 
+$(IntermediateDirectory)/echo_handler$(ObjectSuffix): echo_handler.c $(IntermediateDirectory)/echo_handler$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd3/echo_handler.c" $(C_CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/echo_handler$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/echo_handler$(DependSuffix): echo_handler.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/echo_handler$(ObjectSuffix) -MF$(IntermediateDirectory)/echo_handler$(DependSuffix) -MM "D:/CodeLite/icyhttpd3/echo_handler.c"
+
+$(IntermediateDirectory)/echo_handler$(PreprocessSuffix): echo_handler.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/echo_handler$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/echo_handler.c"
+
+$(IntermediateDirectory)/node$(ObjectSuffix): node.c $(IntermediateDirectory)/node$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd3/node.c" $(C_CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/node$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/node$(DependSuffix): node.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/node$(ObjectSuffix) -MF$(IntermediateDirectory)/node$(DependSuffix) -MM "D:/CodeLite/icyhttpd3/node.c"
+
+$(IntermediateDirectory)/node$(PreprocessSuffix): node.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/node$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/node.c"
+
+$(IntermediateDirectory)/runtime$(ObjectSuffix): runtime.c $(IntermediateDirectory)/runtime$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd3/runtime.c" $(C_CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/runtime$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/runtime$(DependSuffix): runtime.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/runtime$(ObjectSuffix) -MF$(IntermediateDirectory)/runtime$(DependSuffix) -MM "D:/CodeLite/icyhttpd3/runtime.c"
+
+$(IntermediateDirectory)/runtime$(PreprocessSuffix): runtime.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/runtime$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/runtime.c"
+
 
 -include $(IntermediateDirectory)/*$(DependSuffix)
 ##
@@ -174,6 +199,15 @@ clean:
 	$(RM) $(IntermediateDirectory)/buf$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/buf$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/buf$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/echo_handler$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/echo_handler$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/echo_handler$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/node$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/node$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/node$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/runtime$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/runtime$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/runtime$(PreprocessSuffix)
 	$(RM) $(OutputFile)
 	$(RM) $(OutputFile).exe
 

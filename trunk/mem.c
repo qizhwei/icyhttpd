@@ -1,18 +1,21 @@
 #include "mem.h"
 #include "win32.h"
+#include "runtime.h"
 #include <stddef.h>
 #include <stdlib.h>
 
-// TODO
-// profile performance to determine whether or not
-// to use the LFH policy provided by Windows Heap
-// http://msdn.microsoft.com/en-us/library/aa366750.aspx
+#define HEAP_LFH (2)
 
 static HANDLE g_heap;
 
 int mem_init(void)
 {
+	DWORD heap_info = HEAP_LFH;
 	g_heap = GetProcessHeap();
+
+	if (!HeapSetInformation(g_heap, HeapCompatibilityInformation, &heap_info, sizeof(heap_info)))
+		runtime_ignore("Warning: LFH cannot be enabled.");
+
 	return 0;
 }
 

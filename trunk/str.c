@@ -1,6 +1,7 @@
 #include "str.h"
 #include "dict.h"
 #include "mem.h"
+#include "stri.h"
 #include <string.h>
 
 static dict_t g_literals;
@@ -62,7 +63,7 @@ str_t *str_literal(char *p)
 		}
 
 		if (dict_add_str(&g_strings, p, result)) {
-			// TODO: fatal error
+			runtime_abort("Fatal error: this memory allocation must not fail.");
 		} else {
 			dict_add_ptr(&g_literals, p, result);
 		}
@@ -85,18 +86,10 @@ str_t *str_literal(char *p)
 	return result;
 }
 
-str_t *str_concat_sp(str_t *s, char *p)
+static str_t *str_alloc_from_buffer(char *buffer, size_t length)
 {
-	size_t p_size = strlen(p);
-	char *buffer = mem_alloc(s->length + p_size + 1);
 	void **value;
 	str_t *result;
-
-	if (buffer == NULL)
-		return NULL;
-
-	memcpy(buffer, s->buffer, s->length);
-	memcpy(buffer + s->length, p, p_size + 1);
 
 	if ((value = dict_query_str(&g_strings, buffer, 0)) != NULL) {
 		mem_free(buffer);
@@ -107,7 +100,7 @@ str_t *str_concat_sp(str_t *s, char *p)
 		result = mem_alloc(sizeof(str_t));
 		if (result != NULL) {
 			result->ref_count = 1;
-			result->length = s->length + p_size;
+			result->length = length;
 			result->buffer = buffer;
 			if (dict_add_str(&g_strings, buffer, result)) {
 				mem_free(buffer);
@@ -122,12 +115,51 @@ str_t *str_concat_sp(str_t *s, char *p)
 	return result;
 }
 
+str_t *str_concat_sp(str_t *s, char *p)
+{
+	size_t p_size = strlen(p);
+	char *buffer = mem_alloc(s->length + p_size + 1);
+
+	if (buffer == NULL)
+		return NULL;
+
+	memcpy(buffer, s->buffer, s->length);
+	memcpy(buffer + s->length, p, p_size + 1);
+	return str_alloc_from_buffer(buffer, s->length + p_size);
+}
+
 str_t *str_dup(str_t *s)
 {
 	if (s != NULL && s->ref_count)
 		++s->ref_count;
 
 	return s;
+}
+
+str_t *str_lower(str_t *s)
+{
+	int i = 0;
+	char *buffer;
+
+	while (1) {
+		if (s->buffer[i] == '\0') {
+			++s->ref_count;
+			return s;
+		}
+		if (stri_isupper(s->buffer[i]))
+			break;
+		++i;
+	}
+	buffer = mem_alloc(s->length + 1);
+	if (buffer == NULL)
+		return NULL;
+
+	memcpy(buffer, s->buffer, i);
+	do
+		buffer[i] = stri_tolower(s->buffer[i]);
+	while (buffer[i++] != '\0');
+
+	return str_alloc_from_buffer(buffer, i);
 }
 
 void str_free(str_t *s)

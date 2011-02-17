@@ -31,6 +31,44 @@ static void conn_destroy(conn_t *conn)
 	mem_free(conn);
 }
 
+static inline handler_t *conn_get_handler(conn_t *conn, request_t *request)
+{
+	endpoint_t *endpoint = conn->endpoint;
+	node_t *node = endpoint->default_node;
+	void **value = dict_query_ptr(&request->headers, str_literal("Host"), 0);
+	str_t *host;
+	char *p;
+	str_t *ext;
+	handler_t *handler;
+
+	if (value != NULL) {
+		host = str_lower(*value);
+		if (host == NULL)
+			return NULL;
+
+		value = dict_query_ptr(&endpoint->host_nodes, host, 0);
+		str_free(host);
+		if (value != NULL)
+			node = *value;
+	}
+
+	p = request->req_uri->buffer + request->req_uri->length;
+	while (1) {
+		--p;
+		if (*p == '/') {
+			ext = NULL;
+			break;
+		} else if (*p == '.') {
+			ext = str_alloc(p);
+			break;
+		}
+	}
+
+	handler = node_get_handler(node, ext);
+	str_free(ext);
+	return handler;
+}
+
 static inline void debug_print_headers(void *key, void *value)
 {
 	printf("[header] %s: %s\n", ((str_t *)key)->buffer, ((str_t *)value)->buffer);
@@ -42,8 +80,9 @@ static void conn_proc(void *param)
 	char *line;
 	request_t request;
 	response_t response;
+	handler_t *handler;
 
-	while (1) {
+	do {
 		do {
 			if ((line = buf_gets(&conn->readbuf)) == NULL)
 				goto bed;
@@ -60,44 +99,35 @@ static void conn_proc(void *param)
 
 		if (request.ver.major >= 1) {
 			while (1) {
-				if ((line = buf_gets(&conn->readbuf)) == NULL) {
-					request_uninit(&request);
-					goto bed;
-				}
-
+				if ((line = buf_gets(&conn->readbuf)) == NULL)
+					goto bed0;
 				if (*line == '\0')
 					break;
-
-				if (request_parse_header(&request, line)) {
-					request_uninit(&request);
-					goto bed;
-				}
+				if (request_parse_header(&request, line))
+					goto bed0;
 			}
 		}
 
 		dict_walk(&request.headers, debug_print_headers);
 
-		// TODO
-		if (request.method == str_literal("GET")) {
-			buf_puts(&conn->writebuf, "HTTP/1.1 200 OK");
-			buf_puts(&conn->writebuf, "");
-			buf_puts(&conn->writebuf, "<h2>It works!</h2>");
-			buf_put(&conn->writebuf, "<p>url: ");
-			buf_put(&conn->writebuf, request.req_uri->buffer);
-			buf_put(&conn->writebuf, "</p>");
-			buf_flush(&conn->writebuf);
-			request_uninit(&request);
-			break;
-		} else {
+		if ((handler = conn_get_handler(conn, &request)) == NULL)
+			goto bed0;
 
-		}
+		// TODO: do we need to initialize response object first?
+
+		if (handler->handle_proc(handler, &request, &response))
+			goto bed0;
+
+		// TODO: response->read_proc / response->write_proc / response->close_proc
 
 		request_uninit(&request);
-	}
+	} while (1); // TODO: !response.must_close, etc.
 
+bed0:
+	request_uninit(&request);
 bed:
-	printf("connection broken\n");
 	conn_destroy(conn);
+	printf("connection broken\n");
 }
 
 static size_t read_proc(void *u, void *buffer, size_t size)

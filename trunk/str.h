@@ -16,6 +16,7 @@ extern str_t *str_alloc(char *p);
 extern str_t *str_concat_sp(str_t *s, char *p);
 extern str_t *str_literal(char *p);
 extern str_t *str_dup(str_t *s);
+extern str_t *str_lower(str_t *s);
 extern void str_free(str_t *s);
 
 #endif

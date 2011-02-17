@@ -1,6 +1,7 @@
 #include "process.h"
 #include "mem.h"
 #include "win32.h"
+#include "runtime.h"
 #include <stdlib.h>
 
 #define STACK_COMMIT_SIZE (4096)
@@ -101,7 +102,7 @@ int process_create(proc_t *proc, void *param)
 	}
 
 	if (!QueueUserAPC(&switch_proc, GetCurrentThread(), (ULONG_PTR)process)) {
-		// TODO: fatal error
+		runtime_abort("Fatal error: APC queueing must not fail.");
 	}
 
 	return 0;
@@ -123,7 +124,7 @@ void process_exit(void)
 
 	// queue an APC to free the fiber, this call should not fail
 	if (!QueueUserAPC(&exit_proc, GetCurrentThread(), (ULONG_PTR)process->fiber)) {
-		// TODO: fatal error
+		runtime_abort("Fatal error: APC queueing must not fail.");
 	}
 
 	// free all resources allocated other than the fiber
@@ -170,7 +171,7 @@ void process_block(async_t *async)
 
 	if (process->abort_proc) {
 		if (!CancelWaitableTimer(process->timer)) {
-			// TODO: fatal error
+			runtime_abort("Fatal error: timer cancelling must not fail.");
 		}
 		process->abort_proc = NULL;
 	}

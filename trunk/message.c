@@ -1,6 +1,7 @@
 #include "message.h"
 #include "dict.h"
 #include "str.h"
+#include "stri.h"
 #include <string.h>
 #include <stdint.h>
 
@@ -76,9 +77,14 @@ int request_init(request_t *r, char *line)
 		r->query_str = NULL;
 	}
 
-	// TODO: what if uri begins with http://
 	// TODO: uri decode
 	// TODO: uri rewrite (dots and slashes)
+	// TODO: what if uri begins with http://
+	if (*req_uri != '/') {
+		str_free(r->method);
+		str_free(r->query_str);
+		return -1;
+	}
 
 	if ((r->req_uri = str_alloc(req_uri)) == NULL) {
 		str_free(r->method);
@@ -103,22 +109,6 @@ void request_uninit(request_t *r)
 	str_free(r->query_str);
 	dict_walk(&r->headers, free_proc);
 	dict_uninit(&r->headers);
-}
-
-static inline char stri_toupper(char c)
-{
-	if (c >= 'a' && c <= 'z')
-		return c + ('A' - 'a');
-	else
-		return c;
-}
-
-static inline char stri_tolower(char c)
-{
-	if (c >= 'A' && c <= 'Z')
-		return c + ('a' - 'A');
-	else
-		return c;
 }
 
 static inline void normalize_case(char *s)

@@ -1,5 +1,6 @@
 #include "dict.h"
 #include "mem.h"
+#include "stri.h"
 #include <stdint.h>
 #include <string.h>
 
@@ -233,14 +234,6 @@ static inline uint32_t str_hash(void *str)
 	}
 
 	return hash;
-}
-
-static inline char stri_tolower(char c)
-{
-	if (c >= 'A' && c <= 'Z')
-		return c + ('a' - 'A');
-	else
-		return c;
 }
 
 static inline uint32_t stri_hash(void *str)

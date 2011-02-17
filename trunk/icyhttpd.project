@@ -17,6 +17,9 @@
     <File Name="str.c"/>
     <File Name="message.c"/>
     <File Name="buf.c"/>
+    <File Name="echo_handler.c"/>
+    <File Name="node.c"/>
+    <File Name="runtime.c"/>
   </VirtualDirectory>
   <VirtualDirectory Name="inc">
     <File Name="list.h"/>
@@ -31,6 +34,10 @@
     <File Name="message.h"/>
     <File Name="buf.h"/>
     <File Name="proc.h"/>
+    <File Name="handler.h"/>
+    <File Name="echo_handler.h"/>
+    <File Name="stri.h"/>
+    <File Name="runtime.h"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>

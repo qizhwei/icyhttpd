@@ -172,3 +172,22 @@ int request_parse_header(request_t *r, char *line)
 
 	return 0;
 }
+
+str_t *request_alloc_ext(request_t *r)
+{
+	char *p = r->req_uri->buffer + r->req_uri->length;
+
+	while (1) {
+		--p;
+		if (*p == '/')
+			return str_literal(".");
+		else if (*p == '.')
+			return str_alloc(p);
+	}
+}
+
+str_t *request_get_header(request_t *r, str_t *key)
+{
+	void **value = dict_query_ptr(&r->headers, key, 0);
+	return value != NULL ? *value : NULL;
+}

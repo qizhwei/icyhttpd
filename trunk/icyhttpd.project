@@ -9,7 +9,6 @@
   <Dependencies/>
   <VirtualDirectory Name="src">
     <File Name="main.c"/>
-    <File Name="server.c"/>
     <File Name="socket.c"/>
     <File Name="process.c"/>
     <File Name="mem.c"/>
@@ -20,10 +19,11 @@
     <File Name="echo_handler.c"/>
     <File Name="node.c"/>
     <File Name="runtime.c"/>
+    <File Name="endpoint.c"/>
+    <File Name="conn.c"/>
   </VirtualDirectory>
   <VirtualDirectory Name="inc">
     <File Name="list.h"/>
-    <File Name="server.h"/>
     <File Name="win32.h"/>
     <File Name="socket.h"/>
     <File Name="process.h"/>
@@ -38,6 +38,8 @@
     <File Name="echo_handler.h"/>
     <File Name="stri.h"/>
     <File Name="runtime.h"/>
+    <File Name="endpoint.h"/>
+    <File Name="conn.h"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>

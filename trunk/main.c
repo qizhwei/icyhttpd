@@ -2,7 +2,8 @@
 #include "str.h"
 #include "process.h"
 #include "socket.h"
-#include "server.h"
+#include "endpoint.h"
+#include "echo_handler.h"
 
 int main(void)
 {
@@ -10,6 +11,7 @@ int main(void)
 	str_init();
 	process_init();
 	socket_init();
-	endpoint_create("127.0.0.1", 88);
+	echo_handler_init();
+	endpoint_create("127.0.0.1", 88, node_create(str_literal("D:\\wwwroot"), echo_handler));
 	process_loop();
 }

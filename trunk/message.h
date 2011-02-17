@@ -34,5 +34,7 @@ typedef struct response {
 extern int request_init(request_t *r, char *line);
 extern void request_uninit(request_t *r);
 extern int request_parse_header(request_t *r, char *line);
+extern str_t *request_alloc_ext(request_t *r);
+extern str_t *request_get_header(request_t *r, str_t *key);
 
 #endif

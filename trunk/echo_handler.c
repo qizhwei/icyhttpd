@@ -9,6 +9,7 @@ handler_t *echo_handler;
 
 static int handle_proc(handler_t *handler, request_t *request, response_t *response)
 {
+	// TODO: write an echo handler here
 }
 
 void echo_handler_init(void)

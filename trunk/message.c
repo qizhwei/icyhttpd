@@ -118,6 +118,64 @@ static inline int http_ver_parse(http_ver_t *v, char *s)
 	return 0;
 }
 
+// uri decoding
+static void uri_decode(char *uri_buf)
+{
+	// Search for "%"
+	int i = 0, j = 0;
+	char decoded_chr = 0;
+	int decode_left = 0;
+
+	while(uri_buf[i] != 0)
+	{
+		if(uri_buf[i] == '%')
+		{
+			// Initialization
+			decode_left = 2;
+			decoded_chr = 0;
+			i ++;
+			continue;
+		}
+		if(decode_left == 0)
+		{
+			// Nothing to be decoded here. Copy it
+			uri_buf[j++] = uri_buf[i++];
+		}
+		else  // if(decode_left == 2 || decode_left == 1)
+		{
+			if(uri_buf[i] >= '0' && uri_buf[i] <= '9')
+			{
+				decoded_chr += uri_buf[i] - '0';
+			}
+			else if(uri_buf[i] >= 'A' && uri_buf[i] <= 'F')
+			{
+				decoded_chr += uri_buf[i] - 'A' + 10;
+			}
+			else if(uri_buf[i] >= 'a' && uri_buf[i] <= 'f')
+			{
+				decoded_chr += uri_buf[i] - 'a' + 10;
+			}
+			else
+			{
+				// TODO: dealing with unknown character when decoding. - by Fish
+				//printf("uri_decode: unable to decode. unknown character exists.\n");
+				break;
+			}
+			if(decode_left == 2)
+			{
+				decoded_chr *= 0x10;
+			}
+			else // decode_left == 1
+			{
+				uri_buf[j++] = decoded_chr;
+			}
+			decode_left--;
+			i ++;
+		}
+	}
+	uri_buf[j] = 0;
+}
+
 int request_init(request_t *r, char *line)
 {
 	char *req_uri;
@@ -146,63 +204,10 @@ int request_init(request_t *r, char *line)
 	} else {
 		r->query_str = NULL;
 	}
-	
+	 
 	// uri decoding
-	// Search for "%"
-	int i = 0, j = 0;
-	char decoded_chr = 0;
-	int decode_left = 0;
-	
-	while(req_uri[i] != 0)
-	{
-		if(req_uri[i] == '%')
-		{
-			// Initialization
-			decode_left = 2;
-			decoded_chr = 0;
-			i ++;
-			continue;
-		}
-		if(decode_left == 0)
-		{
-			// Nothing to be decoded here. Copy it
-			req_uri[j++] = req_uri[i++];
-		}
-		else  // if(decode_left == 2 || decode_left == 1)
-		{
-			if(req_uri[i] >= '0' && req_uri[i] <= '9')
-			{
-				decoded_chr += req_uri[i] - '0';
-			}
-			else if(req_uri[i] >= 'A' && req_uri[i] <= 'F')
-			{
-				decoded_chr += req_uri[i] - 'A' + 10;
-			}
-			else if(req_uri[i] >= 'a' && req_uri[i] <= 'f')
-			{
-				decoded_chr += req_uri[i] - 'a' + 10;
-			}
-			else
-			{
-				// TODO: dealing with unknown character when decoding. - by Fish
-				//printf("uri_decode: unable to decode. unknown character exists.\n");
-				break;
-			}
-			if(decode_left == 2)
-			{
-				decoded_chr *= 0x10;
-			}
-			else // decode_left == 1
-			{
-				req_uri[j++] = decoded_chr;
-			}
-			decode_left--;
-			i ++;
-		}
-	}
-	req_uri[j] = 0;
-	// uri decoding ends
-	
+	uri_decode(req_uri);
+
 	// TODO: uri rewrite (dots and slashes)
 	// TODO: what if uri begins with http://
 	if (*req_uri != '/') {

@@ -143,9 +143,9 @@ static void conn_proc(void *param)
 				|| buf_putint(&conn->writebuf, response->status)
 				|| buf_put(&conn->writebuf, " ")
 				|| buf_put_str(&conn->writebuf, status)
-				|| buf_puts(&conn->writebuf, "")
+				|| buf_put_crlf(&conn->writebuf)
 				|| dict_walk(&response->headers, write_header_proc, conn)
-				|| buf_puts(&conn->writebuf, ""))
+				|| buf_put_crlf(&conn->writebuf))
 				goto bed1;
 		}
 

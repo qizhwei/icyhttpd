@@ -79,9 +79,14 @@ int buf_put(buf_t *u, char *s)
 	return (s_size && !buf_write(u, s, s_size)) ? -1 : 0;
 }
 
+int buf_put_crlf(buf_t *u)
+{
+	return !buf_write(u, "\r\n", 2) ? -1 : 0;
+}
+
 int buf_puts(buf_t *u, char *s)
 {
-	return (buf_put(u, s) || !buf_write(u, "\r\n", 2)) ? -1 : 0;
+	return (buf_put(u, s) || buf_put_crlf(u)) ? -1 : 0;
 }
 
 int buf_putint(buf_t *u, int i)

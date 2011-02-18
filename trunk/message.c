@@ -5,6 +5,76 @@
 #include <string.h>
 #include <stdint.h>
 
+static dict_t g_status;
+
+static int add_status(int code, char *def_literal)
+{
+	str_t *str;
+
+	if ((str = str_literal(def_literal)) == NULL)
+		return -1;
+	if (dict_add_ptr(&g_status, (void *)code, str))
+		return -1;
+
+	return 0;
+}
+
+int http_init(void)
+{
+	dict_init(&g_status);
+
+	if (add_status(100, "Continue")
+		|| add_status(101, "Switching Protocols")
+		|| add_status(200, "OK")
+		|| add_status(201, "Created")
+		|| add_status(202, "Accepted")
+		|| add_status(203, "Non-Authoritative Information")
+		|| add_status(204, "No Content")
+		|| add_status(205, "Reset Content")
+		|| add_status(206, "Partial Content")
+		|| add_status(300, "Multiple Choices")
+		|| add_status(301, "Moved Permanently")
+		|| add_status(302, "Found")
+		|| add_status(303, "See Other")
+		|| add_status(304, "Not Modified")
+		|| add_status(305, "Use Proxy")
+		// 306 is unused and reserved
+		|| add_status(307, "Temporary Redirect")
+		|| add_status(400, "Bad Request")
+		|| add_status(401, "Unauthorized")
+		|| add_status(402, "Payment Required")
+		|| add_status(403, "Forbidden")
+		|| add_status(404, "Not Found")
+		|| add_status(405, "Method Not Allowed")
+		|| add_status(406, "Not Acceptable")
+		|| add_status(407, "Proxy Authentication Required")
+		|| add_status(408, "Request Timeout")
+		|| add_status(409, "Conflict")
+		|| add_status(410, "Gone")
+		|| add_status(411, "Length Required")
+		|| add_status(412, "Precondition Failed")
+		|| add_status(413, "Request Entity Too Large")
+		|| add_status(414, "Request-URI Too Long")
+		|| add_status(415, "Unsupported Media Type")
+		|| add_status(416, "Request Range Not Satisfiable")
+		|| add_status(417, "Expectation Failed")
+		|| add_status(500, "Internal Server Error")
+		|| add_status(501, "Not Implemented")
+		|| add_status(502, "Bad Gateway")
+		|| add_status(503, "Service Unavailable")
+		|| add_status(504, "Gateway Timeout")
+		|| add_status(505, "HTTP Version Not Supported"))
+		return -1;
+
+	return 0;
+}
+
+str_t *http_get_status(int code)
+{
+	void **value = dict_query_ptr(&g_status, (void *)code, 0);
+	return value == NULL ? NULL : *value;
+}
+
 static inline uint16_t uint16_parse(char *s)
 {
 	int result = 0;

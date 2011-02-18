@@ -2,6 +2,7 @@
 #define _BUF_H
 
 #include "proc.h"
+#include "str.h"
 #include <stddef.h>
 
 #define BUFFER_SIZE (8192)
@@ -24,6 +25,7 @@ extern size_t buf_read(buf_t *u, void *buffer, size_t size);
 extern int buf_put(buf_t *u, char *s);
 extern int buf_puts(buf_t *u, char *s);
 extern int buf_putint(buf_t *u, int i);
+extern int buf_put_str(buf_t *u, str_t *s);
 extern size_t buf_write(buf_t *u, void *buffer, size_t size);
 extern int buf_write_from_proc(buf_t *u, io_proc_t *io_proc, void *object);
 extern int buf_flush(buf_t *u);

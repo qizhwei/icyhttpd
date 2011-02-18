@@ -18,6 +18,8 @@ typedef struct conn {
 	socket_t *socket;
 	buf_t readbuf;
 	buf_t writebuf;
+	request_t request;
+	response_t response;
 } conn_t;
 
 static void conn_destroy(conn_t *conn)
@@ -36,8 +38,11 @@ static inline int write_header_proc(void *u, void *key, void *value)
 {
 	conn_t *conn = u;
 
-	// TODO: put request & response in conn (at least pointers)
-	// so that we can access them here (and everywhere)
+	if (buf_put_str(&conn->writebuf, key)
+		|| buf_put(&conn->writebuf, ": ")
+		|| buf_put_str(&conn->writebuf, value)
+		|| buf_put(&conn->writebuf, "\r\n"))
+		return -1;
 
 	return 0;
 }
@@ -45,9 +50,10 @@ static inline int write_header_proc(void *u, void *key, void *value)
 static void conn_proc(void *param)
 {
 	conn_t *conn = param;
+	request_t *request = &conn->request;
+	response_t *response = &conn->response;
 	char *line;
-	request_t request;
-	response_t response;
+	str_t *status;
 	node_t *node;
 	str_t *ext;
 	handler_t *handler;
@@ -61,36 +67,36 @@ static void conn_proc(void *param)
 			// ignore empty lines where a Request-Line is expected
 		} while (line[0] == '\0');
 
-		if (request_init(&request, line))
+		if (request_init(request, line))
 			goto bed;
 
 		printf("[request] method:%s req_uri:%s query_str:%s version:%d.%d\n",
-			request.method->buffer, request.req_uri->buffer, request.query_str ? request.query_str->buffer : "(null)",
-			request.ver.major, request.ver.minor);
+			request->method->buffer, request->req_uri->buffer, request->query_str ? request->query_str->buffer : "(null)",
+			request->ver.major, request->ver.minor);
 
-		if (request.ver.major >= 1) {
+		if (request->ver.major >= 1) {
 			while (1) {
 				if ((line = buf_gets(&conn->readbuf)) == NULL)
 					goto bed0;
 				if (*line == '\0')
 					break;
-				if (request_parse_header(&request, line))
+				if (request_parse_header(request, line))
 					goto bed0;
 			}
 		}
 
-		dict_walk(&request.headers, debug_print_headers, NULL);
+		dict_walk(&request->headers, debug_print_headers, NULL);
 
-		if (request.ver.major >= 2) {
+		if (request->ver.major >= 2) {
 			// TODO: HTTP 505
 			goto bed0;
 		}
 
 		if ((node = endpoint_get_node(conn->endpoint,
-			request_get_header(&request, str_literal("Host")))) == NULL)
+			request_get_header(request, str_literal("Host")))) == NULL)
 			goto bed0;
 
-		if ((ext = request_alloc_ext(&request)) == NULL)
+		if ((ext = request_alloc_ext(request)) == NULL)
 			goto bed0;
 		if ((handler = node_get_handler(node, ext)) == NULL) {
 			str_free(ext);
@@ -98,7 +104,7 @@ static void conn_proc(void *param)
 		}
 		str_free(ext);
 
-		if (handler->handle_proc(handler, &request, &response))
+		if (handler->handle_proc(handler, request, response))
 			goto bed0;
 
 		// TODO: create a process to read (at least ignore) when Content-Length
@@ -115,7 +121,7 @@ static void conn_proc(void *param)
 		// Under HTTP=1.0, if response header don't have Connection: keep-alive,
 		// we use close method.
 
-		if (request.ver.major == 1 && request.ver.minor >= 1) {
+		if (request->ver.major == 1 && request->ver.minor >= 1) {
 			keep_alive = 1;
 			chunked = 1;
 		} else {
@@ -126,14 +132,19 @@ static void conn_proc(void *param)
 		// TODO: if `Connection: keep-alive' in request exist, keep_alive = 1
 		// TODO: if `Connection: close' in request exist, keep_alive = 0
 
-		if (request.ver.major == 1) {
+		if (request->ver.major == 1) {
+			status = http_get_status(response->status);
+			if (status == NULL) {
+				// TODO: HTTP 500
+				goto bed1;
+			}
+
 			if (buf_put(&conn->writebuf, "HTTP/1.1 ")
-				|| buf_putint(&conn->writebuf, response.status)
+				|| buf_putint(&conn->writebuf, response->status)
 				|| buf_put(&conn->writebuf, " ")
-				// buf_puts(&conn->writebuf, dict_get(xxx))
-				// if cannot get, return 500
-					|| buf_puts(&conn->writebuf, ">_<")
-				|| dict_walk(&response.headers, write_header_proc, conn)
+				|| buf_put_str(&conn->writebuf, status)
+				|| buf_puts(&conn->writebuf, "")
+				|| dict_walk(&response->headers, write_header_proc, conn)
 				|| buf_puts(&conn->writebuf, ""))
 				goto bed1;
 		}
@@ -143,7 +154,7 @@ static void conn_proc(void *param)
 		chunked = 0;
 
 		if (!chunked) {
-			if (buf_write_from_proc(&conn->writebuf, response.read_proc, response.object))
+			if (buf_write_from_proc(&conn->writebuf, response->read_proc, response->object))
 				goto bed1;
 		} else {
 			// TODO: chunked encoding
@@ -153,14 +164,14 @@ static void conn_proc(void *param)
 		if (!keep_alive)
 			goto bed1;
 
-		response_uninit(&response);
-		request_uninit(&request);
+		response_uninit(response);
+		request_uninit(request);
 	}
 
 bed1:
-	response_uninit(&response);
+	response_uninit(response);
 bed0:
-	request_uninit(&request);
+	request_uninit(request);
 bed:
 	conn_destroy(conn);
 	printf("connection broken\n");

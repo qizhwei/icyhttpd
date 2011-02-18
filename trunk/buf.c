@@ -1,4 +1,5 @@
 #include "buf.h"
+#include "str.h"
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
@@ -88,6 +89,11 @@ int buf_putint(buf_t *u, int i)
 	char buffer[16];
 	snprintf(buffer, sizeof(buffer), "%d", i);
 	return buf_put(u, buffer);
+}
+
+int buf_put_str(buf_t *u, str_t *s)
+{
+	return !buf_write(u, s->buffer, s->length) ? -1 : 0;
 }
 
 size_t buf_write(buf_t *u, void *buffer, size_t size)

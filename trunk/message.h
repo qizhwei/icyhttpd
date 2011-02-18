@@ -29,6 +29,8 @@ typedef struct response {
 	void *object;
 } response_t;
 
+extern int http_init(void);
+extern str_t *http_get_status(int code);
 extern int request_init(request_t *r, char *line);
 extern void request_uninit(request_t *r);
 extern void response_uninit(response_t *r);

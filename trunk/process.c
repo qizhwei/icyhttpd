@@ -179,6 +179,13 @@ void process_block(async_t *async)
 
 void process_unblock(async_t *async)
 {
+	if (!QueueUserAPC(&switch_proc, GetCurrentThread(), (ULONG_PTR)async->process)) {
+		runtime_abort("Fatal error: APC queueing must not fail.");
+	}
+}
+
+void process_unblock_now(async_t *async)
+{
 	process_switch(async->process);
 }
 

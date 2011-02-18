@@ -21,6 +21,7 @@
     <File Name="runtime.c"/>
     <File Name="endpoint.c"/>
     <File Name="conn.c"/>
+    <File Name="event.c"/>
   </VirtualDirectory>
   <VirtualDirectory Name="inc">
     <File Name="list.h"/>
@@ -40,6 +41,7 @@
     <File Name="runtime.h"/>
     <File Name="endpoint.h"/>
     <File Name="conn.h"/>
+    <File Name="event.h"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>

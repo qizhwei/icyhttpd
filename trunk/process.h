@@ -18,6 +18,7 @@ extern void process_exit(void);
 extern void *process_share_event(proc_t *callback, void *param);
 extern void process_block(async_t *async);
 extern void process_unblock(async_t *async);
+extern void process_unblock_now(async_t *async);
 extern int process_timeout(int milliseconds, proc_t *abort_proc, void *param);
 
 #endif

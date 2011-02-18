@@ -13,7 +13,7 @@ CurrentFileName        :=
 CurrentFilePath        :=
 CurrentFileFullPath    :=
 User                   :=iceboy
-Date                   :=2011/2/17
+Date                   :=2011/2/18
 CodeLitePath           :="C:\Program Files\CodeLite"
 LinkerName             :=gcc
 ArchiveTool            :=ar rcus
@@ -50,7 +50,7 @@ LibPath                := "$(LibraryPathSwitch)."
 ##
 CodeLiteDir:=C:\Program Files\CodeLite
 Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/socket$(ObjectSuffix) $(IntermediateDirectory)/process$(ObjectSuffix) $(IntermediateDirectory)/mem$(ObjectSuffix) $(IntermediateDirectory)/dict$(ObjectSuffix) $(IntermediateDirectory)/str$(ObjectSuffix) $(IntermediateDirectory)/message$(ObjectSuffix) $(IntermediateDirectory)/buf$(ObjectSuffix) $(IntermediateDirectory)/echo_handler$(ObjectSuffix) $(IntermediateDirectory)/node$(ObjectSuffix) \
-	$(IntermediateDirectory)/runtime$(ObjectSuffix) $(IntermediateDirectory)/endpoint$(ObjectSuffix) $(IntermediateDirectory)/conn$(ObjectSuffix) 
+	$(IntermediateDirectory)/runtime$(ObjectSuffix) $(IntermediateDirectory)/endpoint$(ObjectSuffix) $(IntermediateDirectory)/conn$(ObjectSuffix) $(IntermediateDirectory)/event$(ObjectSuffix) 
 
 ##
 ## Main Build Targets 
@@ -174,6 +174,14 @@ $(IntermediateDirectory)/conn$(DependSuffix): conn.c
 $(IntermediateDirectory)/conn$(PreprocessSuffix): conn.c
 	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/conn$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/conn.c"
 
+$(IntermediateDirectory)/event$(ObjectSuffix): event.c $(IntermediateDirectory)/event$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd3/event.c" $(C_CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/event$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/event$(DependSuffix): event.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/event$(ObjectSuffix) -MF$(IntermediateDirectory)/event$(DependSuffix) -MM "D:/CodeLite/icyhttpd3/event.c"
+
+$(IntermediateDirectory)/event$(PreprocessSuffix): event.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/event$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/event.c"
+
 
 -include $(IntermediateDirectory)/*$(DependSuffix)
 ##
@@ -219,6 +227,9 @@ clean:
 	$(RM) $(IntermediateDirectory)/conn$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/conn$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/conn$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/event$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/event$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/event$(PreprocessSuffix)
 	$(RM) $(OutputFile)
 	$(RM) $(OutputFile).exe
 

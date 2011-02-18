@@ -89,7 +89,7 @@ static void event_proc(void *param)
 
 	if (events.lNetworkEvents & FD_ACCEPT) {
 		async->accept_socket = accept(s->os_socket, NULL, NULL);
-		process_unblock(&async->async);
+		process_unblock_now(&async->async);
 	}
 }
 
@@ -160,7 +160,7 @@ static void CALLBACK io_proc(DWORD error, DWORD size, LPWSAOVERLAPPED overlapped
 		async->result = size;
 
 	if (process)
-		process_unblock(&async->async);
+		process_unblock_now(&async->async);
 }
 
 size_t socket_read(socket_t *s, void *buffer, size_t size)

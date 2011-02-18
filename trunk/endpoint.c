@@ -17,7 +17,7 @@ static void accept_proc(void *param)
 	while (1) {
 		socket_t *t = socket_accept(e->socket);
 
-		if (conn_create(e, t))
+		if (t != NULL && conn_create(e, t))
 			socket_destroy(t);
 	}
 }

@@ -29,6 +29,7 @@ static void conn_destroy(conn_t *conn)
 static inline int debug_print_headers(void *u, void *key, void *value)
 {
 	printf("[header] %s: %s\n", ((str_t *)key)->buffer, ((str_t *)value)->buffer);
+	return 0;
 }
 
 static inline int write_header_proc(void *u, void *key, void *value)

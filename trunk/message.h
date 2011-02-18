@@ -21,9 +21,7 @@ typedef struct request {
 
 typedef struct response {
 	http_ver_t ver;
-	uint16_t status;
-	uint8_t header_eof;
-	uint8_t must_close;
+	int status;
 	dict_t headers;
 	io_proc_t *read_proc;
 	io_proc_t *write_proc;
@@ -33,6 +31,7 @@ typedef struct response {
 
 extern int request_init(request_t *r, char *line);
 extern void request_uninit(request_t *r);
+extern void response_uninit(response_t *r);
 extern int request_parse_header(request_t *r, char *line);
 extern str_t *request_alloc_ext(request_t *r);
 extern str_t *request_get_header(request_t *r, str_t *key);

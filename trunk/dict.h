@@ -45,15 +45,18 @@ extern void **dict_query_str(dict_t *dict, char *key, int remove);
 extern int dict_add_stri(dict_t *dict, char *key, void *value);
 extern void **dict_query_stri(dict_t *dict, char *key, int remove);
 
-typedef void dict_walk_callback_t(void *key, void *value);
+typedef int dict_walk_callback_t(void *u, void *key, void *value);
 
-static inline void dict_walk(dict_t *dict, dict_walk_callback_t *callback)
+static inline int dict_walk(dict_t *dict, dict_walk_callback_t *callback, void *param)
 {
 	int bucket, entry;
 
 	for (bucket = 0; bucket != dict->bucket_size; ++bucket)
 		for (entry = dict->buckets[bucket]; entry != -1; entry = dict->entries[entry].next)
-			callback(dict->entries[entry].key, dict->entries[entry].value);
+			if (callback(param, dict->entries[entry].key, dict->entries[entry].value))
+				return -1;
+
+	return 0;
 }
 
 #endif

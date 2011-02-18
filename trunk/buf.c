@@ -1,6 +1,7 @@
 #include "buf.h"
 #include <stddef.h>
 #include <string.h>
+#include <stdio.h>
 
 void buf_init(buf_t *u, io_proc_t *io_proc, void *object)
 {
@@ -82,6 +83,13 @@ int buf_puts(buf_t *u, char *s)
 	return (buf_put(u, s) || !buf_write(u, "\r\n", 2)) ? -1 : 0;
 }
 
+int buf_putint(buf_t *u, int i)
+{
+	char buffer[16];
+	snprintf(buffer, sizeof(buffer), "%d", i);
+	return buf_put(u, buffer);
+}
+
 size_t buf_write(buf_t *u, void *buffer, size_t size)
 {
 	size_t cur_size = u->last - u->current;
@@ -120,6 +128,20 @@ size_t buf_write(buf_t *u, void *buffer, size_t size)
 	}
 
 	return result;
+}
+
+int buf_write_from_proc(buf_t *u, io_proc_t *io_proc, void *object)
+{
+	// TODO: optimize this function using the internal buffer
+	char buffer[4096];
+	size_t size;
+
+	while (1) {
+		if (!(size = io_proc(object, buffer, sizeof(buffer))))
+			return 0;
+		if (!buf_write(u, buffer, size))
+			return -1;
+	}
 }
 
 int buf_flush(buf_t *u)

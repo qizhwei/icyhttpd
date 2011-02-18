@@ -96,10 +96,11 @@ int request_init(request_t *r, char *line)
 	return 0;
 }
 
-static inline void free_proc(void *key, void *value)
+static inline int free_proc(void *u, void *key, void *value)
 {
 	str_free(key);
 	str_free(value);
+	return 0;
 }
 
 void request_uninit(request_t *r)
@@ -107,8 +108,14 @@ void request_uninit(request_t *r)
 	str_free(r->method);
 	str_free(r->req_uri);
 	str_free(r->query_str);
-	dict_walk(&r->headers, free_proc);
+	dict_walk(&r->headers, free_proc, NULL);
 	dict_uninit(&r->headers);
+}
+
+void response_uninit(response_t *r)
+{
+	dict_walk(&r->headers, free_proc, NULL);
+	r->close_proc(r->object);
 }
 
 static inline void normalize_case(char *s)
@@ -160,6 +167,8 @@ int request_parse_header(request_t *r, char *line)
 			return -1;
 		}
 	} else {
+		// TODO: check `if and only if the entire field-value for
+		// that header field is defined as a comma-separated list'
 		*--p = ',';
 		if ((value = str_concat_sp(*old_value, p)) == NULL) {
 			str_free(key);

@@ -22,6 +22,7 @@
     <File Name="endpoint.c"/>
     <File Name="conn.c"/>
     <File Name="event.c"/>
+    <File Name="fifo.c"/>
   </VirtualDirectory>
   <VirtualDirectory Name="inc">
     <File Name="list.h"/>
@@ -42,6 +43,7 @@
     <File Name="endpoint.h"/>
     <File Name="conn.h"/>
     <File Name="event.h"/>
+    <File Name="fifo.h"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>

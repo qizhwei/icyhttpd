@@ -50,7 +50,7 @@ LibPath                := "$(LibraryPathSwitch)."
 ##
 CodeLiteDir:=C:\Program Files\CodeLite
 Objects=$(IntermediateDirectory)/main$(ObjectSuffix) $(IntermediateDirectory)/socket$(ObjectSuffix) $(IntermediateDirectory)/process$(ObjectSuffix) $(IntermediateDirectory)/mem$(ObjectSuffix) $(IntermediateDirectory)/dict$(ObjectSuffix) $(IntermediateDirectory)/str$(ObjectSuffix) $(IntermediateDirectory)/message$(ObjectSuffix) $(IntermediateDirectory)/buf$(ObjectSuffix) $(IntermediateDirectory)/echo_handler$(ObjectSuffix) $(IntermediateDirectory)/node$(ObjectSuffix) \
-	$(IntermediateDirectory)/runtime$(ObjectSuffix) $(IntermediateDirectory)/endpoint$(ObjectSuffix) $(IntermediateDirectory)/conn$(ObjectSuffix) $(IntermediateDirectory)/event$(ObjectSuffix) 
+	$(IntermediateDirectory)/runtime$(ObjectSuffix) $(IntermediateDirectory)/endpoint$(ObjectSuffix) $(IntermediateDirectory)/conn$(ObjectSuffix) $(IntermediateDirectory)/event$(ObjectSuffix) $(IntermediateDirectory)/fifo$(ObjectSuffix) 
 
 ##
 ## Main Build Targets 
@@ -182,6 +182,14 @@ $(IntermediateDirectory)/event$(DependSuffix): event.c
 $(IntermediateDirectory)/event$(PreprocessSuffix): event.c
 	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/event$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/event.c"
 
+$(IntermediateDirectory)/fifo$(ObjectSuffix): fifo.c $(IntermediateDirectory)/fifo$(DependSuffix)
+	$(C_CompilerName) $(SourceSwitch) "D:/CodeLite/icyhttpd3/fifo.c" $(C_CmpOptions) $(ObjectSwitch)$(IntermediateDirectory)/fifo$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/fifo$(DependSuffix): fifo.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/fifo$(ObjectSuffix) -MF$(IntermediateDirectory)/fifo$(DependSuffix) -MM "D:/CodeLite/icyhttpd3/fifo.c"
+
+$(IntermediateDirectory)/fifo$(PreprocessSuffix): fifo.c
+	@$(C_CompilerName) $(C_CmpOptions) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/fifo$(PreprocessSuffix) "D:/CodeLite/icyhttpd3/fifo.c"
+
 
 -include $(IntermediateDirectory)/*$(DependSuffix)
 ##
@@ -230,6 +238,9 @@ clean:
 	$(RM) $(IntermediateDirectory)/event$(ObjectSuffix)
 	$(RM) $(IntermediateDirectory)/event$(DependSuffix)
 	$(RM) $(IntermediateDirectory)/event$(PreprocessSuffix)
+	$(RM) $(IntermediateDirectory)/fifo$(ObjectSuffix)
+	$(RM) $(IntermediateDirectory)/fifo$(DependSuffix)
+	$(RM) $(IntermediateDirectory)/fifo$(PreprocessSuffix)
 	$(RM) $(OutputFile)
 	$(RM) $(OutputFile).exe
 

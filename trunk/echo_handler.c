@@ -14,7 +14,7 @@ typedef struct echo_handler {
 
 typedef struct session {
 	fifo_t fifo;
-	char buffer[4096];
+	request_t *request;
 } session_t;
 
 static echo_handler_t handler;
@@ -37,33 +37,48 @@ static void close_proc(void *u)
 	mem_free(u);
 }
 
+static int write_headers(void *u, void *key, void *value)
+{
+	if (buf_put_str(u, str_literal("\r\n"))
+		|| buf_put_str(u, key)
+		|| buf_put_str(u, str_literal("="))
+		|| buf_put_str(u, value))
+		return -1;
+	return 0;
+}
+
 static void session_proc(void *u)
 {
 	session_t *session = u;
-	buf_t writebuf;
+	request_t *request = session->request;
+	buf_t wb;
 
-	buf_init(&writebuf, (io_proc_t *)&fifo_write, &session->fifo);
-	buf_put(&writebuf, session->buffer)
-		|| buf_flush(&writebuf);
+	buf_init(&wb, (io_proc_t *)&fifo_write, &session->fifo);
+	buf_put_str(&wb, str_literal("icyhttpd echo handler\r\n\r\n[request]\r\nmethod="))
+	|| buf_put_str(&wb, request->method)
+	|| buf_put_str(&wb, str_literal("\r\nreq_uri="))
+	|| buf_put_str(&wb, request->req_uri)
+	|| buf_put_str(&wb, str_literal("\r\nquery_str="))
+	|| buf_put_str(&wb, request->query_str != NULL ? request->query_str : str_literal("(null)"))
+	|| buf_put_str(&wb, str_literal("\r\n\r\n[Headers]"))
+	|| dict_walk(&request->headers, write_headers, &wb)
+	|| buf_flush(&wb);
+
 	fifo_write(&session->fifo, NULL, 0);
 }
 
 static int handle_proc(handler_t *handler, request_t *request, response_t *response)
 {
 	session_t *session;
-	str_t *content_length;
 
 	if ((session = mem_alloc(sizeof(session_t))) == NULL)
 		return -1;
 
-	session->buffer[0] = '\0';
-	strncat(session->buffer, "Request URL: ", sizeof(session->buffer));
-	strncat(session->buffer, request->req_uri->buffer, sizeof(session->buffer));
 	fifo_init(&session->fifo);
+	session->request = request;
 
 	response_init(response, 200, &read_proc, &write_proc, &close_proc, session);
-	if ((content_length = str_uint32(strlen(session->buffer))) == NULL
-		|| response_add_header(response, str_literal("Content-Length"), content_length)
+	if (response_add_header(response, str_literal("Content-Type"), str_literal("text/plain"))
 		|| process_create(&session_proc, session))
 	{
 		response_uninit(response);

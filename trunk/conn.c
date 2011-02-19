@@ -29,12 +29,6 @@ static void conn_destroy(conn_t *conn)
 	mem_free(conn);
 }
 
-static inline int debug_print_headers(void *u, void *key, void *value)
-{
-	printf("[header] %s: %s\n", ((str_t *)key)->buffer, ((str_t *)value)->buffer);
-	return 0;
-}
-
 static inline int write_header_proc(void *u, void *key, void *value)
 {
 	conn_t *conn = u;
@@ -82,6 +76,8 @@ static void conn_proc(void *param)
 	handler_t *handler;
 	int keep_alive, chunked;
 
+	printf("connection established\n");
+
 	while (1) {
 		do {
 			if ((line = buf_gets(&conn->readbuf)) == NULL)
@@ -107,8 +103,6 @@ static void conn_proc(void *param)
 					goto bed0;
 			}
 		}
-
-		dict_walk(&request->headers, debug_print_headers, NULL);
 
 		if (request->ver.major >= 2) {
 			// TODO: HTTP 505
@@ -140,7 +134,7 @@ static void conn_proc(void *param)
 
 		if (request->ver.major == 1 && request->ver.minor >= 1) {
 			keep_alive = 1;
-			chunked = 1;
+			chunked = 0; // TODO: change to 1 after chunk encoding is implemented
 		} else {
 			keep_alive = 0;
 			chunked = 0;

@@ -1,7 +1,7 @@
 #ifndef _HANDLER_H
 #define _HANDLER_H
 
-#include "message.h"
+#include "http.h"
 
 typedef struct handler handler_t;
 typedef int handle_proc_t(handler_t *handler, request_t *request, response_t *response);

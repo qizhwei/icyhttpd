@@ -1,4 +1,4 @@
-#include "message.h"
+#include "http.h"
 #include "dict.h"
 #include "str.h"
 #include "stri.h"
@@ -204,7 +204,7 @@ int request_init(request_t *r, char *line)
 	} else {
 		r->query_str = NULL;
 	}
-	 
+
 	// uri decoding
 	uri_decode(req_uri);
 
@@ -240,12 +240,6 @@ void request_uninit(request_t *r)
 	str_free(r->query_str);
 	dict_walk(&r->headers, free_proc, NULL);
 	dict_uninit(&r->headers);
-}
-
-void response_uninit(response_t *r)
-{
-	dict_walk(&r->headers, free_proc, NULL);
-	r->close_proc(r->object);
 }
 
 static inline void normalize_case(char *s)
@@ -329,4 +323,38 @@ str_t *request_get_header(request_t *r, str_t *key)
 {
 	void **value = dict_query_ptr(&r->headers, key, 0);
 	return value != NULL ? *value : NULL;
+}
+
+void response_init(response_t *r, int status, io_proc_t *read_proc,
+	io_proc_t *write_proc, proc_t *close_proc, void *object)
+{
+	r->status = status;
+	dict_init(&r->headers);
+	r->read_proc = read_proc;
+	r->write_proc = write_proc;
+	r->close_proc = close_proc;
+	r->object = object;
+}
+
+void response_uninit(response_t *r)
+{
+	dict_walk(&r->headers, free_proc, NULL);
+	dict_uninit(&r->headers);
+	r->close_proc(r->object);
+}
+
+str_t *response_get_header(response_t *r, str_t *key)
+{
+	void **value = dict_query_ptr(&r->headers, key, 0);
+	return value != NULL ? *value : NULL;
+}
+
+int response_add_header(response_t *r, str_t *key, str_t *value)
+{
+	if (dict_add_ptr(&r->headers, key, value))
+		return -1;
+
+	str_dup(key);
+	str_dup(value);
+	return 0;
 }

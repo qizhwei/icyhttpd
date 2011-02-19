@@ -14,7 +14,6 @@
     <File Name="mem.c"/>
     <File Name="dict.c"/>
     <File Name="str.c"/>
-    <File Name="message.c"/>
     <File Name="buf.c"/>
     <File Name="echo_handler.c"/>
     <File Name="node.c"/>
@@ -23,6 +22,7 @@
     <File Name="conn.c"/>
     <File Name="event.c"/>
     <File Name="fifo.c"/>
+    <File Name="http.c"/>
   </VirtualDirectory>
   <VirtualDirectory Name="inc">
     <File Name="list.h"/>
@@ -33,7 +33,6 @@
     <File Name="dict.h"/>
     <File Name="str.h"/>
     <File Name="node.h"/>
-    <File Name="message.h"/>
     <File Name="buf.h"/>
     <File Name="proc.h"/>
     <File Name="handler.h"/>
@@ -44,6 +43,7 @@
     <File Name="conn.h"/>
     <File Name="event.h"/>
     <File Name="fifo.h"/>
+    <File Name="http.h"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>

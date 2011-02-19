@@ -3,7 +3,7 @@
 #include "str.h"
 #include "process.h"
 #include "socket.h"
-#include "message.h"
+#include "http.h"
 #include "node.h"
 #include "buf.h"
 #include "proc.h"
@@ -48,13 +48,35 @@ static inline int write_header_proc(void *u, void *key, void *value)
 	return 0;
 }
 
+static int write_header(conn_t *conn)
+{
+	response_t *response = &conn->response;
+	str_t *status;
+
+	status = http_get_status(response->status);
+	if (status == NULL) {
+		// TODO: HTTP 500
+		return -1;
+	}
+
+	if (buf_put(&conn->writebuf, "HTTP/1.1 ")
+		|| buf_putint(&conn->writebuf, response->status)
+		|| buf_put(&conn->writebuf, " ")
+		|| buf_put_str(&conn->writebuf, status)
+		|| buf_put_crlf(&conn->writebuf)
+		|| dict_walk(&response->headers, write_header_proc, conn)
+		|| buf_put_crlf(&conn->writebuf))
+		return -1;
+
+	return 0;
+}
+
 static void conn_proc(void *param)
 {
 	conn_t *conn = param;
 	request_t *request = &conn->request;
 	response_t *response = &conn->response;
 	char *line;
-	str_t *status;
 	node_t *node;
 	str_t *ext;
 	handler_t *handler;
@@ -116,12 +138,6 @@ static void conn_proc(void *param)
 		// the length of the message, or with 411 (length required) if it wishes to
 		// insist on receiving a valid Content-Length.
 
-		// TODO: Under HTTP>=1.1, if response header have Connection: close,
-		// then use connection close as message EOF, secondly if response header
-		// have Content-Length, then use keep-alive, otherwise use chunked encoding.
-		// Under HTTP=1.0, if response header don't have Connection: keep-alive,
-		// we use close method.
-
 		if (request->ver.major == 1 && request->ver.minor >= 1) {
 			keep_alive = 1;
 			chunked = 1;
@@ -133,26 +149,16 @@ static void conn_proc(void *param)
 		// TODO: if `Connection: keep-alive' in request exist, keep_alive = 1
 		// TODO: if `Connection: close' in request exist, keep_alive = 0
 
-		if (request->ver.major == 1) {
-			status = http_get_status(response->status);
-			if (status == NULL) {
-				// TODO: HTTP 500
-				goto bed1;
-			}
+		if (response_get_header(response, str_literal("Content-Length")) != NULL)
+			chunked = 0;
+		else if (chunked == 0)
+			keep_alive = 0;
 
-			if (buf_put(&conn->writebuf, "HTTP/1.1 ")
-				|| buf_putint(&conn->writebuf, response->status)
-				|| buf_put(&conn->writebuf, " ")
-				|| buf_put_str(&conn->writebuf, status)
-				|| buf_put_crlf(&conn->writebuf)
-				|| dict_walk(&response->headers, write_header_proc, conn)
-				|| buf_put_crlf(&conn->writebuf))
+		if (request->ver.major == 1) {
+			// TODO: append header `Server', `Connection', `Transfer-Encoding', `Date'
+			if (write_header(conn))
 				goto bed1;
 		}
-
-		// TODO: if `Content-Length: XXX' in response does not exist, we must use either chunked or close
-		keep_alive = 0;
-		chunked = 0;
 
 		if (!chunked) {
 			if (buf_write_from_proc(&conn->writebuf, response->read_proc, response->object))
@@ -167,7 +173,7 @@ static void conn_proc(void *param)
 
 		response_uninit(response);
 		request_uninit(request);
-	}
+	} // while (1)
 
 bed1:
 	response_uninit(response);

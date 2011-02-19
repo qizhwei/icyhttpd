@@ -1,18 +1,20 @@
 #include "echo_handler.h"
 #include "dict.h"
+#include "str.h"
 #include "mem.h"
 #include "fifo.h"
 #include "buf.h"
 #include "proc.h"
 #include <stddef.h>
+#include <string.h>
 
 typedef struct echo_handler {
 	handler_t handler;
 } echo_handler_t;
 
 typedef struct session {
-	request_t *request;
 	fifo_t fifo;
+	char buffer[4096];
 } session_t;
 
 static echo_handler_t handler;
@@ -41,37 +43,32 @@ static void session_proc(void *u)
 	buf_t writebuf;
 
 	buf_init(&writebuf, (io_proc_t *)&fifo_write, &session->fifo);
-	buf_put(&writebuf, "Request URL: ") ||
-	buf_puts(&writebuf, session->request->req_uri->buffer) ||
-	buf_flush(&writebuf);
-
+	buf_put(&writebuf, session->buffer)
+		|| buf_flush(&writebuf);
 	fifo_write(&session->fifo, NULL, 0);
 }
 
 static int handle_proc(handler_t *handler, request_t *request, response_t *response)
 {
 	session_t *session;
+	str_t *content_length;
 
 	if ((session = mem_alloc(sizeof(session_t))) == NULL)
 		return -1;
 
-	session->request = request;
+	session->buffer[0] = '\0';
+	strncat(session->buffer, "Request URL: ", sizeof(session->buffer));
+	strncat(session->buffer, request->req_uri->buffer, sizeof(session->buffer));
 	fifo_init(&session->fifo);
 
-	if (process_create(&session_proc, session)) {
-		mem_free(session);
+	response_init(response, 200, &read_proc, &write_proc, &close_proc, session);
+	if ((content_length = str_uint32(strlen(session->buffer))) == NULL
+		|| response_add_header(response, str_literal("Content-Length"), content_length)
+		|| process_create(&session_proc, session))
+	{
+		response_uninit(response);
 		return -1;
 	}
-
-	response->ver.major = 1;
-	response->ver.minor = 1;
-	response->status = 200;
-	dict_init(&response->headers);
-
-	response->read_proc = &read_proc;
-	response->write_proc = &write_proc;
-	response->close_proc = &close_proc;
-	response->object = session;
 
 	return 0;
 }

@@ -46,6 +46,23 @@ str_t *str_alloc(char *p)
 	return result;
 }
 
+str_t *str_uint32(uint32_t i)
+{
+	char buffer[16];
+	char *p = buffer + sizeof(buffer);
+
+	*--p = '\0';
+	while (i) {
+		*--p = '0' + (i % 10);
+		i /= 10;
+	}
+
+	if (*p == '\0')
+		*--p = '0';
+
+	return str_alloc(p);
+}
+
 str_t *str_literal(char *p)
 {
 	void **value;

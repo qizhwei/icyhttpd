@@ -13,6 +13,7 @@ typedef struct str {
 
 extern void str_init(void);
 extern str_t *str_alloc(char *p);
+extern str_t *str_uint32(uint32_t i);
 extern str_t *str_concat_sp(str_t *s, char *p);
 extern str_t *str_literal(char *p);
 extern str_t *str_dup(str_t *s);

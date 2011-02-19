@@ -6,6 +6,7 @@
 #include "message.h"
 #include "node.h"
 #include "buf.h"
+#include "proc.h"
 #include "endpoint.h"
 #include <stddef.h>
 #include <stdio.h>
@@ -177,10 +178,10 @@ bed:
 	printf("connection broken\n");
 }
 
-static size_t read_proc(void *u, void *buffer, size_t size)
+static ssize_t read_proc(void *u, void *buffer, size_t size)
 {
 	if (process_timeout(CONN_TIMEOUT, (proc_t *)&socket_abort, u))
-		return 0;
+		return -1;
 
 	return socket_read(u, buffer, size);
 }

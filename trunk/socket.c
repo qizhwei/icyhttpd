@@ -14,7 +14,7 @@ typedef struct async_accept {
 typedef struct async_io {
 	async_t async;
 	OVERLAPPED overlapped;
-	size_t result;
+	ssize_t result;
 } async_io_t;
 
 struct socket {
@@ -155,7 +155,7 @@ static void CALLBACK io_proc(DWORD error, DWORD size, LPWSAOVERLAPPED overlapped
 	process_t *process = async->async.process;
 
 	if (error)
-		async->result = 0;
+		async->result = -1;
 	else
 		async->result = size;
 
@@ -163,7 +163,7 @@ static void CALLBACK io_proc(DWORD error, DWORD size, LPWSAOVERLAPPED overlapped
 		process_unblock_now(&async->async);
 }
 
-size_t socket_read(socket_t *s, void *buffer, size_t size)
+ssize_t socket_read(socket_t *s, void *buffer, size_t size)
 {
 	WSABUF buf = {size, buffer};
 	DWORD flags = 0;
@@ -173,14 +173,14 @@ size_t socket_read(socket_t *s, void *buffer, size_t size)
 	memset(&async.overlapped, 0, sizeof(WSAOVERLAPPED));
 	if (WSARecv(s->os_socket, &buf, 1, NULL, &flags, &async.overlapped, &io_proc)) {
 		if (GetLastError() != WSA_IO_PENDING)
-			return 0;
+			return -1;
 	}
 
 	process_block(&async.async);
 	return async.result;
 }
 
-size_t socket_write(socket_t *s, void *buffer, size_t size)
+ssize_t socket_write(socket_t *s, void *buffer, size_t size)
 {
 	WSABUF buf = {size, buffer};
 	async_io_t async;
@@ -189,7 +189,7 @@ size_t socket_write(socket_t *s, void *buffer, size_t size)
 	memset(&async.overlapped, 0, sizeof(WSAOVERLAPPED));
 	if (WSASend(s->os_socket, &buf, 1, NULL, 0, &async.overlapped, &io_proc)) {
 		if (GetLastError() != WSA_IO_PENDING)
-			return 0;
+			return -1;
 	}
 
 	process_block(&async.async);

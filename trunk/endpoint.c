@@ -22,11 +22,9 @@ static void accept_proc(void *param)
 	}
 }
 
-endpoint_t *endpoint_create(const char *ip, int port, node_t *default_node)
+MAYFAIL(NULL) endpoint_t *endpoint_create(const char *ip, int port, node_t *default_node)
 {
 	endpoint_t *e = mem_alloc(sizeof(endpoint_t));
-	if (e == NULL)
-		return NULL;
 
 	e->socket = socket_create();
 	if (e->socket == NULL) {
@@ -52,7 +50,7 @@ endpoint_t *endpoint_create(const char *ip, int port, node_t *default_node)
 	return e;
 }
 
-node_t *endpoint_get_node(endpoint_t *endpoint, str_t *host)
+MAYFAIL(NULL) node_t *endpoint_get_node(endpoint_t *endpoint, str_t *host)
 {
 	node_t *node = endpoint->default_node;
 	void **value;

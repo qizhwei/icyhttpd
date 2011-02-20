@@ -1,4 +1,5 @@
 #include "conn.h"
+#include "runtime.h"
 #include "mem.h"
 #include "str.h"
 #include "process.h"
@@ -6,7 +7,6 @@
 #include "http.h"
 #include "node.h"
 #include "buf.h"
-#include "proc.h"
 #include "endpoint.h"
 #include <stddef.h>
 #include <stdio.h>
@@ -75,6 +75,7 @@ static void conn_proc(void *param)
 	str_t *ext;
 	handler_t *handler;
 	int keep_alive, chunked;
+	str_t *date;
 
 	printf("connection established\n");
 
@@ -149,7 +150,24 @@ static void conn_proc(void *param)
 			keep_alive = 0;
 
 		if (request->ver.major == 1) {
-			// TODO: append header `Server', `Connection', `Transfer-Encoding', `Date'
+			// add `Server' field to response header
+			response_add_header(response, str_literal("Server"), str_literal("icyhttpd/0.0"));
+
+			// add `Connection' field to response header
+			if (!keep_alive)
+				response_add_header(response, str_literal("Connection"), str_literal("close"));
+			else if (keep_alive && request->ver.minor == 0)
+				response_add_header(response, str_literal("Connection"), str_literal("keep-alive"));
+
+			// add `Transfer-Encoding' field to response header
+			if (chunked)
+				response_add_header(response, str_literal("Transfer-Encoding"), str_literal("chunked"));
+
+			// add `Date' field to response header (TODO: is it right to put it here?)
+			date = http_alloc_date();
+			response_add_header(response, str_literal("Date"), date);
+			str_free(date);
+
 			if (write_header(conn))
 				goto bed1;
 		}
@@ -180,18 +198,13 @@ bed:
 
 static ssize_t read_proc(void *u, void *buffer, size_t size)
 {
-	if (process_timeout(CONN_TIMEOUT, (proc_t *)&socket_abort, u))
-		return -1;
-
+	process_timeout(CONN_TIMEOUT, (proc_t *)&socket_abort, u);
 	return socket_read(u, buffer, size);
 }
 
 int conn_create(endpoint_t *e, socket_t *s)
 {
 	conn_t *conn = mem_alloc(sizeof(conn_t));
-	if (conn == NULL)
-		return -1;
-
 	conn->endpoint = e;
 	conn->socket = s;
 	buf_init(&conn->readbuf, read_proc, s);

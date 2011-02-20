@@ -7,75 +7,71 @@
 
 static dict_t g_status;
 
-static int add_status(int code, char *def_literal)
+static inline void add_status(int code, char *def_literal)
 {
-	str_t *str;
-
-	if ((str = str_literal(def_literal)) == NULL)
-		return -1;
-	if (dict_add_ptr(&g_status, (void *)code, str))
-		return -1;
-
-	return 0;
+	dict_add_ptr(&g_status, (void *)code, str_literal(def_literal));
 }
 
-int http_init(void)
+void http_init(void)
 {
 	dict_init(&g_status);
 
-	if (add_status(100, "Continue")
-		|| add_status(101, "Switching Protocols")
-		|| add_status(200, "OK")
-		|| add_status(201, "Created")
-		|| add_status(202, "Accepted")
-		|| add_status(203, "Non-Authoritative Information")
-		|| add_status(204, "No Content")
-		|| add_status(205, "Reset Content")
-		|| add_status(206, "Partial Content")
-		|| add_status(300, "Multiple Choices")
-		|| add_status(301, "Moved Permanently")
-		|| add_status(302, "Found")
-		|| add_status(303, "See Other")
-		|| add_status(304, "Not Modified")
-		|| add_status(305, "Use Proxy")
-		// 306 is unused and reserved
-		|| add_status(307, "Temporary Redirect")
-		|| add_status(400, "Bad Request")
-		|| add_status(401, "Unauthorized")
-		|| add_status(402, "Payment Required")
-		|| add_status(403, "Forbidden")
-		|| add_status(404, "Not Found")
-		|| add_status(405, "Method Not Allowed")
-		|| add_status(406, "Not Acceptable")
-		|| add_status(407, "Proxy Authentication Required")
-		|| add_status(408, "Request Timeout")
-		|| add_status(409, "Conflict")
-		|| add_status(410, "Gone")
-		|| add_status(411, "Length Required")
-		|| add_status(412, "Precondition Failed")
-		|| add_status(413, "Request Entity Too Large")
-		|| add_status(414, "Request-URI Too Long")
-		|| add_status(415, "Unsupported Media Type")
-		|| add_status(416, "Request Range Not Satisfiable")
-		|| add_status(417, "Expectation Failed")
-		|| add_status(500, "Internal Server Error")
-		|| add_status(501, "Not Implemented")
-		|| add_status(502, "Bad Gateway")
-		|| add_status(503, "Service Unavailable")
-		|| add_status(504, "Gateway Timeout")
-		|| add_status(505, "HTTP Version Not Supported"))
-		return -1;
-
-	return 0;
+	add_status(100, "Continue");
+	add_status(101, "Switching Protocols");
+	add_status(200, "OK");
+	add_status(201, "Created");
+	add_status(202, "Accepted");
+	add_status(203, "Non-Authoritative Information");
+	add_status(204, "No Content");
+	add_status(205, "Reset Content");
+	add_status(206, "Partial Content");
+	add_status(300, "Multiple Choices");
+	add_status(301, "Moved Permanently");
+	add_status(302, "Found");
+	add_status(303, "See Other");
+	add_status(304, "Not Modified");
+	add_status(305, "Use Proxy");
+	// 306 is unused and reserved
+	add_status(307, "Temporary Redirect");
+	add_status(400, "Bad Request");
+	add_status(401, "Unauthorized");
+	add_status(402, "Payment Required");
+	add_status(403, "Forbidden");
+	add_status(404, "Not Found");
+	add_status(405, "Method Not Allowed");
+	add_status(406, "Not Acceptable");
+	add_status(407, "Proxy Authentication Required");
+	add_status(408, "Request Timeout");
+	add_status(409, "Conflict");
+	add_status(410, "Gone");
+	add_status(411, "Length Required");
+	add_status(412, "Precondition Failed");
+	add_status(413, "Request Entity Too Large");
+	add_status(414, "Request-URI Too Long");
+	add_status(415, "Unsupported Media Type");
+	add_status(416, "Request Range Not Satisfiable");
+	add_status(417, "Expectation Failed");
+	add_status(500, "Internal Server Error");
+	add_status(501, "Not Implemented");
+	add_status(502, "Bad Gateway");
+	add_status(503, "Service Unavailable");
+	add_status(504, "Gateway Timeout");
+	add_status(505, "HTTP Version Not Supported");
 }
 
-str_t *http_get_status(int code)
+MAYFAIL(NULL) str_t *http_get_status(int code)
 {
 	void **value = dict_query_ptr(&g_status, (void *)code, 0);
 	return value == NULL ? NULL : *value;
 }
 
-static inline uint16_t uint16_parse(char *s)
+NOFAIL str_t *http_alloc_date(void)
+{
+	// TODO: generate current date, RFC 822/1123
+	return str_literal("Sun, 06 Nov 1994 08:49:37 GMT");
+}
+
+static inline MAYFAIL(UINT16_MAX) uint16_t uint16_parse(char *s)
 {
 	int result = 0;
 
@@ -93,7 +89,7 @@ static inline uint16_t uint16_parse(char *s)
 	}
 }
 
-static inline int http_ver_parse(http_ver_t *v, char *s)
+static inline MAYFAIL(-1) int http_ver_parse(http_ver_t *v, char *s)
 {
 	char *t;
 
@@ -176,7 +172,7 @@ static void uri_decode(char *uri_buf)
 	uri_buf[j] = 0;
 }
 
-int request_init(request_t *r, char *line)
+MAYFAIL(-1) int request_init(request_t *r, char *line)
 {
 	char *req_uri;
 	char *query_str;
@@ -192,20 +188,14 @@ int request_init(request_t *r, char *line)
 	if (http_ver_parse(&r->ver, http_ver))
 		return -1;
 
-	if ((r->method = str_alloc(line)) == NULL)
-		return -1;
-
+	r->method = str_alloc(line);
 	if ((query_str = strchr(req_uri, '?')) != NULL) {
 		*query_str++ = '\0';
-		if ((r->query_str = str_alloc(query_str)) == NULL) {
-			str_free(r->method);
-			return -1;
-		}
+		r->query_str = str_alloc(query_str);
 	} else {
 		r->query_str = NULL;
 	}
 
-	// uri decoding
 	uri_decode(req_uri);
 
 	// TODO: uri rewrite (dots and slashes)
@@ -216,17 +206,12 @@ int request_init(request_t *r, char *line)
 		return -1;
 	}
 
-	if ((r->req_uri = str_alloc(req_uri)) == NULL) {
-		str_free(r->method);
-		str_free(r->query_str);
-		return -1;
-	}
-
+	r->req_uri = str_alloc(req_uri);
 	dict_init(&r->headers);
 	return 0;
 }
 
-static inline int free_proc(void *u, void *key, void *value)
+static inline NOFAIL int free_proc(void *u, void *key, void *value)
 {
 	str_free(key);
 	str_free(value);
@@ -258,7 +243,7 @@ static inline void normalize_case(char *s)
 	}
 }
 
-int request_parse_header(request_t *r, char *line)
+MAYFAIL(-1) int request_parse_header(request_t *r, char *line)
 {
 	char *p;
 	str_t *key;
@@ -276,29 +261,16 @@ int request_parse_header(request_t *r, char *line)
 		++p;
 
 	normalize_case(line);
-	if ((key = str_alloc(line)) == NULL)
-		return -1;
+	key = str_alloc(line);
 
 	if ((old_value = dict_query_ptr(&r->headers, key, 0)) == NULL) {
-		if ((value = str_alloc(p)) == NULL) {
-			str_free(key);
-			return -1;
-		}
-
-		if (dict_add_ptr(&r->headers, key, value)) {
-			str_free(key);
-			str_free(value);
-			return -1;
-		}
+		value = str_alloc(p);
+		dict_add_ptr(&r->headers, key, value);
 	} else {
 		// TODO: check `if and only if the entire field-value for
 		// that header field is defined as a comma-separated list'
 		*--p = ',';
-		if ((value = str_concat_sp(*old_value, p)) == NULL) {
-			str_free(key);
-			return -1;
-		}
-
+		value = str_concat_sp(*old_value, p);
 		str_free(*old_value);
 		*old_value = value;
 	}
@@ -306,7 +278,7 @@ int request_parse_header(request_t *r, char *line)
 	return 0;
 }
 
-str_t *request_alloc_ext(request_t *r)
+NOFAIL str_t *request_alloc_ext(request_t *r)
 {
 	char *p = r->req_uri->buffer + r->req_uri->length;
 
@@ -319,7 +291,7 @@ str_t *request_alloc_ext(request_t *r)
 	}
 }
 
-str_t *request_get_header(request_t *r, str_t *key)
+MAYFAIL(NULL) str_t *request_get_header(request_t *r, str_t *key)
 {
 	void **value = dict_query_ptr(&r->headers, key, 0);
 	return value != NULL ? *value : NULL;
@@ -343,18 +315,13 @@ void response_uninit(response_t *r)
 	r->close_proc(r->object);
 }
 
-str_t *response_get_header(response_t *r, str_t *key)
+MAYFAIL(NULL) str_t *response_get_header(response_t *r, str_t *key)
 {
 	void **value = dict_query_ptr(&r->headers, key, 0);
 	return value != NULL ? *value : NULL;
 }
 
-int response_add_header(response_t *r, str_t *key, str_t *value)
+void response_add_header(response_t *r, str_t *key, str_t *value)
 {
-	if (dict_add_ptr(&r->headers, key, value))
-		return -1;
-
-	str_dup(key);
-	str_dup(value);
-	return 0;
+	dict_add_ptr(&r->headers, str_dup(key), str_dup(value));
 }

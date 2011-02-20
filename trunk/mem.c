@@ -8,20 +8,23 @@
 
 static HANDLE g_heap;
 
-int mem_init(void)
+void mem_init(void)
 {
 	DWORD heap_info = HEAP_LFH;
 	g_heap = GetProcessHeap();
 
 	if (!HeapSetInformation(g_heap, HeapCompatibilityInformation, &heap_info, sizeof(heap_info)))
 		runtime_ignore("Warning: LFH cannot be enabled.");
-
-	return 0;
 }
 
-void *mem_alloc(size_t size)
+NOFAIL void *mem_alloc(size_t size)
 {
-	return HeapAlloc(g_heap, 0, size);
+	void *p;
+
+	if ((p = HeapAlloc(g_heap, 0, size)) == NULL)
+		runtime_abort("Fatal error: memory allocation failed.");
+
+	return p;
 }
 
 void mem_free(void *p)

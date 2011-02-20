@@ -1,10 +1,10 @@
 #include "echo_handler.h"
+#include "runtime.h"
 #include "dict.h"
 #include "str.h"
 #include "mem.h"
 #include "fifo.h"
 #include "buf.h"
-#include "proc.h"
 #include <stddef.h>
 #include <string.h>
 
@@ -20,13 +20,13 @@ typedef struct session {
 static echo_handler_t handler;
 handler_t *echo_handler;
 
-static ssize_t read_proc(void *u, void *buffer, size_t size)
+static MAYFAIL(-1) ssize_t read_proc(void *u, void *buffer, size_t size)
 {
 	session_t *session = u;
 	return fifo_read(&session->fifo, buffer, size);
 }
 
-static ssize_t write_proc(void *u, void *buffer, size_t size)
+static MAYFAIL(-1) ssize_t write_proc(void *u, void *buffer, size_t size)
 {
 	// write failed, insisting that we do not want the request entity
 	return -1;
@@ -37,7 +37,7 @@ static void close_proc(void *u)
 	mem_free(u);
 }
 
-static int write_headers(void *u, void *key, void *value)
+static MAYFAIL(-1) int write_headers(void *u, void *key, void *value)
 {
 	if (buf_put_str(u, str_literal("\r\n"))
 		|| buf_put_str(u, key)
@@ -67,20 +67,16 @@ static void session_proc(void *u)
 	fifo_write(&session->fifo, NULL, 0);
 }
 
-static int handle_proc(handler_t *handler, request_t *request, response_t *response)
+static MAYFAIL(-1) int handle_proc(handler_t *handler, request_t *request, response_t *response)
 {
-	session_t *session;
-
-	if ((session = mem_alloc(sizeof(session_t))) == NULL)
-		return -1;
-
+	session_t *session = mem_alloc(sizeof(session_t));
 	fifo_init(&session->fifo);
 	session->request = request;
 
 	response_init(response, 200, &read_proc, &write_proc, &close_proc, session);
-	if (response_add_header(response, str_literal("Content-Type"), str_literal("text/plain"))
-		|| process_create(&session_proc, session))
-	{
+	response_add_header(response, str_literal("Content-Type"), str_literal("text/plain"));
+
+	if (process_create(&session_proc, session)) {
 		response_uninit(response);
 		return -1;
 	}

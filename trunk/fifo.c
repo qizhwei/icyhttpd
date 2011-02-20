@@ -50,7 +50,7 @@ void fifo_init(fifo_t *f)
 	list_init(&f->pending_list);
 }
 
-ssize_t fifo_read(fifo_t *f, void *buffer, size_t size)
+MAYFAIL(-1) ssize_t fifo_read(fifo_t *f, void *buffer, size_t size)
 {
 	block_t rb, *wb;
 	size_t read_size, write_size;
@@ -115,7 +115,7 @@ ssize_t fifo_read(fifo_t *f, void *buffer, size_t size)
 	return rb.result;
 }
 
-ssize_t fifo_write(fifo_t *f, void *buffer, size_t size)
+MAYFAIL(-1) ssize_t fifo_write(fifo_t *f, void *buffer, size_t size)
 {
 	block_t wb, *rb;
 	size_t write_size, read_size;

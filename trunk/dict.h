@@ -38,16 +38,14 @@ static inline void dict_uninit(dict_t *dict)
 	mem_free(dict->entries);
 }
 
-extern int dict_add_ptr(dict_t *dict, void *key, void *value);
-extern void **dict_query_ptr(dict_t *dict, void *key, int remove);
-extern int dict_add_str(dict_t *dict, char *key, void *value);
-extern void **dict_query_str(dict_t *dict, char *key, int remove);
-extern int dict_add_stri(dict_t *dict, char *key, void *value);
-extern void **dict_query_stri(dict_t *dict, char *key, int remove);
+extern void dict_add_ptr(dict_t *dict, void *key, void *value);
+extern MAYFAIL(NULL) void **dict_query_ptr(dict_t *dict, void *key, int remove);
+extern void dict_add_str(dict_t *dict, char *key, void *value);
+extern MAYFAIL(NULL) void **dict_query_str(dict_t *dict, char *key, int remove);
 
-typedef int dict_walk_callback_t(void *u, void *key, void *value);
+typedef MAYFAIL(-1) int dict_walk_callback_t(void *u, void *key, void *value);
 
-static inline int dict_walk(dict_t *dict, dict_walk_callback_t *callback, void *param)
+static inline MAYFAIL(-1) int dict_walk(dict_t *dict, dict_walk_callback_t *callback, void *param)
 {
 	int bucket, entry;
 

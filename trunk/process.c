@@ -31,12 +31,19 @@ static HANDLE g_event[MAX_EVENTS];
 static share_t g_share[MAX_EVENTS][MAX_CBS_PER_EVENT + 1] = {0};
 static int g_idx_event = 0, g_idx_cb = 0;
 
-static void process_switch(process_t *process)
+static inline void process_switch(process_t *process)
 {
 	SwitchToFiber(process->fiber);
 }
 
-int process_init(void)
+static inline void queue_apc(PAPCFUNC apc_func, void *param)
+{
+	if (!QueueUserAPC(apc_func, GetCurrentThread(), (ULONG_PTR)param)) {
+		runtime_abort("Fatal error: APC queueing must not fail.");
+	}
+}
+
+MAYFAIL(-1) int process_init(void)
 {
 	g_sched.fiber = ConvertThreadToFiber(&g_sched);
 
@@ -77,12 +84,9 @@ static void CALLBACK switch_proc(ULONG_PTR param)
 	process_switch((process_t *)param);
 }
 
-int process_create(proc_t *proc, void *param)
+MAYFAIL(-1) int process_create(proc_t *proc, void *param)
 {
 	process_t *process = mem_alloc(sizeof(process_t));
-
-	if (process == NULL)
-		return -1;
 
 	process->proc = proc;
 	process->user_param = param;
@@ -101,14 +105,11 @@ int process_create(proc_t *proc, void *param)
 		return -1;
 	}
 
-	if (!QueueUserAPC(&switch_proc, GetCurrentThread(), (ULONG_PTR)process)) {
-		runtime_abort("Fatal error: APC queueing must not fail.");
-	}
-
+	queue_apc(&switch_proc, process);
 	return 0;
 }
 
-process_t *process_current(void)
+NOFAIL process_t *process_current(void)
 {
 	return GetFiberData();
 }
@@ -121,11 +122,7 @@ static void CALLBACK exit_proc(ULONG_PTR param)
 void process_exit(void)
 {
 	process_t *process = process_current();
-
-	// queue an APC to free the fiber, this call should not fail
-	if (!QueueUserAPC(&exit_proc, GetCurrentThread(), (ULONG_PTR)process->fiber)) {
-		runtime_abort("Fatal error: APC queueing must not fail.");
-	}
+	queue_apc(&exit_proc, process->fiber);
 
 	// free all resources allocated other than the fiber
 	CloseHandle(process->timer);
@@ -135,7 +132,7 @@ void process_exit(void)
 	process_switch(&g_sched);
 }
 
-void *process_share_event(proc_t *callback, void *param)
+MAYFAIL(NULL) void *process_share_event(proc_t *callback, void *param)
 {
 	HANDLE event;
 
@@ -170,18 +167,15 @@ void process_block(async_t *async)
 	process_switch(&g_sched);
 
 	if (process->abort_proc) {
-		if (!CancelWaitableTimer(process->timer)) {
-			runtime_abort("Fatal error: timer cancelling must not fail.");
-		}
+		if (!CancelWaitableTimer(process->timer))
+			runtime_abort("Fatal error: unable to cancel waitable timer.");
 		process->abort_proc = NULL;
 	}
 }
 
 void process_unblock(async_t *async)
 {
-	if (!QueueUserAPC(&switch_proc, GetCurrentThread(), (ULONG_PTR)async->process)) {
-		runtime_abort("Fatal error: APC queueing must not fail.");
-	}
+	queue_apc(&switch_proc, async->process);
 }
 
 void process_unblock_now(async_t *async)
@@ -196,7 +190,7 @@ static void CALLBACK timer_proc(void *param, DWORD low, DWORD high)
 	process->abort_proc = NULL;
 }
 
-int process_timeout(int milliseconds, proc_t *abort_proc, void *param)
+void process_timeout(int milliseconds, proc_t *abort_proc, void *param)
 {
 	process_t *process = process_current();
 	LARGE_INTEGER due;
@@ -206,7 +200,5 @@ int process_timeout(int milliseconds, proc_t *abort_proc, void *param)
 	process->abort_param = param;
 
 	if (!SetWaitableTimer(process->timer, &due, 0, &timer_proc, process, FALSE))
-		return -1;
-
-	return 0;
+		runtime_abort("Fatal error: unable to set waitable timer.");
 }

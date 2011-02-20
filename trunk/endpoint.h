@@ -5,7 +5,7 @@
 
 typedef struct endpoint endpoint_t;
 
-extern endpoint_t *endpoint_create(const char *ip, int port, node_t *default_node);
-extern node_t *endpoint_get_node(endpoint_t *endpoint, str_t *host);
+extern MAYFAIL(NULL) endpoint_t *endpoint_create(const char *ip, int port, node_t *default_node);
+extern MAYFAIL(NULL) node_t *endpoint_get_node(endpoint_t *endpoint, str_t *host);
 
 #endif

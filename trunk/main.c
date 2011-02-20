@@ -14,6 +14,6 @@ int main(void)
 	socket_init();
 	http_init();
 	echo_handler_init();
-	endpoint_create("127.0.0.1", 88, node_create(str_literal("D:\\wwwroot"), echo_handler));
+	endpoint_create("0.0.0.0", 88, node_create(str_literal("D:\\wwwroot"), echo_handler));
 	process_loop();
 }

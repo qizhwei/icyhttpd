@@ -1,6 +1,7 @@
 #ifndef _LIST_H
 #define _LIST_H
 
+#include "runtime.h"
 #include <stddef.h>
 
 #define OFFSET_OF(type, member) ((size_t) &((type *)0)->member)
@@ -16,7 +17,7 @@ static inline void list_init(list_t *list)
 	list->prev = list;
 }
 
-static inline int list_empty(list_t *list)
+static inline NOFAIL int list_empty(list_t *list)
 {
 	return list->next == list;
 }
@@ -45,14 +46,14 @@ static inline void list_remove(list_t *entry)
 	entry->next->prev = entry->prev;
 }
 
-static inline list_t *list_pop_back(list_t *list)
+static inline NOFAIL list_t *list_pop_back(list_t *list)
 {
 	list_t *back = list->prev;
 	list_remove(back);
 	return back;
 }
 
-static inline list_t *list_pop_front(list_t *list)
+static inline NOFAIL list_t *list_pop_front(list_t *list)
 {
 	list_t *front = list->next;
 	list_remove(front);

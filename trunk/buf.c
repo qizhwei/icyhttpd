@@ -12,8 +12,7 @@ void buf_init(buf_t *u, io_proc_t *io_proc, void *object)
 	u->last = NULL;
 }
 
-// TODO: should buf_gets differ EOF and error?
-char *buf_gets(buf_t *u)
+MAYFAIL(NULL) char *buf_gets(buf_t *u)
 {
 	char *buffer = u->buffer;
 	char *current = u->current;
@@ -59,7 +58,7 @@ char *buf_gets(buf_t *u)
 	}
 }
 
-ssize_t buf_read(buf_t *u, void *buffer, size_t size)
+MAYFAIL(-1) ssize_t buf_read(buf_t *u, void *buffer, size_t size)
 {
 	size_t cur_size = u->last - u->current;
 
@@ -74,23 +73,23 @@ ssize_t buf_read(buf_t *u, void *buffer, size_t size)
 	}
 }
 
-int buf_put(buf_t *u, char *s)
+MAYFAIL(-1) int buf_put(buf_t *u, char *s)
 {
 	size_t s_size = strlen(s);
 	return (s_size && buf_write(u, s, s_size) == -1) ? -1 : 0;
 }
 
-int buf_put_crlf(buf_t *u)
+MAYFAIL(-1) int buf_put_crlf(buf_t *u)
 {
 	return buf_write(u, "\r\n", 2) == -1 ? -1 : 0;
 }
 
-int buf_puts(buf_t *u, char *s)
+MAYFAIL(-1) int buf_puts(buf_t *u, char *s)
 {
 	return (buf_put(u, s) || buf_put_crlf(u)) ? -1 : 0;
 }
 
-int buf_putint(buf_t *u, int i)
+MAYFAIL(-1) int buf_putint(buf_t *u, int i)
 {
 	char buffer[16];
 	// TODO: write one `itoa' by hand to improve efficiency
@@ -98,12 +97,12 @@ int buf_putint(buf_t *u, int i)
 	return buf_put(u, buffer);
 }
 
-int buf_put_str(buf_t *u, str_t *s)
+MAYFAIL(-1) int buf_put_str(buf_t *u, str_t *s)
 {
 	return buf_write(u, s->buffer, s->length) == -1 ? -1 : 0;
 }
 
-ssize_t buf_write(buf_t *u, void *buffer, size_t size)
+MAYFAIL(-1) ssize_t buf_write(buf_t *u, void *buffer, size_t size)
 {
 	size_t cur_size = u->last - u->current;
 	size_t rem_size;
@@ -143,7 +142,7 @@ ssize_t buf_write(buf_t *u, void *buffer, size_t size)
 	return result;
 }
 
-int buf_write_from_proc(buf_t *u, io_proc_t *io_proc, void *object)
+MAYFAIL(-1) int buf_write_from_proc(buf_t *u, io_proc_t *io_proc, void *object)
 {
 	// TODO: optimize this function using the internal buffer
 	char buffer[4096];
@@ -157,7 +156,7 @@ int buf_write_from_proc(buf_t *u, io_proc_t *io_proc, void *object)
 	}
 }
 
-int buf_flush(buf_t *u)
+MAYFAIL(-1) int buf_flush(buf_t *u)
 {
 	size_t cur_size = u->last - u->current;
 

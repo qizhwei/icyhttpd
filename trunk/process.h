@@ -1,7 +1,6 @@
 #ifndef _PROCESS_H
 #define _PROCESS_H
 
-#include "proc.h"
 #include "runtime.h"
 
 extern MAYFAIL(-1) int process_init(void);

@@ -2,10 +2,21 @@
 #include "dict.h"
 #include "str.h"
 #include "stri.h"
+#include "time.h"
 #include <string.h>
 #include <stdint.h>
+#include <stdio.h>
 
 static dict_t g_status;
+
+static char *weekdays[7] = {
+	"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
+};
+
+static char *months[12] = {
+	"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+	"Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+};
 
 static inline void add_status(int code, char *def_literal)
 {
@@ -65,10 +76,15 @@ MAYFAIL(NULL) str_t *http_get_status(int code)
 	return value == NULL ? NULL : *value;
 }
 
-NOFAIL str_t *http_alloc_date(void)
+NOFAIL str_t *http_alloc_date(struct tm *tm)
 {
-	// TODO: generate current date, RFC 822/1123
-	return str_literal("Sun, 06 Nov 1994 08:49:37 GMT");
+	char buffer[32];
+
+	snprintf(buffer, sizeof(buffer), "%3s, %02d %3s %04d %02d:%02d:%02d GMT",
+		weekdays[tm->tm_wday], tm->tm_mday, months[tm->tm_mon], tm->tm_year + 1900,
+		tm->tm_hour, tm->tm_min, tm->tm_sec);
+
+	return str_alloc(buffer);
 }
 
 static inline MAYFAIL(UINT16_MAX) uint16_t uint16_parse(char *s)
@@ -312,7 +328,7 @@ void response_uninit(response_t *r)
 {
 	dict_walk(&r->headers, free_proc, NULL);
 	dict_uninit(&r->headers);
-	r->close_proc(r->object);
+	//r->close_proc(r->object);
 }
 
 MAYFAIL(NULL) str_t *response_get_header(response_t *r, str_t *key)

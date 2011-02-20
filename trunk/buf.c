@@ -1,6 +1,7 @@
 #include "buf.h"
 #include "str.h"
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -89,12 +90,21 @@ MAYFAIL(-1) int buf_puts(buf_t *u, char *s)
 	return (buf_put(u, s) || buf_put_crlf(u)) ? -1 : 0;
 }
 
-MAYFAIL(-1) int buf_putint(buf_t *u, int i)
+MAYFAIL(-1) int buf_put_uint32(buf_t *u, uint32_t i)
 {
 	char buffer[16];
-	// TODO: write one `itoa' by hand to improve efficiency
-	snprintf(buffer, sizeof(buffer), "%d", i);
-	return buf_put(u, buffer);
+	char *p = buffer + sizeof(buffer);
+
+	if (i) {
+		do {
+			*--p = '0' + (i % 10);
+			i /= 10;
+		} while (i);
+	} else {
+		*--p = '0';
+	}
+
+	return buf_write(u, p, buffer + sizeof(buffer) - p) == -1 ? -1 : 0;
 }
 
 MAYFAIL(-1) int buf_put_str(buf_t *u, str_t *s)

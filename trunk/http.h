@@ -31,7 +31,7 @@ typedef struct response {
 
 extern void http_init(void);
 extern MAYFAIL(NULL) str_t *http_get_status(int code);
-extern NOFAIL str_t *http_alloc_date(void);
+extern NOFAIL str_t *http_alloc_date(struct tm *tm);
 extern MAYFAIL(-1) int request_init(request_t *r, char *line);
 extern void request_uninit(request_t *r);
 extern MAYFAIL(-1) int request_parse_header(request_t *r, char *line);

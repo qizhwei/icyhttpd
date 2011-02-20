@@ -8,9 +8,9 @@
 #include "node.h"
 #include "buf.h"
 #include "endpoint.h"
+#include "dict.h"
 #include <stddef.h>
 #include <stdio.h>
-#include "dict.h"
 
 #define CONN_TIMEOUT (120000)
 
@@ -54,7 +54,7 @@ static int write_header(conn_t *conn)
 	}
 
 	if (buf_put(&conn->writebuf, "HTTP/1.1 ")
-		|| buf_putint(&conn->writebuf, response->status)
+		|| buf_put_uint32(&conn->writebuf, response->status)
 		|| buf_put(&conn->writebuf, " ")
 		|| buf_put_str(&conn->writebuf, status)
 		|| buf_put_crlf(&conn->writebuf)
@@ -75,6 +75,7 @@ static void conn_proc(void *param)
 	str_t *ext;
 	handler_t *handler;
 	int keep_alive, chunked;
+	time_t lt;
 	str_t *date;
 
 	printf("connection established\n");
@@ -122,6 +123,9 @@ static void conn_proc(void *param)
 		}
 		str_free(ext);
 
+		// TODO: the handler must keep a reference to request / response
+		// we must not free them too early (such as goto bed)
+		// so what should we do?
 		if (handler->handle_proc(handler, request, response))
 			goto bed0;
 
@@ -164,7 +168,8 @@ static void conn_proc(void *param)
 				response_add_header(response, str_literal("Transfer-Encoding"), str_literal("chunked"));
 
 			// add `Date' field to response header (TODO: is it right to put it here?)
-			date = http_alloc_date();
+			lt = time(NULL);
+			date = http_alloc_date(gmtime(&lt));
 			response_add_header(response, str_literal("Date"), date);
 			str_free(date);
 

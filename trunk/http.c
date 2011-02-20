@@ -328,7 +328,7 @@ void response_uninit(response_t *r)
 {
 	dict_walk(&r->headers, free_proc, NULL);
 	dict_uninit(&r->headers);
-	//r->close_proc(r->object);
+	r->close_proc(r->object);
 }
 
 MAYFAIL(NULL) str_t *response_get_header(response_t *r, str_t *key)

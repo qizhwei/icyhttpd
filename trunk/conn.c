@@ -34,9 +34,9 @@ static inline int write_header_proc(void *u, void *key, void *value)
 	conn_t *conn = u;
 
 	if (buf_put_str(&conn->writebuf, key)
-		|| buf_put(&conn->writebuf, ": ")
+		|| buf_put_str(&conn->writebuf, str_literal(": "))
 		|| buf_put_str(&conn->writebuf, value)
-		|| buf_put(&conn->writebuf, "\r\n"))
+		|| buf_put_crlf(&conn->writebuf))
 		return -1;
 
 	return 0;

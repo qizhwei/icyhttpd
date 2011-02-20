@@ -14,5 +14,6 @@ typedef struct fifo {
 extern void fifo_init(fifo_t *f);
 extern MAYFAIL(-1) ssize_t fifo_read(fifo_t *f, void *buffer, size_t size);
 extern MAYFAIL(-1) ssize_t fifo_write(fifo_t *f, void *buffer, size_t size);
+extern void fifo_abort(fifo_t *f);
 
 #endif

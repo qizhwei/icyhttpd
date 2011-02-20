@@ -184,3 +184,21 @@ MAYFAIL(-1) ssize_t fifo_write(fifo_t *f, void *buffer, size_t size)
 
 	return wb.result;
 }
+
+void fifo_abort(fifo_t *f)
+{
+	block_t *b;
+
+	if (f->state == STATE_TRANSFER && f->pending_operation != OPERATION_NONE) {
+		do {
+			b = CONTAINER_OF(f->pending_list.next, block_t, entry);
+			b->result = -1;
+			list_remove(&b->entry);
+			process_unblock(&b->async);
+		} while (!list_empty(&f->pending_list));
+	} else {
+		assert(list_empty(&f->pending_list));
+	}
+
+	f->state = STATE_ABORT;
+}

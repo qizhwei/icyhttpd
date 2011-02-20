@@ -5,6 +5,7 @@
 #include "mem.h"
 #include "fifo.h"
 #include "buf.h"
+#include "event.h"
 #include <stddef.h>
 #include <string.h>
 
@@ -14,6 +15,7 @@ typedef struct echo_handler {
 
 typedef struct session {
 	fifo_t fifo;
+	event_t done;
 	request_t *request;
 } session_t;
 
@@ -34,6 +36,9 @@ static MAYFAIL(-1) ssize_t write_proc(void *u, void *buffer, size_t size)
 
 static void close_proc(void *u)
 {
+	session_t *session = u;
+	fifo_abort(&session->fifo);
+	event_wait(&session->done);
 	mem_free(u);
 }
 
@@ -65,12 +70,14 @@ static void session_proc(void *u)
 	|| buf_flush(&wb);
 
 	fifo_write(&session->fifo, NULL, 0);
+	event_set(&session->done);
 }
 
 static MAYFAIL(-1) int handle_proc(handler_t *handler, request_t *request, response_t *response)
 {
 	session_t *session = mem_alloc(sizeof(session_t));
 	fifo_init(&session->fifo);
+	event_init(&session->done, 1, 0);
 	session->request = request;
 
 	response_init(response, 200, &read_proc, &write_proc, &close_proc, session);

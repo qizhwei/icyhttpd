@@ -62,11 +62,17 @@
 
 = Interfaces =
 
+see ArchAndInfac
+
 == http.h ==
 
   * http constants
   * request_t
   * response_t
+
+== endpoint.h ==
+
+  * endpoint
 
 == node.h ==
 

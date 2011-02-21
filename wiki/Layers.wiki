@@ -1,0 +1,96 @@
+#summary Documents layer abstraction of this project
+
+= OS Layer =
+
+== runtime.h ==
+
+  * runtime_abort
+  * runtime_ignore
+
+== mem.h ==
+
+  * mem_alloc
+  * mem_free
+
+== win32.h ==
+
+  * Windows API (5.1)
+  * Winsock
+
+= Utilities =
+
+== dict.h ==
+
+  * hash table
+
+== list.h ==
+
+  * double linked list
+
+== str.h ==
+
+  * string manager
+
+== stri.h ==
+
+  * STRing utilities for case Insensitive strings
+
+= Dispatcher Layer =
+
+== process.h ==
+
+  * the dispatcher
+
+== event.h ==
+
+  * event_set
+  * event_reset
+  * event_wait
+
+== fifo.h ==
+
+  * fifo_read
+  * fifo_write
+  * fifo_abort
+
+== socket.h ==
+
+  * socket_bind_ip
+  * socket_accept
+  * socket_read
+  * socket_write
+
+= Interfaces =
+
+== http.h ==
+
+  * http constants
+  * request_t
+  * response_t
+
+== node.h ==
+
+  * node
+
+== handler.h ==
+
+  * handler
+
+= Implementations =
+
+== echo_handler.h ==
+
+  * a handler implementation that echos request to response
+
+= Top Layer =
+
+== conn.h ==
+
+  * connection manager
+
+= Details =
+
+Add your content here.  Format your content with:
+  * Text in *bold* or _italic_
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages

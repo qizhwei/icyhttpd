@@ -14,6 +14,8 @@ namespace
 	{
 		vector<char> buffer(4096);
 		File file(L"d:\\zzz.txt");
+		printf("total size: %llu\n", file.Size());
+		file.Seek(5);
 		UInt32 size = file.Read(&*buffer.begin(), buffer.size());
 		printf("read %u bytes\n", size);
 		buffer.resize(size);

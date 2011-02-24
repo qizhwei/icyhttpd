@@ -4,6 +4,7 @@
 #include "Types.h"
 #include "Win32.h"
 #include "Stream.h"
+#include "Constant.h"
 
 namespace Httpd
 {
@@ -14,6 +15,8 @@ namespace Httpd
 		virtual ~File();
 		virtual UInt32 Read(char *buffer, UInt32 size);
 		virtual void Write(char *buffer, UInt32 size);
+		UInt64 Size();
+		void Seek(Int64 offset, int method = SeekBegin);
 	private:
 		HANDLE hFile;
 	};

@@ -53,4 +53,20 @@ namespace Httpd
 	{
 		throw NotImplementedException();
 	}
+
+	UInt64 File::Size()
+	{
+		LARGE_INTEGER liOffset;
+		if (!GetFileSizeEx(this->hFile, &liOffset))
+			throw SystemException();
+		return liOffset.QuadPart;
+	}
+
+	void File::Seek(Int64 offset, int method)
+	{
+		LARGE_INTEGER liOffset;
+		liOffset.QuadPart = offset;
+		if (!SetFilePointerEx(this->hFile, liOffset, NULL, method))
+			throw SystemException();
+	}
 }

@@ -83,10 +83,11 @@ namespace Httpd
 	VOID CALLBACK Dispatcher::RecyclerCallback(PVOID lpParameter)
 	{
 		Dispatcher *disp = reinterpret_cast<Dispatcher *>(lpParameter);
+		LPVOID lpMainFiber = TlsGetValue(disp->dwMainFiberTls);
 
 		while (true) {
 			DeleteFiber(TlsGetValue(disp->dwDeletingFiberTls));
-			SwitchToFiber(TlsGetValue(disp->dwMainFiberTls));
+			SwitchToFiber(lpMainFiber);
 		}
 	}
 

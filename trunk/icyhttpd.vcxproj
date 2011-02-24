@@ -83,7 +83,6 @@
     <ClInclude Include="Dispatcher.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="File.h" />
-    <ClInclude Include="Stream.h" />
     <ClInclude Include="Types.h" />
     <ClInclude Include="Win32.h" />
   </ItemGroup>

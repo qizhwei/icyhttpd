@@ -3,22 +3,21 @@
 
 #include "Types.h"
 #include "Win32.h"
-#include "Stream.h"
 #include "Constant.h"
 
 namespace Httpd
 {
-	class File: NonCopyable, public Stream
+	class File: NonCopyable, public Readable
 	{
 	public:
-		File(const wchar_t *path, bool readOnly = true);
+		File(const wchar_t *path);
 		virtual ~File();
 		virtual UInt32 Read(char *buffer, UInt32 size);
-		virtual void Write(char *buffer, UInt32 size);
 		UInt64 Size();
-		void Seek(Int64 offset, int method = SeekBegin);
+		void Seek(UInt64 offset);
 	private:
 		HANDLE hFile;
+		LARGE_INTEGER offset;
 	};
 }
 

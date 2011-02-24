@@ -6,10 +6,10 @@
 
 namespace Httpd
 {
-	File::File(const wchar_t *path, bool readOnly)
+	File::File(const wchar_t *path)
 	{
-		if ((this->hFile = CreateFileW(path, readOnly ? GENERIC_READ : (GENERIC_READ | GENERIC_WRITE),
-			readOnly ? FILE_SHARE_READ : 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL)) == INVALID_HANDLE_VALUE)
+		if ((this->hFile = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL,
+			OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL)) == INVALID_HANDLE_VALUE)
 		{
 			if (GetLastError() == ERROR_FILE_NOT_FOUND)
 				throw FileNotFoundException();
@@ -34,6 +34,9 @@ namespace Httpd
 	{
 		OverlappedOperation overlapped;
 		memset(static_cast<OVERLAPPED *>(&overlapped), 0, sizeof(OVERLAPPED));
+		
+		overlapped.Offset = this->offset.LowPart;
+		overlapped.OffsetHigh = this->offset.HighPart;
 		overlapped.lpFiber = GetCurrentFiber();
 
 		if (!ReadFile(this->hFile, buffer, size, NULL, &overlapped)
@@ -42,16 +45,16 @@ namespace Httpd
 
 		Dispatcher::Instance()->Block();
 
-		DWORD BytesTransferred;
-		if (!GetOverlappedResult(this->hFile, &overlapped, &BytesTransferred, FALSE))
-			throw SystemException();
-		
-		return BytesTransferred;
-	}
+		DWORD dwBytesTransferred;
+		if (!GetOverlappedResult(this->hFile, &overlapped, &dwBytesTransferred, FALSE)) {
+			if (GetLastError() == ERROR_HANDLE_EOF)
+				return 0;
+			else
+				throw SystemException();
+		}
 
-	void File::Write(char *buffer, UInt32 size)
-	{
-		throw NotImplementedException();
+		this->offset.QuadPart += dwBytesTransferred;
+		return dwBytesTransferred;
 	}
 
 	UInt64 File::Size()
@@ -62,11 +65,8 @@ namespace Httpd
 		return liOffset.QuadPart;
 	}
 
-	void File::Seek(Int64 offset, int method)
+	void File::Seek(UInt64 offset)
 	{
-		LARGE_INTEGER liOffset;
-		liOffset.QuadPart = offset;
-		if (!SetFilePointerEx(this->hFile, liOffset, NULL, method))
-			throw SystemException();
+		this->offset.QuadPart = offset;
 	}
 }

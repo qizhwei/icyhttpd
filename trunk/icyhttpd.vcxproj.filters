@@ -38,9 +38,6 @@
     <ClInclude Include="File.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Stream.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Constant.h">
       <Filter>头文件</Filter>
     </ClInclude>

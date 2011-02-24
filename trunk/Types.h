@@ -5,6 +5,13 @@
 
 namespace Httpd
 {
+	typedef int32_t Int32;
+	typedef uint32_t UInt32;
+	typedef int64_t Int64;
+	typedef uint64_t UInt64;
+
+	typedef void Callback(void *);
+
 	class NonCopyable
 	{
 	protected:
@@ -14,17 +21,6 @@ namespace Httpd
 		NonCopyable(const NonCopyable &);
 		NonCopyable &operator=(const NonCopyable &);
 	};
-
-	class FatalException {};
-	class ResourceInsufficientException {};
-
-	typedef uint8_t Byte;
-	typedef int32_t Int32;
-	typedef uint32_t UInt32;
-	typedef int64_t Int64;
-	typedef uint64_t UInt64;
-
-	typedef void Callback(void *);
 }
 
 #endif

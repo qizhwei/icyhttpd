@@ -1,22 +1,15 @@
 #include "Dispatcher.h"
+#include "Exception.h"
 #include "Types.h"
+#include "Constant.h"
 #include <cstdio>
 
 namespace
 {
 	using namespace Httpd;
 
-	const SIZE_T StackCommitSize = 4096;
-	const SIZE_T StackReserveSize = 16384;
-	const int ThreadCount = 4;
-
-	enum CompletionKey {
-		FiberCreateKey,
-		FiberDeleteKey,
-		// Win32OverlapKey,
-	};
-
-	struct FiberCreateRecord {
+	struct FiberCreateRecord
+	{
 		Callback *callback;
 		void *param;
 	};
@@ -32,14 +25,14 @@ namespace Httpd
 
 	Dispatcher::Dispatcher()
 	{
-		if ((dwMainFiberTls = TlsAlloc()) == TLS_OUT_OF_INDEXES)
-			throw FatalException();
-
-		if ((hQueue = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0)) == NULL)
+		if ((dwMainFiberTls = TlsAlloc()) == TLS_OUT_OF_INDEXES
+			|| (dwRecycleFiberTls = TlsAlloc()) == TLS_OUT_OF_INDEXES
+			|| (dwDeletingFiberTls = TlsAlloc()) == TLS_OUT_OF_INDEXES
+			|| (hQueue = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0)) == NULL)
 			throw FatalException();
 
 		for (int i = 0; i < ThreadCount; ++i) {
-			HANDLE hThread = CreateThread(NULL, 0, &ThreadCallback, reinterpret_cast<LPVOID>(this), 0, NULL);
+			HANDLE hThread = CreateThread(NULL, 0, &ThreadCallback, this, 0, NULL);
 			if (hThread == NULL)
 				throw FatalException();
 			CloseHandle(hThread);
@@ -52,13 +45,18 @@ namespace Httpd
 		// the thread creation was in the constructor
 
 		Dispatcher *disp = reinterpret_cast<Dispatcher *>(lpParameter);
-		LPVOID lpFiber;
+		LPVOID lpMainFiber;
+		LPVOID lpRecycleFiber;
 
-		if ((lpFiber = ConvertThreadToFiberEx(NULL, 0)) == NULL)
+		if ((lpMainFiber = ConvertThreadToFiberEx(NULL, 0)) == NULL)
 			throw FatalException();
 
-		if (!TlsSetValue(disp->dwMainFiberTls, lpFiber))
+		if ((lpRecycleFiber = CreateFiberEx(StackCommitSize, StackReserveSize, 0,
+			&RecyclerCallback, disp)) == NULL)
 			throw FatalException();
+
+		TlsSetValue(disp->dwMainFiberTls, lpMainFiber);
+		TlsSetValue(disp->dwRecycleFiberTls, lpRecycleFiber);
 
 		DWORD NumberOfBytes;
 		ULONG_PTR CompletionKey;
@@ -73,10 +71,22 @@ namespace Httpd
 				throw FatalException();
 
 			if (CompletionKey == FiberCreateKey) {
-				SwitchToFiber(reinterpret_cast<LPVOID>(lpOverlapped));
+				SwitchToFiber(lpOverlapped);
 			} else if (CompletionKey == FiberDeleteKey) {
-				DeleteFiber(reinterpret_cast<LPVOID>(lpOverlapped));
+				DeleteFiber(lpOverlapped);
+			} else if (CompletionKey == OverlappedOperationKey) {
+				SwitchToFiber(static_cast<OverlappedOperation *>(lpOverlapped)->lpFiber);
 			}
+		}
+	}
+	
+	VOID CALLBACK Dispatcher::RecyclerCallback(PVOID lpParameter)
+	{
+		Dispatcher *disp = reinterpret_cast<Dispatcher *>(lpParameter);
+
+		while (true) {
+			DeleteFiber(TlsGetValue(disp->dwDeletingFiberTls));
+			SwitchToFiber(TlsGetValue(disp->dwMainFiberTls));
 		}
 	}
 
@@ -90,12 +100,10 @@ namespace Httpd
 		// Perform callback
 		callback(param);
 
-		// Switch back and delete fiber
+		// Switch to recycler to delete self
 		Dispatcher *disp = Dispatcher::Instance();
-		if (!PostQueuedCompletionStatus(disp->hQueue, 0, FiberDeleteKey,
-			reinterpret_cast<LPOVERLAPPED>(GetCurrentFiber())))
-			throw FatalException();
-		disp->SwitchBack();
+		TlsSetValue(disp->dwDeletingFiberTls, GetCurrentFiber());
+		SwitchToFiber(TlsGetValue(disp->dwRecycleFiberTls));
 	}
 
 	void Dispatcher::Queue(Callback *callback, void *param)
@@ -107,7 +115,7 @@ namespace Httpd
 			&FiberCallback, reinterpret_cast<LPVOID>(fcr))) == NULL)
 		{
 			delete fcr;
-			throw ResourceInsufficientException();
+			throw SystemException();
 		}
 
 		fcr->callback = callback;
@@ -118,9 +126,14 @@ namespace Httpd
 			throw FatalException();
 	}
 
-	void Dispatcher::SwitchBack()
+	void Dispatcher::BindHandle(HANDLE hFile, ULONG_PTR key)
 	{
-		LPVOID lpFiber = TlsGetValue(this->dwMainFiberTls);
-		SwitchToFiber(lpFiber);
+		if (CreateIoCompletionPort(hFile, this->hQueue, key, 0) == NULL)
+			throw SystemException();
+	}
+
+	void Dispatcher::Block()
+	{
+		SwitchToFiber(TlsGetValue(this->dwMainFiberTls));
 	}
 }

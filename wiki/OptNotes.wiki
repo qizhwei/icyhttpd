@@ -1,0 +1,7 @@
+#summary 想到而未实现的优化
+
+  * Allocator (Memory Pool)
+  * Dynamic Thread Count
+  * Socket Reuse (SocketPool 已预留接口)
+  * Event Object Reuse
+  * __declspec(novtable)

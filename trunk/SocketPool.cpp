@@ -21,7 +21,7 @@ namespace
 
 		if (WSAIoctl(s, SIO_GET_EXTENSION_FUNCTION_POINTER, const_cast<GUID *>(g), sizeof(*g),
 			pfn, sizeof(FunctionPointer), &dwBytes, NULL, NULL))
-			throw Exception();
+			throw FatalException();
 	}
 }
 
@@ -40,19 +40,15 @@ namespace Httpd
 		if (WSAStartup(MAKEWORD(2, 2), &WSAData))
 			throw FatalException();
 
-		try {
-			SOCKET s = this->Pop();
-			GetFunctionPointer(s, &guidTransmitFile, &this->TransmitFile);
-			GetFunctionPointer(s, &guidAcceptEx, &this->AcceptEx);
-			GetFunctionPointer(s, &guidGetAcceptExSockaddrs, &this->GetAcceptExSockaddrs);
-			GetFunctionPointer(s, &guidTransmitPackets, &this->TransmitPackets);
-			GetFunctionPointer(s, &guidConnectEx, &this->ConnectEx);
-			GetFunctionPointer(s, &guidDisconnectEx, &this->DisconnectEx);
-			GetFunctionPointer(s, &guidWSARecvMsg, &this->WSARecvMsg);
-			this->Push(s, true);
-		} catch (...) {
-			throw FatalException();
-		}
+		SOCKET s = this->Pop();
+		GetFunctionPointer(s, &guidTransmitFile, &this->TransmitFile);
+		GetFunctionPointer(s, &guidAcceptEx, &this->AcceptEx);
+		GetFunctionPointer(s, &guidGetAcceptExSockaddrs, &this->GetAcceptExSockaddrs);
+		GetFunctionPointer(s, &guidTransmitPackets, &this->TransmitPackets);
+		GetFunctionPointer(s, &guidConnectEx, &this->ConnectEx);
+		GetFunctionPointer(s, &guidDisconnectEx, &this->DisconnectEx);
+		GetFunctionPointer(s, &guidWSARecvMsg, &this->WSARecvMsg);
+		this->Push(s, true);
 	}
 
 	// TODO: Implement a socket pool, take good care of multithread synchronizing (and performance)
@@ -60,7 +56,7 @@ namespace Httpd
 	{
 		SOCKET s = socket(AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP);
 		if (s == INVALID_SOCKET)
-			throw Exception();
+			throw ResourceInsufficientException();
 		return s;
 	}
 

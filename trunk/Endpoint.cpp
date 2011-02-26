@@ -32,8 +32,7 @@ namespace Httpd
 					delete socket;
 					throw;
 				}
-			} catch (const Exception &) {
-			} catch (const std::bad_alloc &) {
+			} catch (const std::exception &) {
 			}
 		}
 	}

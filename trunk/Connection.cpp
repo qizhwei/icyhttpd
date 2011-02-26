@@ -44,9 +44,9 @@ namespace Httpd
 		} catch (const HttpException &ex) {
 			try {
 				Response response(conn.socket, ex.StatusCode());
-			} catch (const Exception &) {
+			} catch (const std::exception &) {
 			}
-		} catch (const Exception &) {
+		} catch (const std::exception &) {
 		}
 
 		delete &conn;

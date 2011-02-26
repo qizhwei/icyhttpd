@@ -13,6 +13,7 @@ namespace Httpd
 		typedef std::pair<const char *, const char *> Header;
 
 		Request(Readable &stream);
+		void Flush();
 		virtual UInt32 Read(char *buffer, UInt32 size);
 
 		const char *Method() { return &buffer[method]; }

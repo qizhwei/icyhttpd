@@ -34,14 +34,14 @@ namespace Httpd
 
 		this->canReuse = false;
 		if (bind(this->hSocket, (SOCKADDR *)&service, sizeof(service)))
-			throw Exception();
+			throw SystemException();
 	}
 
 	void Socket::Listen(int backlog)
 	{
 		this->canReuse = false;
 		if (listen(this->hSocket, backlog))
-			throw Exception();
+			throw SystemException();
 	}
 
 	void Socket::Accept(Socket &acceptSocket)
@@ -54,7 +54,7 @@ namespace Httpd
 		if (!SocketPool::Instance().AcceptEx(this->hSocket, acceptSocket.hSocket, buffer,
 			0, AddressLength, AddressLength, NULL, &overlapped)
 			&& WSAGetLastError() != ERROR_IO_PENDING)
-			throw Exception();
+			throw SystemException();
 		acceptSocket.canReuse = false;
 
 		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), overlapped);
@@ -68,7 +68,7 @@ namespace Httpd
 			reuse ? TF_REUSE_SOCKET : 0, 0) && WSAGetLastError() != ERROR_IO_PENDING)
 		{
 			this->canReuse = false;
-			throw Exception();
+			throw SystemException();
 		}
 		this->canReuse = reuse;
 
@@ -87,7 +87,7 @@ namespace Httpd
 		this->canReuse = false;
 		if (WSARecv(this->hSocket, &WSABuf, 1, NULL, &dwFlags, &overlapped, NULL)
 			&& WSAGetLastError() != ERROR_IO_PENDING)
-			throw Exception();
+			throw SystemException();
 
 		return Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), overlapped);
 	}
@@ -103,7 +103,7 @@ namespace Httpd
 		this->canReuse = false;
 		if (WSASend(this->hSocket, &WSABuf, 1, NULL, 0, &overlapped, NULL)
 			&& WSAGetLastError() != ERROR_IO_PENDING)
-			throw Exception();
+			throw SystemException();
 
 		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), overlapped);
 	}

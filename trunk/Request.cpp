@@ -171,4 +171,10 @@ namespace Httpd
 		const char *second = &this->buffer[offsets.second];
 		return Request::Header(first, second);
 	}
+
+	void Request::Flush()
+	{
+		// TODO: Not implemented
+		throw NotImplementedException();
+	}
 }

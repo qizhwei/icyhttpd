@@ -15,7 +15,7 @@ namespace Httpd
 			if (GetLastError() == ERROR_FILE_NOT_FOUND)
 				throw NotFoundException();
 			else
-				throw Exception();
+				throw SystemException();
 		}
 
 		try {
@@ -37,7 +37,7 @@ namespace Httpd
 		
 		if (!ReadFile(this->hFile, buffer, size, NULL, &overlapped)
 			&& GetLastError() != ERROR_IO_PENDING)
-			throw Exception();
+			throw SystemException();
 
 		return Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hFile), overlapped);
 	}
@@ -46,7 +46,7 @@ namespace Httpd
 	{
 		LARGE_INTEGER liFileSize;
 		if (!GetFileSizeEx(this->hFile, &liFileSize))
-			throw Exception();
+			throw SystemException();
 		return liFileSize.QuadPart;
 	}
 

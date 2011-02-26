@@ -26,6 +26,11 @@ namespace Httpd
 				throw FatalException();
 		}
 
+		~OverlappedOperation()
+		{
+			CloseHandle(hReadyEvent);
+		}
+
 		LPVOID lpFiber;
 		HANDLE hReadyEvent;
 	};

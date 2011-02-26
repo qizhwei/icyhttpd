@@ -136,7 +136,6 @@ namespace Httpd
 		ThreadData &threadData = *static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
 		threadData.hReadyEvent = overlapped.hReadyEvent;
 		SwitchToFiber(threadData.lpMainFiber);
-		CloseHandle(overlapped.hReadyEvent);
 
 		DWORD dwBytesTransferred;
 		if (!GetOverlappedResult(hObject, &overlapped, &dwBytesTransferred, FALSE)) {

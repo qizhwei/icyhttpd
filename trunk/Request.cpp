@@ -158,10 +158,6 @@ namespace Httpd
 		}
 	}
 
-	Request::~Request()
-	{
-	}
-
 	UInt32 Request::Read(char *buffer, UInt32 size)
 	{
 		// TODO: first read from [this->begin, this->end), then read through

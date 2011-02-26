@@ -1,7 +1,7 @@
 #ifndef _EXCEPTION_H
 #define _EXCEPTION_H
 
-#include <stdexcept>
+#include "Types.h"
 
 namespace Httpd
 {
@@ -16,15 +16,42 @@ namespace Httpd
 	// when a sharing violation happens when opening a file, this exception
 	// is thrown, but the HTTP module don't need to understand this, yet send
 	// an Internal Server Error message.
-	class Exception {};
+	class Exception
+	{
+	public:
+		virtual ~Exception() {}
+	};
 
 	// HTTP Exceptions
-	// TODO: Add HTTP status code info
-	class HttpException: public Exception {};
-	class NotFoundException: public HttpException {};
-	class NotImplementedException: public HttpException {};
-	class BadRequestException: public HttpException {};
-	class HttpVersionNotSupportedException: public HttpException {};
+	class HttpException: public Exception
+	{
+	public:
+		virtual Int16 StatusCode() const = 0;
+	};
+
+	class NotFoundException: public HttpException
+	{
+	public:
+		virtual Int16 StatusCode() const;
+	};
+
+	class NotImplementedException: public HttpException
+	{
+	public:
+		virtual Int16 StatusCode() const;
+	};
+
+	class BadRequestException: public HttpException
+	{
+	public:
+		virtual Int16 StatusCode() const;
+	};
+
+	class HttpVersionNotSupportedException: public HttpException
+	{
+	public:
+		virtual Int16 StatusCode() const;
+	};
 }
 
 #endif

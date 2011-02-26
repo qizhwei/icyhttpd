@@ -2,6 +2,7 @@
 #include "Dispatcher.h"
 #include "Socket.h"
 #include "Request.h"
+#include "Response.h"
 #include <cstdio>
 
 namespace Httpd
@@ -38,7 +39,12 @@ namespace Httpd
 					printf("[Header] %s: %s\n", header.first, header.second);
 				}
 
-				break;
+				throw NotImplementedException();
+			}
+		} catch (const HttpException &ex) {
+			try {
+				Response response(conn.socket, ex.StatusCode());
+			} catch (const Exception &) {
 			}
 		} catch (const Exception &) {
 		}

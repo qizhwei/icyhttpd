@@ -42,6 +42,12 @@
     <ClCompile Include="Request.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Exception.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Response.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Types.h">
@@ -87,6 +93,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Request.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Response.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

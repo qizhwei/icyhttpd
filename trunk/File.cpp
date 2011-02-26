@@ -13,7 +13,7 @@ namespace Httpd
 			OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL)) == INVALID_HANDLE_VALUE)
 		{
 			if (GetLastError() == ERROR_FILE_NOT_FOUND)
-				throw FileNotFoundException();
+				throw NotFoundException();
 			else
 				throw Exception();
 		}

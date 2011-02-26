@@ -18,10 +18,13 @@ namespace Httpd
 	// an Internal Server Error message.
 	class Exception {};
 
-	// Exceptions with concrete semantics
-	class FileNotFoundException: public Exception {};
-	class NotImplementedException: public Exception {};
-	class BadRequestException: public Exception {};
+	// HTTP Exceptions
+	// TODO: Add HTTP status code info
+	class HttpException: public Exception {};
+	class NotFoundException: public HttpException {};
+	class NotImplementedException: public HttpException {};
+	class BadRequestException: public HttpException {};
+	class HttpVersionNotSupportedException: public HttpException {};
 }
 
 #endif

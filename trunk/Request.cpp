@@ -6,10 +6,32 @@
 
 using namespace std;
 
+namespace
+{
+	const char *ParseCommaList(char *&next)
+	{
+		char *first = next, *last;
+	
+		if ((next = strchr(first, ',')) != nullptr) {
+			last = next;
+			*next++ = '\0';
+		} else {
+			last = first + strlen(first);
+		}
+
+		while (*first == ' ' || *first == '\t')
+			++first;
+		while (first != last && (last[-1] == ' ' || last[-1] == '\t'))
+			*--last = '\0';
+
+		return first;
+	}
+}
+
 namespace Httpd
 {
 	Request::Request(Readable &stream)
-		: stream(stream), buffer(MinRequestBufferSize * 2), begin(0), end(0)
+		: stream(stream), buffer(MinRequestBufferSize * 2), begin(0), end(0), contentLength(-1), chunked(false)
 	{
 		bool done = false;
 		bool title = true;
@@ -47,22 +69,31 @@ namespace Httpd
 							// TODO: parse HTTP/xx.xx from `first'
 							this->majorVer = 1;
 							this->minorVer = 1;
+
+							if (this->majorVer != 1)
+								throw HttpVersionNotSupportedException();
+							if (this->minorVer == 0)
+								this->keepAlive = false;
+							else
+								this->keepAlive = true;
 						}
 
 						// Request URI
 						if (*uri == '/') {
-							this->uri = uri + 1 - base;
+							++uri;
 							this->host = -1;
-						} else if (!strnicmp(uri, "http://", 7)) {
+						} else {
+							if (_strnicmp(uri, "http://", 7))
+								throw BadRequestException();
 							uri += 7;
 							this->host = uri - base;
 							if ((uri = strchr(uri, '/')) == nullptr)
 								throw BadRequestException();
 							*uri++ = '\0';
-							this->uri = uri - base;
-						} else {
-							throw BadRequestException();
 						}
+
+						// TODO: URI Decode and Rewrite
+						this->uri = uri - base;
 
 						// Query string
 						char *query;
@@ -88,12 +119,29 @@ namespace Httpd
 
 							// Eat leading and trailing LWS
 							while (*second == ' ' || *second == '\t')
-								*second++ = '\0';
+								++second;
 							while (last[-1] == ' ' || last[-1] == '\t')
 								*--last = '\0';
 
-							// TODO: Filter out known headers (such as Host, Content-Length, Transfer-Encoding, etc.)
 							this->headers.push_back(std::pair<Int16, Int16>(first - base, second - base));
+
+							// Filter out known headers
+							if (this->host == -1 && !_stricmp(first, "Host")) {
+								this->host = second - base;
+							} else if (!_stricmp(first, "Content-Length")) {
+								// TODO: parse Int64
+							} else if (!_stricmp(first, "Transfer-Encoding")) {
+								if (_stricmp(second, "identity"))
+									this->chunked = true;
+							} else if (!_stricmp(first, "Connection")) {
+								do {
+									const char *option = ParseCommaList(second);
+									if (!_stricmp(option, "close"))
+										this->keepAlive = false;
+									else if (!_stricmp(option, "Keep-Alive"))
+										this->keepAlive = true;
+								} while (second != nullptr);
+							}
 						}
 					}
 

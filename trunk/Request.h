@@ -22,6 +22,9 @@ namespace Httpd
 		const char *Host() { return host == -1 ? nullptr : &buffer[host]; }
 		Int16 MajorVer() { return majorVer; }
 		Int16 MinorVer() { return minorVer; }
+		Int64 ContentLength() { return contentLength; }
+		bool Chunked() { return chunked; }
+		bool KeepAlive() { return keepAlive; }
 		size_t HeaderCount() { return headers.size(); }
 		Header GetHeader(size_t index);
 
@@ -32,6 +35,9 @@ namespace Httpd
 		std::vector<std::pair<Int16, Int16> > headers;
 		Int16 method, uri, query, host;
 		Int16 majorVer, minorVer;
+		Int64 contentLength;
+		bool chunked;
+		bool keepAlive;
 	};
 }
 

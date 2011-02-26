@@ -33,7 +33,7 @@ namespace Httpd
 	class Dispatcher: NonCopyable
 	{
 	public:
-		static Dispatcher *Instance();
+		static Dispatcher &Instance();
 	public:
 		void Queue(Callback *callback, void *param);
 		void BindHandle(HANDLE hFile, ULONG_PTR key);

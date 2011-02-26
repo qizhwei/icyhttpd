@@ -33,8 +33,8 @@ namespace
 
 int main()
 {
-	Dispatcher* dispatcher = Dispatcher::Instance();
-	dispatcher->Queue(hello, nullptr);
+	Dispatcher &dispatcher = Dispatcher::Instance();
+	dispatcher.Queue(hello, nullptr);
 
 	ExitThread(0);
 }

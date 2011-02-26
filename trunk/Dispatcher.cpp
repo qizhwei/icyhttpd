@@ -24,10 +24,10 @@ namespace
 
 namespace Httpd
 {
-	Dispatcher *Dispatcher::Instance()
+	Dispatcher &Dispatcher::Instance()
 	{
 		static Dispatcher *d(new Dispatcher());
-		return d;
+		return *d;
 	}
 
 	Dispatcher::Dispatcher()
@@ -100,7 +100,7 @@ namespace Httpd
 		callback(param);
 
 		// Switch back and delete self
-		ThreadData &threadData = *static_cast<ThreadData *>(TlsGetValue(Dispatcher::Instance()->dwTlsIndex));
+		ThreadData &threadData = *static_cast<ThreadData *>(TlsGetValue(Dispatcher::Instance().dwTlsIndex));
 		threadData.lpDeletingFiber = GetCurrentFiber();
 		SwitchToFiber(threadData.lpMainFiber);
 	}

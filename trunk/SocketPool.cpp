@@ -27,10 +27,10 @@ namespace
 
 namespace Httpd
 {
-	SocketPool *SocketPool::Instance()
+	SocketPool &SocketPool::Instance()
 	{
 		static SocketPool *f(new SocketPool());
-		return f;
+		return *f;
 	}
 
 	SocketPool::SocketPool()

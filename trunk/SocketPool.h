@@ -10,7 +10,7 @@ namespace Httpd
 	{
 		friend class Socket;
 	public:
-		static SocketPool *Instance();
+		static SocketPool &Instance();
 		SOCKET Pop();
 		void Push(SOCKET s, bool canReuse);
 

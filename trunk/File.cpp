@@ -19,7 +19,7 @@ namespace Httpd
 		}
 
 		try {
-			Dispatcher::Instance()->BindHandle(this->hFile, OverlappedOperationKey);
+			Dispatcher::Instance().BindHandle(this->hFile, OverlappedOperationKey);
 		} catch (...) {
 			CloseHandle(this->hFile);
 			throw;
@@ -39,7 +39,7 @@ namespace Httpd
 			&& GetLastError() != ERROR_IO_PENDING)
 			throw SystemException();
 
-		return Dispatcher::Instance()->Block(reinterpret_cast<HANDLE>(this->hFile), overlapped);
+		return Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hFile), overlapped);
 	}
 
 	UInt64 File::Size()

@@ -9,25 +9,25 @@
 namespace Httpd
 {
 	Socket::Socket()
-		: hSocket(SocketPool::Instance()->Pop())
+		: hSocket(SocketPool::Instance().Pop())
 	{
 		try {
 			// TODO: Is it always safe to treat SOCKET as HANDLE?
-			Dispatcher::Instance()->BindHandle((HANDLE)this->hSocket, OverlappedOperationKey);
+			Dispatcher::Instance().BindHandle((HANDLE)this->hSocket, OverlappedOperationKey);
 		} catch (...) {
-			SocketPool::Instance()->Push(this->hSocket, true);
+			SocketPool::Instance().Push(this->hSocket, true);
 			throw;
 		}
 	}
 
 	Socket::~Socket()
 	{
-		SocketPool::Instance()->Push(this->hSocket, false);
+		SocketPool::Instance().Push(this->hSocket, false);
 	}
 
 	void Socket::Abort(bool canReuse)
 	{
-		SocketPool::Instance()->Push(this->hSocket, canReuse);
+		SocketPool::Instance().Push(this->hSocket, canReuse);
 		this->hSocket = INVALID_SOCKET;
 	}
 
@@ -54,23 +54,23 @@ namespace Httpd
 		char buffer[AddressLength * 2];
 		OverlappedOperation overlapped;
 
-		if (!SocketPool::Instance()->AcceptEx(this->hSocket, acceptSocket.hSocket, buffer,
+		if (!SocketPool::Instance().AcceptEx(this->hSocket, acceptSocket.hSocket, buffer,
 			0, AddressLength, AddressLength, NULL, &overlapped)
 			&& WSAGetLastError() != ERROR_IO_PENDING)
 			throw SystemException();
 
-		Dispatcher::Instance()->Block(reinterpret_cast<HANDLE>(this->hSocket), overlapped);
+		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), overlapped);
 	}
 
 	void Socket::Disconnect(bool reuse)
 	{
 		OverlappedOperation overlapped;
 
-		if (!SocketPool::Instance()->DisconnectEx(this->hSocket, &overlapped,
+		if (!SocketPool::Instance().DisconnectEx(this->hSocket, &overlapped,
 			reuse ? TF_REUSE_SOCKET : 0, 0) && WSAGetLastError() != ERROR_IO_PENDING)
 			throw SystemException();
 
-		Dispatcher::Instance()->Block(reinterpret_cast<HANDLE>(this->hSocket), overlapped);
+		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), overlapped);
 	}
 
 	UInt32 Socket::Read(char *buffer, UInt32 size)
@@ -87,7 +87,7 @@ namespace Httpd
 			&& WSAGetLastError() != ERROR_IO_PENDING)
 			throw SystemException();
 
-		return Dispatcher::Instance()->Block(reinterpret_cast<HANDLE>(this->hSocket), overlapped);
+		return Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), overlapped);
 	}
 
 	void Socket::Write(const char *buffer, UInt32 size)
@@ -102,6 +102,6 @@ namespace Httpd
 			&& WSAGetLastError() != ERROR_IO_PENDING)
 			throw SystemException();
 
-		Dispatcher::Instance()->Block(reinterpret_cast<HANDLE>(this->hSocket), overlapped);
+		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), overlapped);
 	}
 }

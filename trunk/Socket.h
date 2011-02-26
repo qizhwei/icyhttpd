@@ -14,7 +14,7 @@ namespace Httpd
 		virtual ~Socket();
 
 		void Abort(bool canReuse = false);
-		void BindIP(UInt16 port, const char *ip = "0.0.0.0");
+		void BindIP(const char *ip, UInt16 port);
 		// TODO: BindIPv6. But inet_pton is not implemented before Windows Vista.
 
 		void Listen(int backlog = SOMAXCONN);

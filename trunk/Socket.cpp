@@ -31,7 +31,7 @@ namespace Httpd
 		this->hSocket = INVALID_SOCKET;
 	}
 
-	void Socket::BindIP(UInt16 port, const char *ip)
+	void Socket::BindIP(const char *ip, UInt16 port)
 	{
 		struct sockaddr_in service;
 		service.sin_family = AF_INET;

@@ -80,15 +80,21 @@
     <ClCompile Include="Dispatcher.cpp" />
     <ClCompile Include="File.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Endpoint.cpp" />
+    <ClCompile Include="Node.cpp" />
     <ClCompile Include="Socket.cpp" />
     <ClCompile Include="SocketPool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Constant.h" />
     <ClInclude Include="Dispatcher.h" />
+    <ClInclude Include="EchoHandler.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="File.h" />
+    <ClInclude Include="Handler.h" />
+    <ClInclude Include="Node.h" />
     <ClInclude Include="Pipe.h" />
+    <ClInclude Include="Endpoint.h" />
     <ClInclude Include="Socket.h" />
     <ClInclude Include="SocketPool.h" />
     <ClInclude Include="Types.h" />

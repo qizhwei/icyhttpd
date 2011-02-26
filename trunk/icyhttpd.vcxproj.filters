@@ -30,6 +30,12 @@
     <ClCompile Include="Socket.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Endpoint.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Node.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Types.h">
@@ -57,6 +63,18 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Pipe.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Endpoint.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Node.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Handler.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="EchoHandler.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

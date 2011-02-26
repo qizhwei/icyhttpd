@@ -21,6 +21,7 @@ namespace Httpd
 	// Exceptions with concrete semantics
 	class FileNotFoundException: public Exception {};
 	class NotImplementedException: public Exception {};
+	class BadRequestException: public Exception {};
 }
 
 #endif

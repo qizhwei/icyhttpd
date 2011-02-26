@@ -5,3 +5,5 @@
   * Socket Reuse (SocketPool 已预留接口)
   * Event Object Reuse
   * __declspec(novtable)
+  * 对于同步完成的操作不投递完成包
+  * 异步操作完成等待之前在用户态判断事件是否被设置 (从而避免一次陷入)

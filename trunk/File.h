@@ -17,7 +17,7 @@ namespace Httpd
 		void Seek(UInt64 offset);
 	private:
 		HANDLE hFile;
-		LARGE_INTEGER offset;
+		UInt64 offset;
 	};
 }
 

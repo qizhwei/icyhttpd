@@ -7,6 +7,7 @@
 namespace Httpd
 {
 	File::File(const wchar_t *path)
+		: offset(0)
 	{
 		if ((this->hFile = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL,
 			OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL)) == INVALID_HANDLE_VALUE)
@@ -32,41 +33,25 @@ namespace Httpd
 
 	UInt32 File::Read(char *buffer, UInt32 size)
 	{
-		OverlappedOperation overlapped;
-		memset(static_cast<OVERLAPPED *>(&overlapped), 0, sizeof(OVERLAPPED));
+		OverlappedOperation overlapped(this->offset);
 		
-		overlapped.Offset = this->offset.LowPart;
-		overlapped.OffsetHigh = this->offset.HighPart;
-		overlapped.lpFiber = GetCurrentFiber();
-
 		if (!ReadFile(this->hFile, buffer, size, NULL, &overlapped)
 			&& GetLastError() != ERROR_IO_PENDING)
 			throw SystemException();
 
-		Dispatcher::Instance()->Block();
-
-		DWORD dwBytesTransferred;
-		if (!GetOverlappedResult(this->hFile, &overlapped, &dwBytesTransferred, FALSE)) {
-			if (GetLastError() == ERROR_HANDLE_EOF)
-				return 0;
-			else
-				throw SystemException();
-		}
-
-		this->offset.QuadPart += dwBytesTransferred;
-		return dwBytesTransferred;
+		return Dispatcher::Instance()->Block(reinterpret_cast<HANDLE>(this->hFile), overlapped);
 	}
 
 	UInt64 File::Size()
 	{
-		LARGE_INTEGER liOffset;
-		if (!GetFileSizeEx(this->hFile, &liOffset))
+		LARGE_INTEGER liFileSize;
+		if (!GetFileSizeEx(this->hFile, &liFileSize))
 			throw SystemException();
-		return liOffset.QuadPart;
+		return liFileSize.QuadPart;
 	}
 
 	void File::Seek(UInt64 offset)
 	{
-		this->offset.QuadPart = offset;
+		this->offset = offset;
 	}
 }

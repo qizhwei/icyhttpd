@@ -24,6 +24,12 @@
     <ClCompile Include="File.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="SocketPool.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Socket.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Types.h">
@@ -42,6 +48,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Exception.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="SocketPool.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Socket.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

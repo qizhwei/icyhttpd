@@ -5,6 +5,8 @@
 
 namespace Httpd
 {
+	typedef int16_t Int16;
+	typedef uint16_t UInt16;
 	typedef int32_t Int32;
 	typedef uint32_t UInt32;
 	typedef int64_t Int64;
@@ -32,7 +34,7 @@ namespace Httpd
 	class Writable
 	{
 	public:
-		virtual void Write(char *buffer, UInt32 size) = 0;
+		virtual void Write(const char *buffer, UInt32 size) = 0;
 		virtual ~Writable() {};
 	};
 }

@@ -15,8 +15,7 @@ namespace Httpd
 
 	// Completion keys
 	const ULONG_PTR FiberCreateKey = 0;
-	const ULONG_PTR FiberDeleteKey = 1;
-	const ULONG_PTR OverlappedOperationKey = 2;
+	const ULONG_PTR OverlappedOperationKey = 1;
 
 	// Seek methods
 	const int SeekBegin = 0;

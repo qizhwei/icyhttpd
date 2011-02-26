@@ -1,6 +1,6 @@
 #include "Dispatcher.h"
 #include "Win32.h"
-#include "File.h"
+#include "Socket.h"
 #include <cstdio>
 #include <vector>
 
@@ -12,15 +12,22 @@ namespace
 	// test code
 	void hello(void *)
 	{
-		vector<char> buffer(4096);
-		File file(L"d:\\zzz.txt");
-		printf("total size: %llu\n", file.Size());
-		file.Seek(5);
-		UInt32 size = file.Read(&*buffer.begin(), buffer.size());
-		printf("read %u bytes\n", size);
-		buffer.resize(size);
-		buffer.push_back('\0');
-		printf("%s\n", &*buffer.begin());
+		Socket s;
+		s.BindIP(88);
+		s.Listen();
+		while (true) {
+			char buffer[4096];
+			Socket a;
+			s.Accept(a);
+			printf("connection established\n");
+			while (true) {
+				UInt32 x = a.Read(buffer, 4096);
+				if (x == 0)
+					break;
+				printf("received %u bytes\n", x);
+			}
+			printf("connection broken\n");
+		}
 	}
 }
 

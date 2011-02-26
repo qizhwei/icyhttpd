@@ -13,6 +13,13 @@ namespace
 		Callback *callback;
 		void *param;
 	};
+
+	struct ThreadData
+	{
+		LPVOID lpMainFiber;
+		LPVOID lpDeletingFiber;
+		HANDLE hReadyEvent;
+	};
 }
 
 namespace Httpd
@@ -25,9 +32,7 @@ namespace Httpd
 
 	Dispatcher::Dispatcher()
 	{
-		if ((dwMainFiberTls = TlsAlloc()) == TLS_OUT_OF_INDEXES
-			|| (dwRecycleFiberTls = TlsAlloc()) == TLS_OUT_OF_INDEXES
-			|| (dwDeletingFiberTls = TlsAlloc()) == TLS_OUT_OF_INDEXES
+		if ((dwTlsIndex = TlsAlloc()) == TLS_OUT_OF_INDEXES
 			|| (hQueue = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0)) == NULL)
 			throw FatalException();
 
@@ -45,18 +50,14 @@ namespace Httpd
 		// the thread creation was in the constructor
 
 		Dispatcher *disp = reinterpret_cast<Dispatcher *>(lpParameter);
-		LPVOID lpMainFiber;
-		LPVOID lpRecycleFiber;
+		ThreadData threadData;
 
-		if ((lpMainFiber = ConvertThreadToFiberEx(NULL, 0)) == NULL)
+		if ((threadData.lpMainFiber = ConvertThreadToFiberEx(NULL, 0)) == NULL)
 			throw FatalException();
+		threadData.lpDeletingFiber = NULL;
+		threadData.hReadyEvent = NULL;
 
-		if ((lpRecycleFiber = CreateFiberEx(StackCommitSize, StackReserveSize, 0,
-			&RecyclerCallback, disp)) == NULL)
-			throw FatalException();
-
-		TlsSetValue(disp->dwMainFiberTls, lpMainFiber);
-		TlsSetValue(disp->dwRecycleFiberTls, lpRecycleFiber);
+		TlsSetValue(disp->dwTlsIndex, &threadData);
 
 		DWORD NumberOfBytes;
 		ULONG_PTR CompletionKey;
@@ -72,25 +73,22 @@ namespace Httpd
 
 			if (CompletionKey == FiberCreateKey) {
 				SwitchToFiber(lpOverlapped);
-			} else if (CompletionKey == FiberDeleteKey) {
-				DeleteFiber(lpOverlapped);
 			} else if (CompletionKey == OverlappedOperationKey) {
-				SwitchToFiber(static_cast<OverlappedOperation *>(lpOverlapped)->lpFiber);
+				OverlappedOperation *overlapped = static_cast<OverlappedOperation *>(lpOverlapped);
+				WaitForSingleObject(overlapped->hReadyEvent, INFINITE);
+				SwitchToFiber(overlapped->lpFiber);
+			}
+
+			if (threadData.lpDeletingFiber != NULL) {
+				DeleteFiber(threadData.lpDeletingFiber);
+				threadData.lpDeletingFiber = NULL;
+			} else if (threadData.hReadyEvent != NULL) {
+				SetEvent(threadData.hReadyEvent);
+				threadData.hReadyEvent = NULL;
 			}
 		}
 	}
 	
-	VOID CALLBACK Dispatcher::RecyclerCallback(PVOID lpParameter)
-	{
-		Dispatcher *disp = reinterpret_cast<Dispatcher *>(lpParameter);
-		LPVOID lpMainFiber = TlsGetValue(disp->dwMainFiberTls);
-
-		while (true) {
-			DeleteFiber(TlsGetValue(disp->dwDeletingFiberTls));
-			SwitchToFiber(lpMainFiber);
-		}
-	}
-
 	VOID CALLBACK Dispatcher::FiberCallback(PVOID lpParameter)
 	{
 		FiberCreateRecord *fcr = reinterpret_cast<FiberCreateRecord *>(lpParameter);
@@ -101,10 +99,10 @@ namespace Httpd
 		// Perform callback
 		callback(param);
 
-		// Switch to recycler to delete self
-		Dispatcher *disp = Dispatcher::Instance();
-		TlsSetValue(disp->dwDeletingFiberTls, GetCurrentFiber());
-		SwitchToFiber(TlsGetValue(disp->dwRecycleFiberTls));
+		// Switch back and delete self
+		ThreadData &threadData = *static_cast<ThreadData *>(TlsGetValue(Dispatcher::Instance()->dwTlsIndex));
+		threadData.lpDeletingFiber = GetCurrentFiber();
+		SwitchToFiber(threadData.lpMainFiber);
 	}
 
 	void Dispatcher::Queue(Callback *callback, void *param)
@@ -133,8 +131,21 @@ namespace Httpd
 			throw SystemException();
 	}
 
-	void Dispatcher::Block()
+	UInt32 Dispatcher::Block(HANDLE hObject, OverlappedOperation &overlapped)
 	{
-		SwitchToFiber(TlsGetValue(this->dwMainFiberTls));
+		ThreadData &threadData = *static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
+		threadData.hReadyEvent = overlapped.hReadyEvent;
+		SwitchToFiber(threadData.lpMainFiber);
+		CloseHandle(overlapped.hReadyEvent);
+
+		DWORD dwBytesTransferred;
+		if (!GetOverlappedResult(hObject, &overlapped, &dwBytesTransferred, FALSE)) {
+			if (GetLastError() == ERROR_HANDLE_EOF)
+				return 0;
+			else
+				throw SystemException();
+		}
+
+		return dwBytesTransferred;
 	}
 }

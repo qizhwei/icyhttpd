@@ -29,6 +29,11 @@ namespace Httpd
 			printf("Query String: %s\n", request.QueryString());
 			printf("Host: %s\n", request.Host());
 
+			for (size_t i = 0; i != request.HeaderCount(); ++i) {
+				Request::Header header = request.GetHeader(i);
+				printf("[Header] %s: %s\n", header.first, header.second);
+			}
+
 			break;
 		}
 

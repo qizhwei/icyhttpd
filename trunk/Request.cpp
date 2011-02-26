@@ -119,4 +119,12 @@ namespace Httpd
 		// TODO: first read from [this->begin, this->end), then read through
 		throw NotImplementedException();
 	}
+
+	Request::Header Request::GetHeader(size_t index)
+	{
+		std::pair<Int16, Int16> offsets = this->headers[index];
+		const char *first = &this->buffer[offsets.first];
+		const char *second = &this->buffer[offsets.second];
+		return Request::Header(first, second);
+	}
 }

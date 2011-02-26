@@ -10,6 +10,8 @@ namespace Httpd
 	class Request: NonCopyable, public Readable
 	{
 	public:
+		typedef std::pair<const char *, const char *> Header;
+
 		Request(Readable &stream);
 		virtual ~Request();
 		virtual UInt32 Read(char *buffer, UInt32 size);
@@ -20,18 +22,16 @@ namespace Httpd
 		const char *Host() { return host == -1 ? nullptr : &buffer[host]; }
 		Int16 MajorVer() { return majorVer; }
 		Int16 MinorVer() { return minorVer; }
+		size_t HeaderCount() { return headers.size(); }
+		Header GetHeader(size_t index);
+
 	private:
 		Readable &stream;
 		std::vector<char> buffer;
-		size_t begin;
-		size_t end;
+		size_t begin, end;
 		std::vector<std::pair<Int16, Int16> > headers;
-		Int16 method;
-		Int16 uri;
-		Int16 query;
-		Int16 host;
-		Int16 majorVer;
-		Int16 minorVer;
+		Int16 method, uri, query, host;
+		Int16 majorVer, minorVer;
 	};
 }
 

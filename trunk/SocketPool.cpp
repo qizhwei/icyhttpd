@@ -21,7 +21,7 @@ namespace
 
 		if (WSAIoctl(s, SIO_GET_EXTENSION_FUNCTION_POINTER, const_cast<GUID *>(g), sizeof(*g),
 			pfn, sizeof(FunctionPointer), &dwBytes, NULL, NULL))
-			throw SystemException();
+			throw Exception();
 	}
 }
 
@@ -60,7 +60,7 @@ namespace Httpd
 	{
 		SOCKET s = socket(AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP);
 		if (s == INVALID_SOCKET)
-			throw SystemException();
+			throw Exception();
 		return s;
 	}
 

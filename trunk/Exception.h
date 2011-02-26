@@ -11,16 +11,16 @@ namespace Httpd
 	// or not possible, such as failure of initializing dispatcher.
 	class FatalException {};
 
-	// A system exception SHOULD be thrown when system error occurs, and the
+	// A general exception SHOULD be thrown when system error occurs, and the
 	// specific type of error has no semantics in this project. For example,
 	// when a sharing violation happens when opening a file, this exception
 	// is thrown, but the HTTP module don't need to understand this, yet send
 	// an Internal Server Error message.
-	class SystemException {};
+	class Exception {};
 
 	// Exceptions with concrete semantics
-	class FileNotFoundException {};
-	class NotImplementedException {};
+	class FileNotFoundException: public Exception {};
+	class NotImplementedException: public Exception {};
 }
 
 #endif

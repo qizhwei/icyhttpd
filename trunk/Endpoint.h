@@ -13,11 +13,13 @@ namespace Httpd
 	class Endpoint: NonCopyable
 	{
 	public:
-		Endpoint(const char *ip, UInt16 port, Node *defaultNode);
+		Endpoint(const std::string &ip, UInt16 port, Node *defaultNode);
 
 	private:
 		// this class has no destructor, declaration only
 		~Endpoint();
+
+		static void AcceptCallback(void *param);
 	private:
 		Socket socket;
 		std::unordered_map<std::string, Node *> bindings;

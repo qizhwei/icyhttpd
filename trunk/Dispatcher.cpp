@@ -114,7 +114,7 @@ namespace Httpd
 			&FiberCallback, reinterpret_cast<LPVOID>(fcr))) == NULL)
 		{
 			delete fcr;
-			throw SystemException();
+			throw Exception();
 		}
 
 		fcr->callback = callback;
@@ -128,7 +128,7 @@ namespace Httpd
 	void Dispatcher::BindHandle(HANDLE hFile, ULONG_PTR key)
 	{
 		if (CreateIoCompletionPort(hFile, this->hQueue, key, 0) == NULL)
-			throw SystemException();
+			throw Exception();
 	}
 
 	UInt32 Dispatcher::Block(HANDLE hObject, OverlappedOperation &overlapped)
@@ -142,7 +142,7 @@ namespace Httpd
 			if (GetLastError() == ERROR_HANDLE_EOF)
 				return 0;
 			else
-				throw SystemException();
+				throw Exception();
 		}
 
 		return dwBytesTransferred;

@@ -21,6 +21,9 @@ namespace Httpd
 	const int SeekBegin = 0;
 	const int SeekCurrent = 1;
 	const int SeekEnd = 2;
+
+	// Accept fiber count
+	const int AcceptFiberCount = 4;
 }
 
 #endif

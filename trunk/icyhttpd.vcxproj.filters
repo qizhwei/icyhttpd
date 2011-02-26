@@ -36,6 +36,9 @@
     <ClCompile Include="Node.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Connection.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Types.h">
@@ -75,6 +78,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="EchoHandler.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Connection.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

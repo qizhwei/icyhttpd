@@ -9,7 +9,7 @@
 namespace Httpd
 {
 	Socket::Socket()
-		: hSocket(SocketPool::Instance().Pop())
+		: hSocket(SocketPool::Instance().Pop()), canReuse(true)
 	{
 		try {
 			// TODO: Is it always safe to treat SOCKET as HANDLE?
@@ -22,13 +22,7 @@ namespace Httpd
 
 	Socket::~Socket()
 	{
-		SocketPool::Instance().Push(this->hSocket, false);
-	}
-
-	void Socket::Abort(bool canReuse)
-	{
-		SocketPool::Instance().Push(this->hSocket, canReuse);
-		this->hSocket = INVALID_SOCKET;
+		SocketPool::Instance().Push(this->hSocket, this->canReuse);
 	}
 
 	void Socket::BindIP(const char *ip, UInt16 port)
@@ -38,14 +32,16 @@ namespace Httpd
 		service.sin_port = htons(port);
 		service.sin_addr.s_addr = inet_addr(ip);
 
+		this->canReuse = false;
 		if (bind(this->hSocket, (SOCKADDR *)&service, sizeof(service)))
-			throw SystemException();
+			throw Exception();
 	}
 
 	void Socket::Listen(int backlog)
 	{
+		this->canReuse = false;
 		if (listen(this->hSocket, backlog))
-			throw SystemException();
+			throw Exception();
 	}
 
 	void Socket::Accept(Socket &acceptSocket)
@@ -54,10 +50,12 @@ namespace Httpd
 		char buffer[AddressLength * 2];
 		OverlappedOperation overlapped;
 
+		this->canReuse = false;
 		if (!SocketPool::Instance().AcceptEx(this->hSocket, acceptSocket.hSocket, buffer,
 			0, AddressLength, AddressLength, NULL, &overlapped)
 			&& WSAGetLastError() != ERROR_IO_PENDING)
-			throw SystemException();
+			throw Exception();
+		acceptSocket.canReuse = false;
 
 		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), overlapped);
 	}
@@ -68,7 +66,11 @@ namespace Httpd
 
 		if (!SocketPool::Instance().DisconnectEx(this->hSocket, &overlapped,
 			reuse ? TF_REUSE_SOCKET : 0, 0) && WSAGetLastError() != ERROR_IO_PENDING)
-			throw SystemException();
+		{
+			this->canReuse = false;
+			throw Exception();
+		}
+		this->canReuse = reuse;
 
 		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), overlapped);
 	}
@@ -80,12 +82,12 @@ namespace Httpd
 		WSABuf.len = size;
 
 		DWORD dwFlags = 0;
-
 		OverlappedOperation overlapped;
 
+		this->canReuse = false;
 		if (WSARecv(this->hSocket, &WSABuf, 1, NULL, &dwFlags, &overlapped, NULL)
 			&& WSAGetLastError() != ERROR_IO_PENDING)
-			throw SystemException();
+			throw Exception();
 
 		return Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), overlapped);
 	}
@@ -98,9 +100,10 @@ namespace Httpd
 
 		OverlappedOperation overlapped;
 
+		this->canReuse = false;
 		if (WSASend(this->hSocket, &WSABuf, 1, NULL, 0, &overlapped, NULL)
 			&& WSAGetLastError() != ERROR_IO_PENDING)
-			throw SystemException();
+			throw Exception();
 
 		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), overlapped);
 	}

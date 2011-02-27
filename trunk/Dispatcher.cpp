@@ -37,7 +37,7 @@ namespace Httpd
 			throw FatalException();
 
 		for (int i = 0; i < ThreadCount; ++i) {
-			HANDLE hThread = CreateThread(NULL, 0, &ThreadCallback, this, 0, NULL);
+			HANDLE hThread = CreateThread(NULL, StackReserveSize, &ThreadCallback, this, 0, NULL);
 			if (hThread == NULL)
 				throw FatalException();
 			CloseHandle(hThread);
@@ -52,7 +52,7 @@ namespace Httpd
 		Dispatcher *disp = reinterpret_cast<Dispatcher *>(lpParameter);
 		ThreadData threadData;
 
-		if ((threadData.lpMainFiber = ConvertThreadToFiberEx(NULL, 0)) == NULL)
+		if ((threadData.lpMainFiber = ConvertThreadToFiber(NULL)) == NULL)
 			throw FatalException();
 		threadData.lpDeletingFiber = NULL;
 		threadData.hReadyEvent = NULL;

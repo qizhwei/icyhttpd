@@ -4,7 +4,97 @@
 #include "Dispatcher.h"
 #include "Constant.h"
 #include "Exception.h"
-#include <cstring>
+
+using namespace Httpd;
+using namespace std;
+
+namespace
+{
+	const int AddressLength = sizeof(sockaddr_in6) + 16;
+
+	class AcceptOperation: public OverlappedOperation
+	{
+	public:
+		AcceptOperation(SOCKET hSocket, SOCKET hAcceptSocket)
+			: hSocket(hSocket), hAcceptSocket(hAcceptSocket)
+		{}
+
+		virtual bool operator()()
+		{
+			return static_cast<bool>(SocketPool::Instance().AcceptEx()(
+				this->hSocket, this->hAcceptSocket, buffer,
+				0, AddressLength, AddressLength, NULL, this)
+				|| WSAGetLastError() == ERROR_IO_PENDING);
+		}
+
+	private:
+		SOCKET hSocket;
+		SOCKET hAcceptSocket;
+		char buffer[AddressLength * 2];
+	};
+
+	class DisconnectOperation: public OverlappedOperation
+	{
+	public:
+		DisconnectOperation(SOCKET hSocket, bool reuse)
+			: hSocket(hSocket), reuse(reuse)
+		{}
+
+		virtual bool operator()()
+		{
+			return static_cast<bool>(SocketPool::Instance().DisconnectEx()(
+				this->hSocket, this, this->reuse ? TF_REUSE_SOCKET : 0, 0)
+				|| WSAGetLastError() == ERROR_IO_PENDING);
+		}
+
+	private:
+		SOCKET hSocket;
+		bool reuse;
+	};
+
+	class ReadOperation: public OverlappedOperation
+	{
+	public:
+		ReadOperation(SOCKET hSocket, char *buffer, UInt32 size)
+			: hSocket(hSocket)
+		{
+			WSABuf.buf = buffer;
+			WSABuf.len = size;
+		}
+
+		virtual bool operator()()
+		{
+			DWORD dwFlags = 0;
+			return static_cast<bool>(!WSARecv(this->hSocket, &this->WSABuf, 1, NULL,
+				&dwFlags, this, NULL) || WSAGetLastError() == ERROR_IO_PENDING);
+		}
+
+	private:
+		SOCKET hSocket;
+		WSABUF WSABuf;
+	};
+
+	class WriteOperation: public OverlappedOperation
+	{
+	public:
+		WriteOperation(SOCKET hSocket, const char *buffer, UInt32 size)
+			: hSocket(hSocket)
+		{
+			WSABuf.buf = const_cast<char *>(buffer);
+			WSABuf.len = size;
+		}
+
+		virtual bool operator()()
+		{
+			return static_cast<bool>(!WSASend(this->hSocket, &this->WSABuf, 1, NULL,
+				0, this, NULL) || WSAGetLastError() == ERROR_IO_PENDING);
+		}
+
+	private:
+		SOCKET hSocket;
+		WSABUF WSABuf;
+	};
+}
 
 namespace Httpd
 {
@@ -46,65 +136,42 @@ namespace Httpd
 
 	void Socket::Accept(Socket &acceptSocket)
 	{
-		const int AddressLength = sizeof(sockaddr_in6) + 16;
-		char buffer[AddressLength * 2];
-		OverlappedOperation overlapped;
+		AcceptOperation operation(this->hSocket, acceptSocket.hSocket);
 
 		this->canReuse = false;
-		if (!SocketPool::Instance().AcceptEx(this->hSocket, acceptSocket.hSocket, buffer,
-			0, AddressLength, AddressLength, NULL, &overlapped)
-			&& WSAGetLastError() != ERROR_IO_PENDING)
+		if (Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation) == -1)
 			throw SystemException();
 		acceptSocket.canReuse = false;
-
-		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), overlapped);
 	}
 
 	void Socket::Disconnect(bool reuse)
 	{
-		OverlappedOperation overlapped;
+		DisconnectOperation operation(this->hSocket, reuse);
 
-		if (!SocketPool::Instance().DisconnectEx(this->hSocket, &overlapped,
-			reuse ? TF_REUSE_SOCKET : 0, 0) && WSAGetLastError() != ERROR_IO_PENDING)
-		{
+		if (Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation) == -1) {
 			this->canReuse = false;
 			throw SystemException();
 		}
 		this->canReuse = reuse;
-
-		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), overlapped);
 	}
 
 	UInt32 Socket::Read(char *buffer, UInt32 size)
 	{
-		WSABUF WSABuf;
-		WSABuf.buf = buffer;
-		WSABuf.len = size;
-
-		DWORD dwFlags = 0;
-		OverlappedOperation overlapped;
+		ReadOperation operation(this->hSocket, buffer, size);
 
 		this->canReuse = false;
-		if (WSARecv(this->hSocket, &WSABuf, 1, NULL, &dwFlags, &overlapped, NULL)
-			&& WSAGetLastError() != ERROR_IO_PENDING)
+		Int32 result = Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation);
+		if (result == -1)
 			throw SystemException();
-
-		return Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), overlapped);
+		return static_cast<UInt32>(result);
 	}
 
 	void Socket::Write(const char *buffer, UInt32 size)
 	{
-		WSABUF WSABuf;
-		WSABuf.buf = const_cast<char *>(buffer);
-		WSABuf.len = size;
-
-		OverlappedOperation overlapped;
+		WriteOperation operation(this->hSocket, buffer, size);
 
 		this->canReuse = false;
-		if (WSASend(this->hSocket, &WSABuf, 1, NULL, 0, &overlapped, NULL)
-			&& WSAGetLastError() != ERROR_IO_PENDING)
+		if (Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation) == -1)
 			throw SystemException();
-
-		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), overlapped);
 	}
 }

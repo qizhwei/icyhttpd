@@ -4,6 +4,30 @@
 #include "Win32.h"
 #include "Exception.h"
 
+using namespace Httpd;
+
+namespace
+{
+	class ReadOperation: public OverlappedOperation
+	{
+	public:
+		ReadOperation(HANDLE hFile, Int64 offset, char *buffer, UInt32 size)
+			: hFile(hFile), OverlappedOperation(offset), buffer(buffer), size(size)
+		{}
+
+		virtual bool operator()()
+		{
+			return static_cast<bool>(ReadFile(this->hFile, this->buffer, this->size,
+				NULL, this) || GetLastError() == ERROR_IO_PENDING);
+		}
+
+	private:
+		HANDLE hFile;
+		char *buffer;
+		UInt32 size;
+	};
+}
+
 namespace Httpd
 {
 	File::File(const wchar_t *path)
@@ -33,13 +57,14 @@ namespace Httpd
 
 	UInt32 File::Read(char *buffer, UInt32 size)
 	{
-		OverlappedOperation overlapped(this->offset);
+		ReadOperation operation(this->hFile, this->offset, buffer, size);
 		
-		if (!ReadFile(this->hFile, buffer, size, NULL, &overlapped)
-			&& GetLastError() != ERROR_IO_PENDING)
+		Int32 result = Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hFile), operation);
+		if (result == -1)
 			throw SystemException();
 
-		return Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hFile), overlapped);
+		this->offset += result;
+		return static_cast<UInt32>(result);
 	}
 
 	UInt64 File::Size()

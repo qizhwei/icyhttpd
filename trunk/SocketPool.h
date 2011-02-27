@@ -8,11 +8,19 @@ namespace Httpd
 {
 	class SocketPool: NonCopyable
 	{
-		friend class Socket;
 	public:
 		static SocketPool &Instance();
 		SOCKET Pop();
 		void Push(SOCKET s, bool canReuse);
+
+	public:
+		LPFN_TRANSMITFILE TransmitFile() const { return pfnTransmitFile; }
+		LPFN_ACCEPTEX AcceptEx() const { return pfnAcceptEx; }
+		LPFN_GETACCEPTEXSOCKADDRS GetAcceptExSockaddrs() const { return pfnGetAcceptExSockaddrs; }
+		LPFN_TRANSMITPACKETS TransmitPackets() const { return pfnTransmitPackets; }
+		LPFN_CONNECTEX ConnectEx() const { return pfnConnectEx; }
+		LPFN_DISCONNECTEX DisconnectEx() const { return pfnDisconnectEx; }
+		LPFN_WSARECVMSG WSARecvMsg() const { return pfnWSARecvMsg; }
 
 	private:
 		SocketPool();
@@ -21,13 +29,13 @@ namespace Httpd
 		~SocketPool();
 
 	private:
-		LPFN_TRANSMITFILE TransmitFile;
-		LPFN_ACCEPTEX AcceptEx;
-		LPFN_GETACCEPTEXSOCKADDRS GetAcceptExSockaddrs;
-		LPFN_TRANSMITPACKETS TransmitPackets;
-		LPFN_CONNECTEX ConnectEx;
-		LPFN_DISCONNECTEX DisconnectEx;
-		LPFN_WSARECVMSG WSARecvMsg;
+		LPFN_TRANSMITFILE pfnTransmitFile;
+		LPFN_ACCEPTEX pfnAcceptEx;
+		LPFN_GETACCEPTEXSOCKADDRS pfnGetAcceptExSockaddrs;
+		LPFN_TRANSMITPACKETS pfnTransmitPackets;
+		LPFN_CONNECTEX pfnConnectEx;
+		LPFN_DISCONNECTEX pfnDisconnectEx;
+		LPFN_WSARECVMSG pfnWSARecvMsg;
 	};
 }
 

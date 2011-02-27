@@ -7,9 +7,32 @@
 
 namespace Httpd
 {
-	struct OverlappedOperation: public OVERLAPPED
+	class Operation
 	{
-		OverlappedOperation(UInt64 offset = 0, LPVOID lpFiber = GetCurrentFiber())
+	public:
+		Operation(LPVOID lpFiber = GetCurrentFiber())
+			: lpFiber(lpFiber)
+		{}
+
+		virtual bool operator()() = 0;
+
+		void SwitchBack()
+		{
+			SwitchToFiber(this->lpFiber);
+		}
+
+	private:
+		LPVOID lpFiber;
+
+		// This object should not be allocated on heap
+		void *operator new(size_t);
+		void operator delete(void *);
+	};
+
+	class OverlappedOperation: public OVERLAPPED, public Operation
+	{
+	public:
+		OverlappedOperation(UInt64 offset = 0)
 		{
 			this->Internal = 0;
 			this->InternalHigh = 0;
@@ -20,19 +43,7 @@ namespace Httpd
 			this->OffsetHigh = liOffset.HighPart;
 
 			this->hEvent = NULL;
-			this->lpFiber = lpFiber;
-
-			if ((this->hReadyEvent = CreateEventW(NULL, FALSE, FALSE, NULL)) == NULL)
-				throw FatalException();
 		}
-
-		~OverlappedOperation()
-		{
-			CloseHandle(hReadyEvent);
-		}
-
-		LPVOID lpFiber;
-		HANDLE hReadyEvent;
 	};
 
 	class Dispatcher: NonCopyable
@@ -42,7 +53,7 @@ namespace Httpd
 	public:
 		void Queue(Callback *callback, void *param);
 		void BindHandle(HANDLE hFile, ULONG_PTR key);
-		UInt32 Block(HANDLE hObject, OverlappedOperation &overlapped);
+		Int32 Block(HANDLE hObject, OverlappedOperation &operation);
 	private:
 		Dispatcher();
 
@@ -54,7 +65,6 @@ namespace Httpd
 		HANDLE hQueue;
 		DWORD dwTlsIndex;
 	};
-
 }
 
 #endif

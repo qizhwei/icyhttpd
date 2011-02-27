@@ -41,13 +41,13 @@ namespace Httpd
 			throw FatalException();
 
 		SOCKET s = this->Pop();
-		GetFunctionPointer(s, &guidTransmitFile, &this->TransmitFile);
-		GetFunctionPointer(s, &guidAcceptEx, &this->AcceptEx);
-		GetFunctionPointer(s, &guidGetAcceptExSockaddrs, &this->GetAcceptExSockaddrs);
-		GetFunctionPointer(s, &guidTransmitPackets, &this->TransmitPackets);
-		GetFunctionPointer(s, &guidConnectEx, &this->ConnectEx);
-		GetFunctionPointer(s, &guidDisconnectEx, &this->DisconnectEx);
-		GetFunctionPointer(s, &guidWSARecvMsg, &this->WSARecvMsg);
+		GetFunctionPointer(s, &guidTransmitFile, &this->pfnTransmitFile);
+		GetFunctionPointer(s, &guidAcceptEx, &this->pfnAcceptEx);
+		GetFunctionPointer(s, &guidGetAcceptExSockaddrs, &this->pfnGetAcceptExSockaddrs);
+		GetFunctionPointer(s, &guidTransmitPackets, &this->pfnTransmitPackets);
+		GetFunctionPointer(s, &guidConnectEx, &this->pfnConnectEx);
+		GetFunctionPointer(s, &guidDisconnectEx, &this->pfnDisconnectEx);
+		GetFunctionPointer(s, &guidWSARecvMsg, &this->pfnWSARecvMsg);
 		this->Push(s, true);
 	}
 

@@ -2,12 +2,11 @@
 #include "Exception.h"
 #include "Types.h"
 #include "Constant.h"
-#include <cstdio>
+
+using namespace Httpd;
 
 namespace
 {
-	using namespace Httpd;
-
 	struct FiberCreateRecord
 	{
 		Callback *callback;
@@ -17,9 +16,39 @@ namespace
 	struct ThreadData
 	{
 		LPVOID lpMainFiber;
-		LPVOID lpDeletingFiber;
-		HANDLE hReadyEvent;
+		Operation *operation;
+		bool failed;
 	};
+
+	struct DeleteFiberOperation: public Operation
+	{
+		DeleteFiberOperation()
+			: lpFiber(GetCurrentFiber())
+		{}
+
+		virtual bool operator()()
+		{
+			DeleteFiber(this->lpFiber);
+			// This object is allocated on stack and no longer exist after fiber deletion
+
+			return true;
+		}
+
+		LPVOID lpFiber;
+	};
+
+	struct NullOperation: public Operation
+	{
+		NullOperation()
+			: Operation(NULL)
+		{}
+
+		virtual bool operator()()
+		{
+			return true;
+		}
+
+	} nullOperation;
 }
 
 namespace Httpd
@@ -54,8 +83,8 @@ namespace Httpd
 
 		if ((threadData.lpMainFiber = ConvertThreadToFiber(NULL)) == NULL)
 			throw FatalException();
-		threadData.lpDeletingFiber = NULL;
-		threadData.hReadyEvent = NULL;
+		threadData.operation = &nullOperation;
+		threadData.failed = false;
 
 		TlsSetValue(disp->dwTlsIndex, &threadData);
 
@@ -75,20 +104,19 @@ namespace Httpd
 				SwitchToFiber(lpOverlapped);
 			} else if (CompletionKey == OverlappedOperationKey) {
 				OverlappedOperation *overlapped = static_cast<OverlappedOperation *>(lpOverlapped);
-				WaitForSingleObject(overlapped->hReadyEvent, INFINITE);
-				SwitchToFiber(overlapped->lpFiber);
+				overlapped->SwitchBack();
 			}
 
-			if (threadData.lpDeletingFiber != NULL) {
-				DeleteFiber(threadData.lpDeletingFiber);
-				threadData.lpDeletingFiber = NULL;
-			} else if (threadData.hReadyEvent != NULL) {
-				SetEvent(threadData.hReadyEvent);
-				threadData.hReadyEvent = NULL;
+			while (!(*threadData.operation)()) {
+				threadData.failed = true;
+				threadData.operation->SwitchBack();
 			}
+
+			threadData.operation = &nullOperation;
+			threadData.failed = false;
 		}
 	}
-	
+
 	VOID CALLBACK Dispatcher::FiberCallback(PVOID lpParameter)
 	{
 		FiberCreateRecord *fcr = reinterpret_cast<FiberCreateRecord *>(lpParameter);
@@ -101,7 +129,8 @@ namespace Httpd
 
 		// Switch back and delete self
 		ThreadData &threadData = *static_cast<ThreadData *>(TlsGetValue(Dispatcher::Instance().dwTlsIndex));
-		threadData.lpDeletingFiber = GetCurrentFiber();
+		DeleteFiberOperation operation;
+		threadData.operation = &operation;
 		SwitchToFiber(threadData.lpMainFiber);
 	}
 
@@ -131,20 +160,19 @@ namespace Httpd
 			throw SystemException();
 	}
 
-	UInt32 Dispatcher::Block(HANDLE hObject, OverlappedOperation &overlapped)
+	Int32 Dispatcher::Block(HANDLE hObject, OverlappedOperation &operation)
 	{
 		ThreadData &threadData = *static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
-		threadData.hReadyEvent = overlapped.hReadyEvent;
+		threadData.operation = &operation;
 		SwitchToFiber(threadData.lpMainFiber);
 
-		DWORD dwBytesTransferred;
-		if (!GetOverlappedResult(hObject, &overlapped, &dwBytesTransferred, FALSE)) {
-			if (GetLastError() == ERROR_HANDLE_EOF)
-				return 0;
-			else
-				throw SystemException();
-		}
+		if (threadData.failed)
+			return -1;
 
-		return dwBytesTransferred;
+		DWORD dwBytesTransferred;
+		if (!GetOverlappedResult(hObject, &operation, &dwBytesTransferred, FALSE))
+			return (GetLastError() == ERROR_HANDLE_EOF) ? 0 : -1;
+
+		return static_cast<Int32>(dwBytesTransferred);
 	}
 }

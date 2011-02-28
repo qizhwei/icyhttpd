@@ -77,6 +77,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BufferedWriter.cpp" />
     <ClCompile Include="Connection.cpp" />
     <ClCompile Include="Dispatcher.cpp" />
     <ClCompile Include="Exception.cpp" />
@@ -84,6 +85,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Endpoint.cpp" />
     <ClCompile Include="Node.cpp" />
+    <ClCompile Include="Pipe.cpp" />
     <ClCompile Include="Request.cpp" />
     <ClCompile Include="Response.cpp" />
     <ClCompile Include="Socket.cpp" />

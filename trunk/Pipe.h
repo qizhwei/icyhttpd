@@ -2,20 +2,45 @@
 #define _PIPE_H
 
 #include "Types.h"
+#include "Win32.h"
 
 namespace Httpd
 {
-	class Pipe: NonCopyable, public Readable, public Writable
+	class PipeHandle: NonCopyable
 	{
 	public:
-		Pipe();
-		virtual ~Pipe();
+		PipeHandle(HANDLE hPipe);
+		~PipeHandle();
+	protected:
+		HANDLE hPipe;
+	};
 
+	class PipeReader: public Readable
+	{
+	public:
+		PipeReader(HANDLE hPipe);
+		virtual UInt32 Read(char *buffer, UInt32 size);
+	private:
+		PipeHandle pipe;
+	};
+
+	class PipeWriter: public Writable
+	{
+	public:
+		PipeWriter(HANDLE hPipe);
+		virtual void Write(const char *buffer, UInt32 size);
+	private:
+		PipeHandle pipe;
+	};
+
+	class Pipe: public Readable, public Writable
+	{
+	public:
+		Pipe(HANDLE hPipe);
 		virtual UInt32 Read(char *buffer, UInt32 size);
 		virtual void Write(const char *buffer, UInt32 size);
-
 	private:
-		HANDLE hPipe;
+		PipeHandle pipe;
 	};
 }
 

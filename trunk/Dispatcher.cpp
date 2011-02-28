@@ -160,19 +160,23 @@ namespace Httpd
 			throw SystemException();
 	}
 
-	Int32 Dispatcher::Block(HANDLE hObject, OverlappedOperation &operation)
+	UInt32 Dispatcher::Block(HANDLE hObject, OverlappedOperation &operation)
 	{
 		ThreadData &threadData = *static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
 		threadData.operation = &operation;
 		SwitchToFiber(threadData.lpMainFiber);
 
 		if (threadData.failed)
-			return -1;
+			throw SystemException();
 
 		DWORD dwBytesTransferred;
-		if (!GetOverlappedResult(hObject, &operation, &dwBytesTransferred, FALSE))
-			return (GetLastError() == ERROR_HANDLE_EOF) ? 0 : -1;
+		if (!GetOverlappedResult(hObject, &operation, &dwBytesTransferred, FALSE)) {
+			if (GetLastError() == ERROR_HANDLE_EOF)
+				return 0;
+			else
+				throw SystemException();
+		}
 
-		return static_cast<Int32>(dwBytesTransferred);
+		return dwBytesTransferred;
 	}
 }

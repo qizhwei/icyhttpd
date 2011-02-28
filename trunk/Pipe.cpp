@@ -93,50 +93,25 @@ namespace Httpd
 
 	UInt32 PipeReader::Read(char *buffer, UInt32 size)
 	{
-		Int32 result;
-
 		ReadOperation operation(this->pipe.Handle(), 0, buffer, size);
-		
-		result = Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->pipe.Handle()), operation);
-		if (result == -1)
-			throw SystemException();
-
-		return static_cast<UInt32>(result);
+		return Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->pipe.Handle()), operation);
 	}
 
 	void PipeWriter::Write(const char *buffer, UInt32 size)
 	{
-		Int32 result;
-
 		WriteOperation operation(this->pipe.Handle(), 0, buffer, size);
-		
-		result = Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->pipe.Handle()), operation);
-		if (result == -1)
-			throw SystemException();
+		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->pipe.Handle()), operation);
 	}
 
 	UInt32 Pipe::Read(char *buffer, UInt32 size)
 	{
-		Int32 result;
-
 		ReadOperation operation(this->pipe.Handle(), 0, buffer, size);
-		
-		result = Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->pipe.Handle()), operation);
-		if (result == -1)
-			throw SystemException();
-
-		return static_cast<UInt32>(result);
+		return Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->pipe.Handle()), operation);
 	}
 
 	void Pipe::Write(const char *buffer, UInt32 size)
 	{
-		Int32 result;
-
 		WriteOperation operation(this->pipe.Handle(), 0, buffer, size);
-		
 		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->pipe.Handle()), operation);
-		if (result == -1)
-			throw SystemException();
-	
 	}
 }

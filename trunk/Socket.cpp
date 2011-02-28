@@ -139,8 +139,7 @@ namespace Httpd
 		AcceptOperation operation(this->hSocket, acceptSocket.hSocket);
 
 		this->canReuse = false;
-		if (Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation) == -1)
-			throw SystemException();
+		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation);
 		acceptSocket.canReuse = false;
 	}
 
@@ -148,10 +147,8 @@ namespace Httpd
 	{
 		DisconnectOperation operation(this->hSocket, reuse);
 
-		if (Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation) == -1) {
-			this->canReuse = false;
-			throw SystemException();
-		}
+		this->canReuse = false;
+		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation);
 		this->canReuse = reuse;
 	}
 
@@ -160,10 +157,7 @@ namespace Httpd
 		ReadOperation operation(this->hSocket, buffer, size);
 
 		this->canReuse = false;
-		Int32 result = Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation);
-		if (result == -1)
-			throw SystemException();
-		return static_cast<UInt32>(result);
+		return Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation);
 	}
 
 	void Socket::Write(const char *buffer, UInt32 size)
@@ -171,7 +165,6 @@ namespace Httpd
 		WriteOperation operation(this->hSocket, buffer, size);
 
 		this->canReuse = false;
-		if (Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation) == -1)
-			throw SystemException();
+		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation);
 	}
 }

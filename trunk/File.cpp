@@ -58,13 +58,9 @@ namespace Httpd
 	UInt32 File::Read(char *buffer, UInt32 size)
 	{
 		ReadOperation operation(this->hFile, this->offset, buffer, size);
-		
-		Int32 result = Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hFile), operation);
-		if (result == -1)
-			throw SystemException();
-
+		UInt32 result = Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hFile), operation);
 		this->offset += result;
-		return static_cast<UInt32>(result);
+		return result;
 	}
 
 	UInt64 File::Size()

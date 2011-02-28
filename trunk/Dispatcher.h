@@ -53,7 +53,7 @@ namespace Httpd
 	public:
 		void Queue(Callback *callback, void *param);
 		void BindHandle(HANDLE hFile, ULONG_PTR key);
-		Int32 Block(HANDLE hObject, OverlappedOperation &operation);
+		UInt32 Block(HANDLE hObject, OverlappedOperation &operation);
 	private:
 		Dispatcher();
 

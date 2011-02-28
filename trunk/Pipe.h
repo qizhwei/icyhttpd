@@ -9,9 +9,10 @@ namespace Httpd
 	class PipeHandle: NonCopyable
 	{
 	public:
+		HANDLE Handle();
 		PipeHandle(HANDLE hPipe);
 		~PipeHandle();
-	protected:
+	private:
 		HANDLE hPipe;
 	};
 

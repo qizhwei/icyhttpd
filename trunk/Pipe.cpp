@@ -57,7 +57,7 @@ namespace Httpd
 		const int PIPE_TIMEOUT = 1000; 
 		TCHAR PIPE_NAME[48];
 		
-		wsprintf(PIPE_NAME, TEXT("\\\\.\\pipe\\icyhttpd\\critter.%08x.%08x"), GetCurrentProcessId(),  InterlockedIncrement(&PipeCount));
+		wsprintf(PIPE_NAME, L"\\\\.\\pipe\\icyhttpd\\critter.%08x.%08x", GetCurrentProcessId(),  InterlockedIncrement(&PipeCount));
 		
 		SECURITY_ATTRIBUTES sec; 
 		sec.bInheritHandle = TRUE;
@@ -110,7 +110,7 @@ namespace Httpd
 
 		WriteOperation operation(this->pipe.Handle(), 0, buffer, size);
 		
-		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->pipe.Handle()), operation);
+		result = Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->pipe.Handle()), operation);
 		if (result == -1)
 			throw SystemException();
 	}

@@ -8,6 +8,7 @@ using namespace Httpd;
 
 namespace
 {
+	volatile long PipeCount = 0;
 	class ReadOperation: public OverlappedOperation
 	{
 	public:
@@ -49,29 +50,18 @@ namespace
 
 namespace Httpd
 {
-	static long PipeCount = 0; 
 	PipeHandle::PipeHandle(HANDLE hPipe)
 		: hPipe(hPipe)
 	{
 		const int BUFFER_SIZE = 1024; 
 		const int PIPE_TIMEOUT = 1000; 
-		TCHAR PIPE_NAME[48];
+		wchar_t PipeName[48];
 		
-		wsprintf(PIPE_NAME, L"\\\\.\\pipe\\icyhttpd\\critter.%08x.%08x", GetCurrentProcessId(),  InterlockedIncrement(&PipeCount));
-		
-		SECURITY_ATTRIBUTES sec; 
-		sec.bInheritHandle = TRUE;
-		sec.lpSecurityDescriptor = NULL;
-		sec.nLength = sizeof(SECURITY_ATTRIBUTES);
+		wsprintf(PipeName, L"\\\\.\\pipe\\icyhttpd\\critter.%08x.%08x", GetCurrentProcessId(),  InterlockedIncrement(&PipeCount));
 
-		if ((hPipe = CreateNamedPipe(PIPE_NAME, PIPE_ACCESS_DUPLEX 
-                , PIPE_WAIT, PIPE_UNLIMITED_INSTANCES, BUFFER_SIZE, BUFFER_SIZE 
-                , PIPE_TIMEOUT, &sec)) == INVALID_HANDLE_VALUE ){
-			if (GetLastError() == ERROR_FILE_NOT_FOUND)
-				throw NotFoundException();
-			else
-				throw SystemException();
-		}
+		hPipe = CreateNamedPipe(PipeName, PIPE_ACCESS_DUPLEX 
+				, PIPE_WAIT, PIPE_UNLIMITED_INSTANCES, BUFFER_SIZE, BUFFER_SIZE 
+				, PIPE_TIMEOUT,NULL);
 
 		try {
 			Dispatcher::Instance().BindHandle(hPipe, OverlappedOperationKey);
@@ -91,17 +81,29 @@ namespace Httpd
 		CloseHandle(hPipe);
 	}
 
+	PipeReader::PipeReader(HANDLE hPipe)
+		: pipe(hPipe)
+	{}
+
 	UInt32 PipeReader::Read(char *buffer, UInt32 size)
 	{
 		ReadOperation operation(this->pipe.Handle(), 0, buffer, size);
 		return Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->pipe.Handle()), operation);
 	}
 
+	PipeWriter::PipeWriter(HANDLE hPipe)
+		: pipe(hPipe)
+	{}
+
 	void PipeWriter::Write(const char *buffer, UInt32 size)
 	{
 		WriteOperation operation(this->pipe.Handle(), 0, buffer, size);
 		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->pipe.Handle()), operation);
 	}
+
+	Pipe::Pipe(HANDLE hPipe)
+		: pipe(hPipe)
+	{}
 
 	UInt32 Pipe::Read(char *buffer, UInt32 size)
 	{

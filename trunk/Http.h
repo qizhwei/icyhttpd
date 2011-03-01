@@ -2,6 +2,7 @@
 #define _HTTP_H
 
 #include "Types.h"
+#include "Socket.h"
 #include <vector>
 #include <utility>
 
@@ -10,12 +11,12 @@ namespace Httpd
 	typedef std::pair<const char *, const char *> HttpHeader;
 	typedef std::pair<UInt16, UInt16> HttpVersion;
 
-	class HttpRequest: NonCopyable, public Readable
+	class HttpRequest: NonCopyable
 	{
 	public:
-		HttpRequest(Readable &stream);
+		HttpRequest(Socket &socket);
 		void Flush();
-		virtual UInt32 Read(char *buffer, UInt32 size);
+		UInt32 Read(char *buffer, UInt32 size);
 
 		const char *Method() { return &buffer[method]; }
 		const char *URI() { return &buffer[uri]; }
@@ -30,7 +31,7 @@ namespace Httpd
 		HttpHeader GetHeader(size_t index);
 
 	private:
-		Readable &stream;
+		Socket &socket;
 		std::vector<char> buffer;
 		size_t begin, end;
 		std::vector<std::pair<UInt16, UInt16> > headers;
@@ -43,10 +44,10 @@ namespace Httpd
 		static const UInt16 NullOffset = 65535;
 	};
 
-	class HttpResponse: NonCopyable, public Writable
+	class HttpResponse: NonCopyable
 	{
 	public:
-		HttpResponse(Writable &stream, HttpVersion requestVer);
+		HttpResponse(Socket &socket, HttpVersion requestVer);
 		void AppendTitle(UInt16 status);
 		void AppendHeader(HttpHeader header);
 		void EndHeader();
@@ -54,7 +55,7 @@ namespace Httpd
 		// TODO: TransmitFile, dynamic_cast<Socket &> if bad_cast, simulate
 		void Flush();
 	private:
-		Writable &stream;
+		Socket &socket;
 		// TODO: ChunkedWriter
 		std::vector<char> buffer;
 		HttpVersion requestVer;

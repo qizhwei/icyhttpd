@@ -1,6 +1,9 @@
 #ifndef _UTILITY_H
 #define _UTILITY_H
 
+#include "Types.h"
+#include "Exception.h"
+#include "Win32.h"
 #include <string>
 #include <cstring>
 #include <functional>
@@ -31,6 +34,26 @@ namespace Httpd
 	};
 
 	typedef std::basic_string<char, CiCharTraits> CiString;
+
+	class Win32Handle: NonCopyable
+	{
+	public:
+		Win32Handle(HANDLE hObject)
+			: hObject(hObject)
+		{}
+
+		~Win32Handle()
+		{
+			CloseHandle(hObject);
+		}
+
+		HANDLE Handle() const
+		{
+			return hObject;
+		}
+	private:
+		HANDLE hObject;
+	};
 }
 
 namespace std

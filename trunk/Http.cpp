@@ -2,6 +2,7 @@
 #include "Types.h"
 #include "Constant.h"
 #include "Exception.h"
+#include "Socket.h"
 #include "Win32.h"
 #include <cstring>
 #include <utility>
@@ -35,14 +36,14 @@ namespace
 
 namespace Httpd
 {
-	HttpRequest::HttpRequest(Readable &stream)
-		: stream(stream), buffer(MinRequestBufferSize * 2), begin(0), end(0), contentLength(NullOffset), chunked(false)
+	HttpRequest::HttpRequest(Socket &socket)
+		: socket(socket), buffer(MinRequestBufferSize * 2), begin(0), end(0), contentLength(NullOffset), chunked(false)
 	{
 		bool done = false;
 		bool title = true;
 
 		while (!done) {
-			UInt32 bytesRead = stream.Read(&this->buffer[this->end], this->buffer.size() - this->end);
+			UInt32 bytesRead = socket.Read(&this->buffer[this->end], this->buffer.size() - this->end);
 
 			if (bytesRead == 0)
 				throw SystemException();
@@ -216,8 +217,8 @@ namespace Httpd
 		throw NotImplementedException();
 	}
 
-	HttpResponse::HttpResponse(Writable &stream, HttpVersion requestVer)
-		: stream(stream), buffer(TitleSize), requestVer(requestVer), titleOffset(TitleSize), entity(false), chunked(false)
+	HttpResponse::HttpResponse(Socket &socket, HttpVersion requestVer)
+		: socket(socket), buffer(TitleSize), requestVer(requestVer), titleOffset(TitleSize), entity(false), chunked(false)
 	{}
 
 	void HttpResponse::AppendTitle(UInt16 status)
@@ -273,14 +274,14 @@ namespace Httpd
 		if (!this->entity)
 			this->EndHeader();
 
-		stream.Write(buffer, size);
+		socket.Write(buffer, size);
 	}
 
 	void HttpResponse::Flush()
 	{
 		const size_t size = this->buffer.size() - this->titleOffset;
 		if (size != 0) {
-			stream.Write(&this->buffer[this->titleOffset], size);
+			socket.Write(&this->buffer[this->titleOffset], size);
 			vector<char>().swap(this->buffer);
 			this->titleOffset = 0;
 		}

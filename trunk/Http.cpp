@@ -192,6 +192,8 @@ namespace Httpd
 				this->buffer.resize(newSize);
 			}
 		}
+
+		// TODO: Throw BadRequestException if majorVer = 1, minorVer >= 1 and host not presented
 	}
 
 	UInt32 HttpRequest::Read(char *buffer, UInt32 size)

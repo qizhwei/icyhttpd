@@ -21,6 +21,7 @@ namespace Httpd
 		void Disconnect(bool reuse);
 		virtual UInt32 Read(char *buffer, UInt32 size);
 		virtual void Write(const char *buffer, UInt32 size);
+		// TODO: TransmitFile
 
 	private:
 		SOCKET hSocket;

@@ -51,6 +51,7 @@ namespace Httpd
 		void AppendHeader(HttpHeader header);
 		void EndHeader();
 		virtual void Write(const char *buffer, UInt32 size);
+		// TODO: TransmitFile, dynamic_cast<Socket &> if bad_cast, simulate
 		void Flush();
 	private:
 		Writable &stream;

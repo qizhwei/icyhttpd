@@ -8,7 +8,6 @@ using namespace Httpd;
 
 namespace
 {
-	volatile long PipeCount = 0;
 	class ReadOperation: public OverlappedOperation
 	{
 	public:
@@ -52,24 +51,7 @@ namespace Httpd
 {
 	PipeHandle::PipeHandle(HANDLE hPipe)
 		: hPipe(hPipe)
-	{
-		const int BUFFER_SIZE = 1024; 
-		const int PIPE_TIMEOUT = 1000; 
-		wchar_t PipeName[48];
-		
-		wsprintf(PipeName, L"\\\\.\\pipe\\icyhttpd\\critter.%08x.%08x", GetCurrentProcessId(),  InterlockedIncrement(&PipeCount));
-
-		hPipe = CreateNamedPipe(PipeName, PIPE_ACCESS_DUPLEX 
-				, PIPE_WAIT, PIPE_UNLIMITED_INSTANCES, BUFFER_SIZE, BUFFER_SIZE 
-				, PIPE_TIMEOUT,NULL);
-
-		try {
-			Dispatcher::Instance().BindHandle(hPipe, OverlappedOperationKey);
-		} catch (...) {
-			CloseHandle(hPipe);
-			throw;
-		}
-	}
+	{}
 
 	HANDLE PipeHandle::Handle()
 	{

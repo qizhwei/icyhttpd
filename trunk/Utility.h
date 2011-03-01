@@ -8,9 +8,12 @@
 #include <cstring>
 #include <functional>
 #include <cstddef>
+#include "Dispatcher.h"
+#include "Constant.h"
 
 namespace
 {
+	volatile long PipeCount;
 	inline char CiIsLower(char c)
 	{
 		return c >= 'a' && c <= 'z';
@@ -54,6 +57,64 @@ namespace Httpd
 	private:
 		HANDLE hObject;
 	};
+
+	int CreatePipePairDuplex(HANDLE hPipe[2])
+	{
+		const int BUFFER_SIZE = 4096; 
+		const int PIPE_TIMEOUT = 1000; 
+		wchar_t PipeName[48];
+		
+		wsprintf(PipeName, L"\\\\.\\pipe\\icyhttpd\\critter.%08x.%08x", GetCurrentProcessId(),  InterlockedIncrement(&PipeCount));
+
+		hPipe[0] = CreateNamedPipe(PipeName, PIPE_ACCESS_DUPLEX 
+				, PIPE_WAIT, PIPE_UNLIMITED_INSTANCES, BUFFER_SIZE, BUFFER_SIZE 
+				, PIPE_TIMEOUT,NULL);
+
+		try {
+			Dispatcher::Instance().BindHandle(hPipe, OverlappedOperationKey);
+		} catch (...) {
+			CloseHandle(hPipe);
+			throw;
+		}
+
+		hPipe[1] = CreateFile(PipeName, GENERIC_READ | GENERIC_WRITE, 0, NULL,
+						OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
+		if (hPipe[1] == INVALID_HANDLE_VALUE) {
+			CloseHandle(hPipe[0]);
+			return 1;
+		} 
+
+		return 0;
+	}
+	
+	int CreatePipePair(HANDLE hPipe[2])
+	{
+		const int BUFFER_SIZE = 4096; 
+		const int PIPE_TIMEOUT = 1000; 
+		wchar_t PipeName[48];
+		
+		wsprintf(PipeName, L"\\\\.\\pipe\\icyhttpd\\critter.%08x.%08x", GetCurrentProcessId(),  InterlockedIncrement(&PipeCount));
+
+		hPipe[0] = CreateNamedPipe(PipeName, PIPE_ACCESS_OUTBOUND 
+				, PIPE_WAIT, PIPE_UNLIMITED_INSTANCES, BUFFER_SIZE, BUFFER_SIZE 
+				, PIPE_TIMEOUT,NULL);
+
+		try {
+			Dispatcher::Instance().BindHandle(hPipe, OverlappedOperationKey);
+		} catch (...) {
+			CloseHandle(hPipe);
+			throw;
+		}
+
+		hPipe[1] = CreateFile(PipeName, GENERIC_WRITE, 0, NULL,
+						OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
+		if (hPipe[1] == INVALID_HANDLE_VALUE) {
+			CloseHandle(hPipe[0]);
+			return 1;
+		} 
+
+		return 0;
+	}
 }
 
 namespace std

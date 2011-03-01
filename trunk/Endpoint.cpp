@@ -3,6 +3,7 @@
 #include "Dispatcher.h"
 #include "Connection.h"
 #include "Constant.h"
+#include "Node.h"
 #include <unordered_map>
 #include <string>
 
@@ -27,7 +28,7 @@ namespace Httpd
 				Socket *socket = new Socket();
 				try {
 					ep.socket.Accept(*socket);
-					new Connection(*socket);
+					new Connection(ep, *socket);
 				} catch (...) {
 					delete socket;
 					throw;
@@ -35,5 +36,14 @@ namespace Httpd
 			} catch (const std::exception &) {
 			}
 		}
+	}
+
+	Node &Endpoint::GetNode(const CiString &host)
+	{
+		auto iter = this->bindings.find(host);
+		if (iter == this->bindings.end())
+			return *(this->defaultNode);
+		else
+			return *(iter->second);
 	}
 }

@@ -3,6 +3,7 @@
 
 #include "Types.h"
 #include "Socket.h"
+#include "Utility.h"
 #include <unordered_map>
 #include <string>
 
@@ -14,6 +15,7 @@ namespace Httpd
 	{
 	public:
 		Endpoint(const std::string &ip, UInt16 port, Node *defaultNode);
+		Node &GetNode(const CiString &host);
 
 	private:
 		// this class has no destructor, declaration only
@@ -22,7 +24,7 @@ namespace Httpd
 		static void AcceptCallback(void *param);
 	private:
 		Socket socket;
-		std::unordered_map<std::string, Node *> bindings;
+		std::unordered_map<CiString, Node *> bindings;
 		Node *defaultNode;
 	};
 }

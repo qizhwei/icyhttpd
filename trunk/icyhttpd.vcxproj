@@ -82,6 +82,7 @@
     <ClCompile Include="Dispatcher.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="File.cpp" />
+    <ClCompile Include="EchoHandler.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Endpoint.cpp" />
     <ClCompile Include="Node.cpp" />
@@ -92,6 +93,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BufferedWriter.h" />
+    <ClInclude Include="Utility.h" />
     <ClInclude Include="Connection.h" />
     <ClInclude Include="Constant.h" />
     <ClInclude Include="Dispatcher.h" />

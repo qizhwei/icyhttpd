@@ -19,6 +19,7 @@ namespace Httpd
 
 		const char *Method() { return &buffer[method]; }
 		const char *URI() { return &buffer[uri]; }
+		const char *Extension() { return ext == NullOffset ? "." : &buffer[ext]; };
 		const char *QueryString() { return query == NullOffset ? nullptr : &buffer[query]; }
 		const char *Host() { return host == NullOffset ? nullptr : &buffer[host]; }
 		HttpVersion Version() { return HttpVersion(majorVer, minorVer); }
@@ -33,7 +34,7 @@ namespace Httpd
 		std::vector<char> buffer;
 		size_t begin, end;
 		std::vector<std::pair<UInt16, UInt16> > headers;
-		UInt16 method, uri, query, host;
+		UInt16 method, uri, ext, query, host;
 		UInt16 majorVer, minorVer;
 		Int64 contentLength;
 		bool chunked;

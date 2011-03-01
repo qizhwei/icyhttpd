@@ -3,12 +3,15 @@
 #include "Exception.h"
 #include "Socket.h"
 #include "Http.h"
+#include "Endpoint.h"
+#include "Node.h"
+#include "Handler.h"
 #include <cstdio>
 
 namespace Httpd
 {
-	Connection::Connection(Socket &socket)
-		: socket(socket)
+	Connection::Connection(Endpoint &endpoint, Socket &socket)
+		: endpoint(endpoint), socket(socket)
 	{
 		Dispatcher::Instance().Queue(&ConnectionCallback, this);
 	}
@@ -21,19 +24,23 @@ namespace Httpd
 	void Connection::ConnectionCallback(void *param)
 	{
 		Connection &conn = *static_cast<Connection *>(param);
-		bool keepAlive;
+		Endpoint &ep = conn.endpoint;
 
 		printf("connection established\n");
 		
 		try {
+			bool keepAlive;
+			HttpVersion requestVer(1, 1);
 			do {
 				try {
 					keepAlive = false;
 					HttpRequest request(conn.socket);
 					keepAlive = request.KeepAlive();
+					requestVer = request.Version();
 
 					printf("Method: %s\n", request.Method());
 					printf("URI: %s\n", request.URI());
+					printf("Extension: %s\n", request.Extension());
 					printf("Query String: %s\n", request.QueryString());
 					printf("Host: %s\n", request.Host());
 					printf("Content-Length: %lld\n", request.ContentLength());
@@ -45,11 +52,16 @@ namespace Httpd
 						printf("[Header] %s: %s\n", header.first, header.second);
 					}
 
+					Node &node = ep.GetNode(request.Host());
+					Handler &handler = node.GetHandler(request.Extension());
+					HttpResponse response(conn.socket, requestVer);
+					handler.Handle(request, response);
+
 					// TODO: Implement
 					throw NotImplementedException();
 
 				} catch (const HttpException &ex) {
-					HttpResponse response(conn.socket, HttpVersion(1, 1));
+					HttpResponse response(conn.socket, requestVer);
 					response.AppendTitle(ex.StatusCode());
 					response.AppendHeader(HttpHeader("Connection", keepAlive ? "keep-alive" : "close"));
 					response.AppendHeader(HttpHeader("Content-Length", "0"));

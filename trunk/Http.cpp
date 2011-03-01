@@ -6,6 +6,7 @@
 #include <cstring>
 #include <utility>
 #include <unordered_map>
+#include <cassert>
 
 using namespace Httpd;
 using namespace std;
@@ -68,7 +69,9 @@ namespace Httpd
 
 						// Version
 						char *uri = first;
+						char *uriLast;
 						if ((first = strchr(first, ' ')) == nullptr) {
+							uriLast = uri + strlen(uri);
 							this->majorVer = 0;
 							this->minorVer = 9;
 							this->keepAlive = false;
@@ -76,6 +79,7 @@ namespace Httpd
 							// HTTP/0.9 requests don't have headers
 							done = true;
 						} else {
+							uriLast = first;
 							*first++ = '\0';
 							// TODO: parse HTTP/xx.xx from `first'
 							this->majorVer = 1;
@@ -90,30 +94,51 @@ namespace Httpd
 						}
 
 						// Request URI
-						if (*uri == '/') {
-							++uri;
+						if (uri[0] == '/' || (uri[0] == '*' && uri[1] == '\0')) {
 							this->host = NullOffset;
 						} else {
 							if (_strnicmp(uri, "http://", 7))
 								throw BadRequestException();
-							uri += 7;
-							this->host = uri - base;
-							if ((uri = strchr(uri, '/')) == nullptr)
-								throw BadRequestException();
-							*uri++ = '\0';
-						}
+							char *host = uri;
+							if ((uri = strchr(uri + 7, '/')) == nullptr)
+								uri = uriLast;
+							memmove(host, host + 7, uri - host - 7);
+							host[uri - host - 7] = '\0';
+							if (uri == uriLast)
+								*--uri = '/';
+							uri[-1] = '\0';
 
-						// TODO: URI Decode and Rewrite
-						this->uri = uri - base;
+							this->host = host - base;
+						}
 
 						// Query string
 						char *query;
 						if ((query = strchr(uri, '?')) != nullptr) {
+							uriLast = query;
 							*query++ = '\0';
 							this->query = query - base;
 						} else {
 							this->query = NullOffset;
 						}
+
+						// TODO: URI Decode and Rewrite dots and slashes in [uri, uriLast),
+						// DO NOT FORGET to update uriLast
+
+						// Extension
+						assert(uri[-1] == '\0');
+						char *ext = uriLast;
+						while (true) {
+							char c = *--ext;
+							if (c == '.') {
+								break;
+							} else if (c == '/' || c == '\0') {
+								ext = nullptr;
+								break;
+							}
+						}
+
+						this->uri = uri - base;
+						this->ext = ext != nullptr ? ext - base : -1;
 
 						title = false;
 					} else if (!title) {

@@ -1,5 +1,6 @@
 #include "Connection.h"
 #include "Dispatcher.h"
+#include "Exception.h"
 #include "Socket.h"
 #include "Http.h"
 #include <cstdio>
@@ -20,16 +21,15 @@ namespace Httpd
 	void Connection::ConnectionCallback(void *param)
 	{
 		Connection &conn = *static_cast<Connection *>(param);
-		bool header = true;
-		bool keepAlive = false;
+		bool keepAlive;
 
 		printf("connection established\n");
 		
 		try {
 			do {
 				try {
+					keepAlive = false;
 					HttpRequest request(conn.socket);
-					header = (request.MajorVer() == 1);
 					keepAlive = request.KeepAlive();
 
 					printf("Method: %s\n", request.Method());
@@ -49,7 +49,8 @@ namespace Httpd
 					throw NotImplementedException();
 
 				} catch (const HttpException &ex) {
-					HttpResponse response(conn.socket, header, ex.StatusCode());
+					HttpResponse response(conn.socket, HttpVersion(1, 1));
+					response.AppendTitle(ex.StatusCode());
 					response.AppendHeader(HttpHeader("Connection", keepAlive ? "keep-alive" : "close"));
 					response.AppendHeader(HttpHeader("Content-Length", "0"));
 					response.EndHeader();

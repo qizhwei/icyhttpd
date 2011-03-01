@@ -27,7 +27,8 @@ namespace Httpd
 
 	// Request buffer size
 	const size_t MinRequestBufferSize = 2048;
-	const size_t MaxRequestBufferSize = 32768; // must be able to represent in Int16
+	const size_t MaxRequestBufferSize = 32768; // must be able to represent in UInt16
+	const size_t MaxResponseHeaderSize = 32768;
 }
 
 #endif

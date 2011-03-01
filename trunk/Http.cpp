@@ -2,7 +2,7 @@
 #include "Types.h"
 #include "Constant.h"
 #include "Exception.h"
-#include "BufferedWriter.h"
+#include "Win32.h"
 #include <cstring>
 #include <utility>
 #include <unordered_map>
@@ -35,7 +35,7 @@ namespace
 namespace Httpd
 {
 	HttpRequest::HttpRequest(Readable &stream)
-		: stream(stream), buffer(MinRequestBufferSize * 2), begin(0), end(0), contentLength(-1), chunked(false)
+		: stream(stream), buffer(MinRequestBufferSize * 2), begin(0), end(0), contentLength(NullOffset), chunked(false)
 	{
 		bool done = false;
 		bool title = true;
@@ -57,7 +57,9 @@ namespace Httpd
 					if (first != last && last[-1] == '\r')
 						*--last = '\0';
 
-					if (title) {
+					// Empty lines are ignored
+					if (title && first != last) {
+
 						// Request method
 						this->method = first - base;
 						if ((first = strchr(first, ' ')) == nullptr)
@@ -90,7 +92,7 @@ namespace Httpd
 						// Request URI
 						if (*uri == '/') {
 							++uri;
-							this->host = -1;
+							this->host = NullOffset;
 						} else {
 							if (_strnicmp(uri, "http://", 7))
 								throw BadRequestException();
@@ -110,11 +112,11 @@ namespace Httpd
 							*query++ = '\0';
 							this->query = query - base;
 						} else {
-							this->query = -1;
+							this->query = NullOffset;
 						}
 
 						title = false;
-					} else {
+					} else if (!title) {
 						if (*first == '\0') {
 							done = true;
 						} else if (*first == ' ' || *first == '\t') {
@@ -135,7 +137,7 @@ namespace Httpd
 							this->headers.push_back(std::pair<Int16, Int16>(first - base, second - base));
 
 							// Filter out known headers
-							if (this->host == -1 && !_stricmp(first, "Host")) {
+							if (this->host == NullOffset && !_stricmp(first, "Host")) {
 								this->host = second - base;
 							} else if (!_stricmp(first, "Content-Length")) {
 								// TODO: parse Int64
@@ -187,38 +189,74 @@ namespace Httpd
 		throw NotImplementedException();
 	}
 
-	HttpResponse::HttpResponse(Writable &stream, bool header, UInt16 status)
-		: writer(stream)
+	HttpResponse::HttpResponse(Writable &stream, HttpVersion requestVer)
+		: stream(stream), buffer(TitleSize), requestVer(requestVer), titleOffset(TitleSize), entity(false), chunked(false)
+	{}
+
+	void HttpResponse::AppendTitle(UInt16 status)
 	{
-		if (header) {
-			writer.Write("HTTP/1.1 ", 9);
-			writer.Append(status);
-			writer.Write(" ", 1);
-			writer.AppendLine(HttpUtility::Instance().ReasonPhrase(status));
-		}
+		if (this->requestVer.first == 0 || this->entity)
+			return;
+
+		wsprintfA(&*this->buffer.begin(), "HTTP/1.1 %u %s\r\n",
+			static_cast<unsigned int>(status), HttpUtility::Instance().ReasonPhrase(status));
+		const size_t titleSize = strlen(&*this->buffer.begin());
+		this->titleOffset = TitleSize - titleSize;
+		memmove(&this->buffer[this->titleOffset], &*this->buffer.begin(), titleSize);
 	}
 
-	void HttpResponse::AppendHeader(const HttpHeader &header)
+	void HttpResponse::AppendHeader(HttpHeader header)
 	{
-		writer.Append(header.first);
-		writer.Write(": ", 2);
-		writer.AppendLine(header.second);
+		if (this->requestVer.first == 0)
+			return;
+
+		if (!this->entity) {
+			const size_t first_len = strlen(header.first);
+			const char *colon = ": ";
+			const size_t second_len = strlen(header.second);
+			const char *crlf = "\r\n";
+			const size_t newSize = this->buffer.size() + first_len + second_len + 4;
+
+			if (newSize >= MaxResponseHeaderSize)
+				throw SystemException();
+
+			this->buffer.reserve(newSize);
+			this->buffer.insert(this->buffer.end(), header.first, header.first + first_len);
+			this->buffer.insert(this->buffer.end(), colon, colon + 2);
+			this->buffer.insert(this->buffer.end(), header.second, header.second + second_len);
+			this->buffer.insert(this->buffer.end(), crlf, crlf + 2);
+		} else {
+			// TODO: Chunked encoding supports header in entity
+		}
 	}
 
 	void HttpResponse::EndHeader()
 	{
-		writer.AppendLine();
+		if (this->requestVer.first == 0 || this->entity)
+			return;
+
+		const char *crlf = "\r\n";
+		this->buffer.insert(this->buffer.end(), crlf, crlf + 2);
+		this->Flush();
+		this->entity = true;
 	}
 
 	void HttpResponse::Write(const char *buffer, UInt32 size)
 	{
-		// TODO: Chunked encoding
-		writer.Write(buffer, size);
+		if (!this->entity)
+			this->EndHeader();
+
+		stream.Write(buffer, size);
 	}
 
 	void HttpResponse::Flush()
 	{
-		writer.Flush();
+		const size_t size = this->buffer.size() - this->titleOffset;
+		if (size != 0) {
+			stream.Write(&this->buffer[this->titleOffset], size);
+			vector<char>().swap(this->buffer);
+			this->titleOffset = 0;
+		}
 	}
 }
 

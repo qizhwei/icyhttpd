@@ -7,6 +7,7 @@
 #include <cstring>
 #include <utility>
 #include <unordered_map>
+#include <ctime>
 #include <cassert>
 
 using namespace Httpd;
@@ -32,12 +33,32 @@ namespace
 
 		return first;
 	}
+
+	UInt16 ParseUInt16(char *&p)
+	{
+		int i = 0;
+		while (*p >= '0' && *p <= '9') {
+			if ((i = i * 10 + (*p - '0')) > 65535)
+				i = 65535;
+			++p;
+		}
+		return i;
+	}
+
+	char *Weekdays[7] = {
+		"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
+	};
+
+	char *Months[12] = {
+		"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+	};
 }
 
 namespace Httpd
 {
 	HttpRequest::HttpRequest(Socket &socket)
-		: socket(socket), buffer(MinRequestBufferSize * 2), begin(0), end(0), contentLength(NullOffset), chunked(false)
+		: socket(socket), buffer(MinRequestBufferSize * 2), begin(0), end(0), contentLength(0), chunked(false)
 	{
 		bool done = false;
 		bool title = true;
@@ -82,9 +103,15 @@ namespace Httpd
 						} else {
 							uriLast = first;
 							*first++ = '\0';
-							// TODO: parse HTTP/xx.xx from `first'
-							this->majorVer = 1;
-							this->minorVer = 1;
+							if (strncmp(first, "HTTP/", 5))
+								throw BadRequestException();
+							first += 5;
+							this->majorVer = ParseUInt16(first);
+							if (*first++ != '.')
+								throw BadRequestException();
+							this->minorVer = ParseUInt16(first);
+							if (*first != '\0')
+								throw BadRequestException();
 
 							if (this->majorVer != 1)
 								throw HttpVersionNotSupportedException();
@@ -166,7 +193,7 @@ namespace Httpd
 							if (this->host == NullOffset && !_stricmp(first, "Host")) {
 								this->host = second - base;
 							} else if (!_stricmp(first, "Content-Length")) {
-								// TODO: parse Int64
+								// TODO: parse UInt64
 							} else if (!_stricmp(first, "Transfer-Encoding")) {
 								if (_stricmp(second, "identity"))
 									this->chunked = true;
@@ -217,13 +244,16 @@ namespace Httpd
 		throw NotImplementedException();
 	}
 
-	HttpResponse::HttpResponse(Socket &socket, HttpVersion requestVer)
-		: socket(socket), buffer(TitleSize), requestVer(requestVer), titleOffset(TitleSize), entity(false), chunked(false)
+	HttpResponse::HttpResponse(Socket &socket, HttpVersion requestVersion, bool requestKeepAlive)
+		: assumeKeepAlive(requestVersion.first == 1 && requestVersion.second >= 1)
+		, entity(requestVersion.first == 0), keepAlive(requestKeepAlive)
+		, chunked(requestVersion.first == 1 && requestVersion.second >= 1)
+		, socket(socket), buffer(TitleSize), titleOffset(TitleSize)
 	{}
 
 	void HttpResponse::AppendTitle(UInt16 status)
 	{
-		if (this->requestVer.first == 0 || this->entity)
+		if (this->entity)
 			return;
 
 		wsprintfA(&*this->buffer.begin(), "HTTP/1.1 %u %s\r\n",
@@ -235,33 +265,55 @@ namespace Httpd
 
 	void HttpResponse::AppendHeader(HttpHeader header)
 	{
-		if (this->requestVer.first == 0)
+		if (this->entity)
 			return;
 
-		if (!this->entity) {
-			const size_t first_len = strlen(header.first);
-			const char *colon = ": ";
-			const size_t second_len = strlen(header.second);
-			const char *crlf = "\r\n";
-			const size_t newSize = this->buffer.size() + first_len + second_len + 4;
+		const size_t first_len = strlen(header.first);
+		const char *colon = ": ";
+		const size_t second_len = strlen(header.second);
+		const char *crlf = "\r\n";
+		const size_t newSize = this->buffer.size() + first_len + second_len + 4;
 
-			if (newSize >= MaxResponseHeaderSize)
-				throw SystemException();
+		if (newSize >= MaxResponseHeaderSize)
+			throw SystemException();
 
-			this->buffer.reserve(newSize);
-			this->buffer.insert(this->buffer.end(), header.first, header.first + first_len);
-			this->buffer.insert(this->buffer.end(), colon, colon + 2);
-			this->buffer.insert(this->buffer.end(), header.second, header.second + second_len);
-			this->buffer.insert(this->buffer.end(), crlf, crlf + 2);
-		} else {
-			// TODO: Chunked encoding supports header in entity
-		}
+		this->buffer.reserve(newSize);
+		this->buffer.insert(this->buffer.end(), header.first, header.first + first_len);
+		this->buffer.insert(this->buffer.end(), colon, colon + 2);
+		this->buffer.insert(this->buffer.end(), header.second, header.second + second_len);
+		this->buffer.insert(this->buffer.end(), crlf, crlf + 2);
 	}
 
-	void HttpResponse::EndHeader()
+	void HttpResponse::EndHeader(bool lengthProvided)
 	{
-		if (this->requestVer.first == 0 || this->entity)
+		if (this->entity)
 			return;
+
+		if (lengthProvided)
+			this->chunked = false;
+		else if (!this->chunked)
+			this->keepAlive = false;
+
+		if (this->chunked)
+			AppendHeader(HttpHeader("Transfer-Encoding", "chunked"));
+
+		if (!this->keepAlive)
+			AppendHeader(HttpHeader("Connection", "close"));
+		else if (!this->assumeKeepAlive)
+			AppendHeader(HttpHeader("Connection", "keep-alive"));
+
+		AppendHeader(HttpHeader("Server", "icyhttpd/0.0"));
+
+		__time64_t currentTime;
+		tm currentTm;
+
+		char dateBuffer[32];
+		_time64(&currentTime);
+		_gmtime64_s(&currentTm, &currentTime);
+        wsprintfA(dateBuffer, "%3s, %02d %3s %04d %02d:%02d:%02d GMT",
+            Weekdays[currentTm.tm_wday], currentTm.tm_mday, Months[currentTm.tm_mon],
+			currentTm.tm_year + 1900, currentTm.tm_hour, currentTm.tm_min, currentTm.tm_sec);
+		AppendHeader(HttpHeader("Date", dateBuffer));
 
 		const char *crlf = "\r\n";
 		this->buffer.insert(this->buffer.end(), crlf, crlf + 2);
@@ -271,9 +323,7 @@ namespace Httpd
 
 	void HttpResponse::Write(const char *buffer, UInt32 size)
 	{
-		if (!this->entity)
-			this->EndHeader();
-
+		assert(this->entity);
 		socket.Write(buffer, size);
 	}
 
@@ -288,67 +338,57 @@ namespace Httpd
 	}
 }
 
-namespace
-{
-	std::unordered_map<UInt16, const char *> reason;
-
-	void setReason(UInt16 status, const char *phrase)
-	{
-		reason.insert(make_pair(status, phrase));
-	}
-}
-
 namespace Httpd
 {
 	HttpUtility &HttpUtility::Instance()
 	{
-		HttpUtility *u(new HttpUtility());
+		static HttpUtility *u(new HttpUtility());
 		return *u;
 	}
 
 	HttpUtility::HttpUtility()
 	{
-		setReason(100, "Continue");
-		setReason(101, "Switching Protocols");
-		setReason(200, "OK");
-		setReason(201, "Created");
-		setReason(202, "Accepted");
-		setReason(203, "Non-Authoritative Information");
-		setReason(204, "No Content");
-		setReason(205, "Reset Content");
-		setReason(206, "Partial Content");
-		setReason(300, "Multiple Choices");
-		setReason(301, "Moved Permanently");
-		setReason(302, "Found");
-		setReason(303, "See Other");
-		setReason(304, "Not Modified");
-		setReason(305, "Use Proxy");
+		reason.insert(make_pair(100, "Continue"));
+		reason.insert(make_pair(101, "Switching Protocols"));
+		reason.insert(make_pair(200, "OK"));
+		reason.insert(make_pair(201, "Created"));
+		reason.insert(make_pair(202, "Accepted"));
+		reason.insert(make_pair(203, "Non-Authoritative Information"));
+		reason.insert(make_pair(204, "No Content"));
+		reason.insert(make_pair(205, "Reset Content"));
+		reason.insert(make_pair(206, "Partial Content"));
+		reason.insert(make_pair(300, "Multiple Choices"));
+		reason.insert(make_pair(301, "Moved Permanently"));
+		reason.insert(make_pair(302, "Found"));
+		reason.insert(make_pair(303, "See Other"));
+		reason.insert(make_pair(304, "Not Modified"));
+		reason.insert(make_pair(305, "Use Proxy"));
 		// 306 is unused and reserved
-		setReason(307, "Temporary Redirect");
-		setReason(400, "Bad Request");
-		setReason(401, "Unauthorized");
-		setReason(402, "Payment Required");
-		setReason(403, "Forbidden");
-		setReason(404, "Not Found");
-		setReason(405, "Method Not Allowed");
-		setReason(406, "Not Acceptable");
-		setReason(407, "Proxy Authentication Required");
-		setReason(408, "Request Timeout");
-		setReason(409, "Conflict");
-		setReason(410, "Gone");
-		setReason(411, "Length Required");
-		setReason(412, "Precondition Failed");
-		setReason(413, "Request Entity Too Large");
-		setReason(414, "Request-URI Too Long");
-		setReason(415, "Unsupported Media Type");
-		setReason(416, "Request Range Not Satisfiable");
-		setReason(417, "Expectation Failed");
-		setReason(500, "Internal Server Error");
-		setReason(501, "Not Implemented");
-		setReason(502, "Bad Gateway");
-		setReason(503, "Service Unavailable");
-		setReason(504, "Gateway Timeout");
-		setReason(505, "HTTP Version Not Supported");
+		reason.insert(make_pair(307, "Temporary Redirect"));
+		reason.insert(make_pair(400, "Bad Request"));
+		reason.insert(make_pair(401, "Unauthorized"));
+		reason.insert(make_pair(402, "Payment Required"));
+		reason.insert(make_pair(403, "Forbidden"));
+		reason.insert(make_pair(404, "Not Found"));
+		reason.insert(make_pair(405, "Method Not Allowed"));
+		reason.insert(make_pair(406, "Not Acceptable"));
+		reason.insert(make_pair(407, "Proxy Authentication Required"));
+		reason.insert(make_pair(408, "Request Timeout"));
+		reason.insert(make_pair(409, "Conflict"));
+		reason.insert(make_pair(410, "Gone"));
+		reason.insert(make_pair(411, "Length Required"));
+		reason.insert(make_pair(412, "Precondition Failed"));
+		reason.insert(make_pair(413, "Request Entity Too Large"));
+		reason.insert(make_pair(414, "Request-URI Too Long"));
+		reason.insert(make_pair(415, "Unsupported Media Type"));
+		reason.insert(make_pair(416, "Request Range Not Satisfiable"));
+		reason.insert(make_pair(417, "Expectation Failed"));
+		reason.insert(make_pair(500, "Internal Server Error"));
+		reason.insert(make_pair(501, "Not Implemented"));
+		reason.insert(make_pair(502, "Bad Gateway"));
+		reason.insert(make_pair(503, "Service Unavailable"));
+		reason.insert(make_pair(504, "Gateway Timeout"));
+		reason.insert(make_pair(505, "HTTP Version Not Supported"));
 	}
 
 	const char *HttpUtility::ReasonPhrase(UInt16 status)

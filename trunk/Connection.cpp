@@ -57,9 +57,7 @@ namespace Httpd
 					HttpResponse response(conn.socket, requestVer, keepAlive);
 					handler.Handle(request, response);
 
-					// TODO: Implement
-					throw NotImplementedException();
-
+					keepAlive = response.KeepAlive()
 				} catch (const HttpException &ex) {
 					HttpResponse response(conn.socket, requestVer, keepAlive);
 					response.AppendTitle(ex.StatusCode());

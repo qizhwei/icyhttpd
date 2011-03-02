@@ -52,9 +52,11 @@ namespace Httpd
 		void AppendTitle(UInt16 status);
 		void AppendHeader(HttpHeader header);
 		void EndHeader(bool lengthProvided);
-		virtual void Write(const char *buffer, UInt32 size);
-		// TODO: TransmitFile, dynamic_cast<Socket &> if bad_cast, simulate
+		void Write(const char *buffer, UInt32 size);
+		// TODO: TransmitFile
 		void Flush();
+		bool KeepAlive() { return keepAlive; }
+
 	private:
 		Socket &socket;
 		bool assumeKeepAlive;

@@ -53,6 +53,18 @@ namespace
 		"Jan", "Feb", "Mar", "Apr", "May", "Jun",
 		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 	};
+
+	void GetCurrentDate(char dateBuffer[32])
+	{
+		__time64_t currentTime;
+		tm currentTm;
+
+		_time64(&currentTime);
+		_gmtime64_s(&currentTm, &currentTime);
+        wsprintfA(dateBuffer, "%3s, %02d %3s %04d %02d:%02d:%02d GMT",
+            Weekdays[currentTm.tm_wday], currentTm.tm_mday, Months[currentTm.tm_mon],
+			currentTm.tm_year + 1900, currentTm.tm_hour, currentTm.tm_min, currentTm.tm_sec);
+	}
 }
 
 namespace Httpd
@@ -304,15 +316,8 @@ namespace Httpd
 
 		AppendHeader(HttpHeader("Server", "icyhttpd/0.0"));
 
-		__time64_t currentTime;
-		tm currentTm;
-
 		char dateBuffer[32];
-		_time64(&currentTime);
-		_gmtime64_s(&currentTm, &currentTime);
-        wsprintfA(dateBuffer, "%3s, %02d %3s %04d %02d:%02d:%02d GMT",
-            Weekdays[currentTm.tm_wday], currentTm.tm_mday, Months[currentTm.tm_mon],
-			currentTm.tm_year + 1900, currentTm.tm_hour, currentTm.tm_min, currentTm.tm_sec);
+		GetCurrentDate(dateBuffer);
 		AppendHeader(HttpHeader("Date", dateBuffer));
 
 		const char *crlf = "\r\n";

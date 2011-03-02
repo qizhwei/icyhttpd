@@ -7,7 +7,7 @@
 
 namespace Httpd
 {
-	class Socket: NonCopyable, public Readable, public Writable
+	class Socket: NonCopyable
 	{
 	public:
 		Socket();
@@ -19,9 +19,10 @@ namespace Httpd
 		void Listen(int backlog = SOMAXCONN);
 		void Accept(Socket &acceptSocket);
 		void Disconnect(bool reuse);
-		virtual UInt32 Read(char *buffer, UInt32 size);
-		virtual void Write(const char *buffer, UInt32 size);
-		// TODO: TransmitFile
+		UInt32 Read(char *buffer, UInt32 size);
+		void Write(const char *buffer, UInt32 size);
+		void Write(const char *buffer0, UInt32 size0, const char *buffer1, UInt32 size1);
+		void TransmitFile(HANDLE hFile, UInt64 offset = 0, UInt32 size = 0);
 
 	private:
 		SOCKET hSocket;

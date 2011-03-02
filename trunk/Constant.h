@@ -29,6 +29,9 @@ namespace Httpd
 	const size_t MinRequestBufferSize = 2048;
 	const size_t MaxRequestBufferSize = 32768; // must be able to represent in UInt16
 	const size_t MaxResponseHeaderSize = 32768;
+
+	// Pipe buffer size
+	const DWORD PipeBufferSize = 4096;
 }
 
 #endif

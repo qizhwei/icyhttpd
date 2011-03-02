@@ -81,7 +81,6 @@
     <ClCompile Include="Connection.cpp" />
     <ClCompile Include="Dispatcher.cpp" />
     <ClCompile Include="Exception.cpp" />
-    <ClCompile Include="File.cpp" />
     <ClCompile Include="EchoHandler.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Endpoint.cpp" />
@@ -90,6 +89,7 @@
     <ClCompile Include="Http.cpp" />
     <ClCompile Include="Socket.cpp" />
     <ClCompile Include="SocketPool.cpp" />
+    <ClCompile Include="Utility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BufferedWriter.h" />
@@ -99,7 +99,6 @@
     <ClInclude Include="Dispatcher.h" />
     <ClInclude Include="EchoHandler.h" />
     <ClInclude Include="Exception.h" />
-    <ClInclude Include="File.h" />
     <ClInclude Include="Handler.h" />
     <ClInclude Include="Http.h" />
     <ClInclude Include="Node.h" />

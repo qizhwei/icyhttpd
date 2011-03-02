@@ -21,10 +21,10 @@ namespace
 
 		virtual bool operator()()
 		{
-			return static_cast<bool>(SocketPool::Instance().AcceptEx()(
+			return SocketPool::Instance().AcceptEx()(
 				this->hSocket, this->hAcceptSocket, buffer,
 				0, AddressLength, AddressLength, NULL, this)
-				|| WSAGetLastError() == ERROR_IO_PENDING);
+				|| WSAGetLastError() == ERROR_IO_PENDING;
 		}
 
 	private:
@@ -42,9 +42,9 @@ namespace
 
 		virtual bool operator()()
 		{
-			return static_cast<bool>(SocketPool::Instance().DisconnectEx()(
+			return SocketPool::Instance().DisconnectEx()(
 				this->hSocket, this, this->reuse ? TF_REUSE_SOCKET : 0, 0)
-				|| WSAGetLastError() == ERROR_IO_PENDING);
+				|| WSAGetLastError() == ERROR_IO_PENDING;
 		}
 
 	private:
@@ -65,8 +65,8 @@ namespace
 		virtual bool operator()()
 		{
 			DWORD dwFlags = 0;
-			return static_cast<bool>(!WSARecv(this->hSocket, &this->WSABuf, 1, NULL,
-				&dwFlags, this, NULL) || WSAGetLastError() == ERROR_IO_PENDING);
+			return !WSARecv(this->hSocket, &this->WSABuf, 1, NULL, &dwFlags, this, NULL)
+				|| WSAGetLastError() == ERROR_IO_PENDING;
 		}
 
 	private:
@@ -86,13 +86,56 @@ namespace
 
 		virtual bool operator()()
 		{
-			return static_cast<bool>(!WSASend(this->hSocket, &this->WSABuf, 1, NULL,
-				0, this, NULL) || WSAGetLastError() == ERROR_IO_PENDING);
+			return !WSASend(this->hSocket, &this->WSABuf, 1, NULL, 0, this, NULL)
+				|| WSAGetLastError() == ERROR_IO_PENDING;
 		}
 
 	private:
 		SOCKET hSocket;
 		WSABUF WSABuf;
+	};
+
+	class WriteOperation2: public OverlappedOperation
+	{
+	public:
+		WriteOperation2(SOCKET hSocket, const char *buffer0, UInt32 size0, const char *buffer1, UInt32 size1)
+			: hSocket(hSocket)
+		{
+			WSABuf[0].buf = const_cast<char *>(buffer0);
+			WSABuf[0].len = size0;
+			WSABuf[1].buf = const_cast<char *>(buffer1);
+			WSABuf[1].len = size1;
+		}
+
+		virtual bool operator()()
+		{
+			return !WSASend(this->hSocket, &this->WSABuf[0], 2, NULL, 0, this, NULL)
+				|| WSAGetLastError() == ERROR_IO_PENDING;
+		}
+
+	private:
+		SOCKET hSocket;
+		WSABUF WSABuf[2];
+	};
+
+	class TransmitFileOperation: public OverlappedOperation
+	{
+	public:
+		TransmitFileOperation(SOCKET hSocket, HANDLE hFile, UInt64 offset, UInt32 size)
+			: hSocket(hSocket), hFile(hFile), OverlappedOperation(offset), size(size)
+		{}
+
+		virtual bool operator()()
+		{
+			return SocketPool::Instance().TransmitFile()(
+				this->hSocket, this->hFile, size, 0, this, NULL, 0)
+				|| WSAGetLastError() == ERROR_IO_PENDING;
+		}
+
+	private:
+		SOCKET hSocket;
+		HANDLE hFile;
+		UInt32 size;
 	};
 }
 
@@ -137,7 +180,6 @@ namespace Httpd
 	void Socket::Accept(Socket &acceptSocket)
 	{
 		AcceptOperation operation(this->hSocket, acceptSocket.hSocket);
-
 		this->canReuse = false;
 		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation);
 		acceptSocket.canReuse = false;
@@ -146,7 +188,6 @@ namespace Httpd
 	void Socket::Disconnect(bool reuse)
 	{
 		DisconnectOperation operation(this->hSocket, reuse);
-
 		this->canReuse = false;
 		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation);
 		this->canReuse = reuse;
@@ -155,7 +196,6 @@ namespace Httpd
 	UInt32 Socket::Read(char *buffer, UInt32 size)
 	{
 		ReadOperation operation(this->hSocket, buffer, size);
-
 		this->canReuse = false;
 		return Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation);
 	}
@@ -163,7 +203,20 @@ namespace Httpd
 	void Socket::Write(const char *buffer, UInt32 size)
 	{
 		WriteOperation operation(this->hSocket, buffer, size);
+		this->canReuse = false;
+		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation);
+	}
 
+	void Socket::Write(const char *buffer0, UInt32 size0, const char *buffer1, UInt32 size1)
+	{
+		WriteOperation2 operation(this->hSocket, buffer0, size0, buffer1, size1);
+		this->canReuse = false;
+		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation);
+	}
+
+	void Socket::TransmitFile(HANDLE hFile, UInt64 offset, UInt32 size)
+	{
+		TransmitFileOperation operation(this->hSocket, hFile, offset, size);
 		this->canReuse = false;
 		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation);
 	}

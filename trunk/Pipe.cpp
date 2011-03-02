@@ -11,14 +11,14 @@ namespace
 	class ReadOperation: public OverlappedOperation
 	{
 	public:
-		ReadOperation(HANDLE hFile, Int64 offset, char *buffer, UInt32 size)
-			: hFile(hFile), OverlappedOperation(offset), buffer(buffer), size(size)
+		ReadOperation(HANDLE hFile, char *buffer, UInt32 size)
+			: hFile(hFile), buffer(buffer), size(size)
 		{}
 
 		virtual bool operator()()
 		{
-			return static_cast<bool>(ReadFile(this->hFile, this->buffer, this->size,
-				NULL, this) || GetLastError() == ERROR_IO_PENDING);
+			return ReadFile(this->hFile, this->buffer, this->size, NULL, this)
+				|| GetLastError() == ERROR_IO_PENDING;
 		}
 
 	private:
@@ -30,14 +30,14 @@ namespace
 	class WriteOperation: public OverlappedOperation
 	{
 	public:
-		WriteOperation(HANDLE hFile, Int64 offset, const char *buffer, UInt32 size)
-			: hFile(hFile), OverlappedOperation(offset), buffer(buffer), size(size)
+		WriteOperation(HANDLE hFile, const char *buffer, UInt32 size)
+			: hFile(hFile), buffer(buffer), size(size)
 		{}
 
 		virtual bool operator()()
 		{
-			return static_cast<bool>(WriteFile(this->hFile, this->buffer, this->size,
-				NULL, this) || GetLastError() == ERROR_IO_PENDING);
+			return WriteFile(this->hFile, this->buffer, this->size, NULL, this)
+				|| GetLastError() == ERROR_IO_PENDING;
 		}
 
 	private:
@@ -49,53 +49,19 @@ namespace
 
 namespace Httpd
 {
-	PipeHandle::PipeHandle(HANDLE hPipe)
-		: hPipe(hPipe)
-	{}
-
-	HANDLE PipeHandle::Handle()
-	{
-		return hPipe;
-	}
-
-	PipeHandle::~PipeHandle()
-	{
-		CloseHandle(hPipe);
-	}
-
-	PipeReader::PipeReader(HANDLE hPipe)
-		: pipe(hPipe)
-	{}
-
-	UInt32 PipeReader::Read(char *buffer, UInt32 size)
-	{
-		ReadOperation operation(this->pipe.Handle(), 0, buffer, size);
-		return Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->pipe.Handle()), operation);
-	}
-
-	PipeWriter::PipeWriter(HANDLE hPipe)
-		: pipe(hPipe)
-	{}
-
-	void PipeWriter::Write(const char *buffer, UInt32 size)
-	{
-		WriteOperation operation(this->pipe.Handle(), 0, buffer, size);
-		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->pipe.Handle()), operation);
-	}
-
 	Pipe::Pipe(HANDLE hPipe)
 		: pipe(hPipe)
 	{}
 
 	UInt32 Pipe::Read(char *buffer, UInt32 size)
 	{
-		ReadOperation operation(this->pipe.Handle(), 0, buffer, size);
+		ReadOperation operation(this->pipe.Handle(), buffer, size);
 		return Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->pipe.Handle()), operation);
 	}
 
 	void Pipe::Write(const char *buffer, UInt32 size)
 	{
-		WriteOperation operation(this->pipe.Handle(), 0, buffer, size);
+		WriteOperation operation(this->pipe.Handle(), buffer, size);
 		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->pipe.Handle()), operation);
 	}
 }

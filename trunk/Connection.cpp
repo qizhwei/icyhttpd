@@ -57,13 +57,14 @@ namespace Httpd
 					HttpResponse response(conn.socket, requestVer, keepAlive);
 					handler.Handle(request, response);
 
-					keepAlive = response.KeepAlive()
+					keepAlive = response.KeepAlive();
+
+					// TODO: Ignore remaining entity data in request
+
 				} catch (const HttpException &ex) {
 					HttpResponse response(conn.socket, requestVer, keepAlive);
-					response.AppendTitle(ex.StatusCode());
 					response.AppendHeader(HttpHeader("Content-Length", "0"));
-					response.EndHeader(true);
-					response.Flush();
+					response.EndHeader(ex.StatusCode(), true);
 				}
 			} while (keepAlive);
 		} catch (const std::exception &) {

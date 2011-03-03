@@ -257,23 +257,11 @@ namespace Httpd
 	}
 
 	HttpResponse::HttpResponse(Socket &socket, HttpVersion requestVersion, bool requestKeepAlive)
-		: assumeKeepAlive(requestVersion.first == 1 && requestVersion.second >= 1)
+		: socket(socket)
+		, assumeKeepAlive(requestVersion.first == 1 && requestVersion.second >= 1)
 		, entity(requestVersion.first == 0), keepAlive(requestKeepAlive)
 		, chunked(requestVersion.first == 1 && requestVersion.second >= 1)
-		, socket(socket), buffer(TitleSize), titleOffset(TitleSize)
 	{}
-
-	void HttpResponse::AppendTitle(UInt16 status)
-	{
-		if (this->entity)
-			return;
-
-		wsprintfA(&*this->buffer.begin(), "HTTP/1.1 %u %s\r\n",
-			static_cast<unsigned int>(status), HttpUtility::Instance().ReasonPhrase(status));
-		const size_t titleSize = strlen(&*this->buffer.begin());
-		this->titleOffset = TitleSize - titleSize;
-		memmove(&this->buffer[this->titleOffset], &*this->buffer.begin(), titleSize);
-	}
 
 	void HttpResponse::AppendHeader(HttpHeader header)
 	{
@@ -296,33 +284,46 @@ namespace Httpd
 		this->buffer.insert(this->buffer.end(), crlf, crlf + 2);
 	}
 
-	void HttpResponse::EndHeader(bool lengthProvided)
+	void HttpResponse::EndHeader(UInt16 status, bool lengthProvided)
 	{
 		if (this->entity)
 			return;
+
+		char titleBuffer[48];
+		wsprintfA(titleBuffer, "HTTP/1.1 %u %s\r\n",
+			static_cast<unsigned int>(status), HttpUtility::Instance().ReasonPhrase(status));
+		size_t const titleSize = strlen(titleBuffer);
 
 		if (lengthProvided)
 			this->chunked = false;
 		else if (!this->chunked)
 			this->keepAlive = false;
 
+		// Server header
+		AppendHeader(HttpHeader("Server", "icyhttpd/0.0"));
+
+		// Date header
+		char dateBuffer[32];
+		GetCurrentDate(dateBuffer);
+		AppendHeader(HttpHeader("Date", dateBuffer));
+
+		// Transfer encoding header
 		if (this->chunked)
 			AppendHeader(HttpHeader("Transfer-Encoding", "chunked"));
 
+		// Connection header
 		if (!this->keepAlive)
 			AppendHeader(HttpHeader("Connection", "close"));
 		else if (!this->assumeKeepAlive)
 			AppendHeader(HttpHeader("Connection", "keep-alive"));
 
-		AppendHeader(HttpHeader("Server", "icyhttpd/0.0"));
-
-		char dateBuffer[32];
-		GetCurrentDate(dateBuffer);
-		AppendHeader(HttpHeader("Date", dateBuffer));
-
+		// Final CRLF
 		const char *crlf = "\r\n";
 		this->buffer.insert(this->buffer.end(), crlf, crlf + 2);
-		this->Flush();
+
+		// Write socket and clear buffer
+		this->socket.Write(titleBuffer, titleSize, &*this->buffer.begin(), this->buffer.size());
+		vector<char>().swap(this->buffer);
 		this->entity = true;
 	}
 
@@ -330,16 +331,6 @@ namespace Httpd
 	{
 		assert(this->entity);
 		socket.Write(buffer, size);
-	}
-
-	void HttpResponse::Flush()
-	{
-		const size_t size = this->buffer.size() - this->titleOffset;
-		if (size != 0) {
-			socket.Write(&this->buffer[this->titleOffset], size);
-			vector<char>().swap(this->buffer);
-			this->titleOffset = 0;
-		}
 	}
 }
 

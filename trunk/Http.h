@@ -39,6 +39,7 @@ namespace Httpd
 		UInt16 method, uri, ext, query, host;
 		UInt16 majorVer, minorVer;
 		UInt64 contentLength;
+		// TODO: union { remaining length (identity context), chunked context }
 		bool chunked;
 		bool keepAlive;
 
@@ -49,12 +50,10 @@ namespace Httpd
 	{
 	public:
 		HttpResponse(Socket &socket, HttpVersion requestVersion, bool requestKeepAlive);
-		void AppendTitle(UInt16 status);
 		void AppendHeader(HttpHeader header);
-		void EndHeader(bool lengthProvided);
+		void EndHeader(UInt16 status, bool lengthProvided);
 		void Write(const char *buffer, UInt32 size);
 		// TODO: TransmitFile
-		void Flush();
 		bool KeepAlive() { return keepAlive; }
 
 	private:
@@ -65,9 +64,6 @@ namespace Httpd
 		bool chunked;
 
 		std::vector<char> buffer;
-		UInt16 titleOffset;
-
-		static const size_t TitleSize = 48;
 	};
 
 	class HttpUtility: NonCopyable

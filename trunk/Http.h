@@ -25,7 +25,7 @@ namespace Httpd
 		const char *QueryString() { return query == NullOffset ? "" : &buffer[query]; }
 		const char *Host() { return host == NullOffset ? "" : &buffer[host]; }
 		HttpVersion Version() { return HttpVersion(majorVer, minorVer); }
-		UInt64 ContentLength() { return contentLength; }
+		UInt64 RemainingLength() { return remainingLength; }
 		bool Chunked() { return chunked; }
 		bool KeepAlive() { return keepAlive; }
 		size_t HeaderCount() { return headers.size(); }
@@ -38,12 +38,11 @@ namespace Httpd
 		std::vector<std::pair<UInt16, UInt16> > headers;
 		UInt16 method, uri, ext, query, host;
 		UInt16 majorVer, minorVer;
-		UInt64 contentLength;
-		// TODO: union { remaining length (identity context), chunked context }
+		UInt64 remainingLength;
 		bool chunked;
 		bool keepAlive;
 
-		static const UInt16 NullOffset = 65535;
+		static const UInt16 NullOffset = UINT16_MAX;
 	};
 
 	class HttpResponse: NonCopyable

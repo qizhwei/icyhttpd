@@ -38,11 +38,51 @@ namespace
 	{
 		int i = 0;
 		while (*p >= '0' && *p <= '9') {
-			if ((i = i * 10 + (*p - '0')) > 65535)
-				i = 65535;
+			if ((i = i * 10 + (*p - '0')) > UINT16_MAX)
+				i = UINT16_MAX;
 			++p;
 		}
 		return i;
+	}
+
+	UInt64 ParseUInt64Dec(char *p)
+	{
+		size_t len = strlen(p);
+		if (len > 20 || (len == 20 && memcmp(p, "18446744073709551615", 20) >= 0))
+			return UINT64_MAX;
+
+		UInt64 u = 0;
+		while (*p != '\0') {
+			if (*p >= '0' && *p <= '9')
+				u = u * 10 + (*p - '0');
+			else
+				return UINT64_MAX;
+			++p;
+		}
+
+		return u;
+	}
+
+	UInt64 ParseUInt64Hex(char *p)
+	{
+		size_t len = strlen(p);
+		if (len > 16)
+			return UINT64_MAX;
+
+		UInt16 u = 0;
+		while (*p != '\0') {
+			if (*p >= '0' && *p <= '9')
+				u = (u << 4) | (*p - '0');
+			else if (*p >= 'a' && *p <= 'f')
+				u = (u << 4) | (*p - 'a' + 10);
+			else if (*p >= 'A' && *p <= 'F')
+				u = (u << 4) | (*p - 'A' + 10);
+			else
+				return UINT64_MAX;
+			++p;
+		}
+
+		return u;
 	}
 
 	char *Weekdays[7] = {
@@ -70,7 +110,7 @@ namespace
 namespace Httpd
 {
 	HttpRequest::HttpRequest(Socket &socket)
-		: socket(socket), buffer(MinRequestBufferSize * 2), begin(0), end(0), contentLength(0), chunked(false)
+		: socket(socket), buffer(MinRequestBufferSize * 2), begin(0), end(0), remainingLength(0), chunked(false)
 	{
 		bool done = false;
 		bool title = true;
@@ -199,16 +239,18 @@ namespace Httpd
 							while (last[-1] == ' ' || last[-1] == '\t')
 								*--last = '\0';
 
-							this->headers.push_back(std::pair<Int16, Int16>(first - base, second - base));
-
 							// Filter out known headers
 							if (this->host == NullOffset && !_stricmp(first, "Host")) {
 								this->host = second - base;
 							} else if (!_stricmp(first, "Content-Length")) {
-								// TODO: parse UInt64
+								if ((this->remainingLength = ParseUInt64Dec(second)) == UINT64_MAX)
+									throw RequestEntityTooLargeException();
+								this->chunked = false;
 							} else if (!_stricmp(first, "Transfer-Encoding")) {
-								if (_stricmp(second, "identity"))
+								if (_stricmp(second, "identity")) {
+									this->remainingLength = 0;
 									this->chunked = true;
+								}
 							} else if (!_stricmp(first, "Connection")) {
 								do {
 									const char *option = ParseCommaList(second);
@@ -217,6 +259,8 @@ namespace Httpd
 									else if (!_stricmp(option, "Keep-Alive"))
 										this->keepAlive = true;
 								} while (second != nullptr);
+							} else {
+								this->headers.push_back(std::pair<Int16, Int16>(first - base, second - base));
 							}
 						}
 					}
@@ -238,7 +282,22 @@ namespace Httpd
 
 	UInt32 HttpRequest::Read(char *buffer, UInt32 size)
 	{
-		// TODO: first read from [this->begin, this->end), then read through
+		if (remainingLength == 0) {
+			if (chunked) {
+				// TODO: read chunk size to remainingLength
+				if (remainingLength == 0) {
+					this->chunked = false;
+					return 0;
+				}
+			} else {
+				return 0;
+			}
+		}
+
+		if (remainingLength < size)
+			size = remainingLength;
+
+		// TODO: first read from [this->begin, this->end), then read through, update remainingLength
 		throw NotImplementedException();
 	}
 

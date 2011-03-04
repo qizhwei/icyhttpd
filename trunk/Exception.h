@@ -52,6 +52,12 @@ namespace Httpd
 	public:
 		virtual Int16 StatusCode() const;
 	};
+
+	class RequestEntityTooLargeException: public HttpException
+	{
+	public:
+		virtual Int16 StatusCode() const;
+	};
 }
 
 #endif

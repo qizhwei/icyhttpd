@@ -43,7 +43,7 @@ namespace Httpd
 					printf("[Title] Extension: %s\n", request.Extension());
 					printf("[Title] Query String: %s\n", request.QueryString());
 					printf("[Title] Host: %s\n", request.Host());
-					printf("[Title] Content-Length: %lld\n", request.ContentLength());
+					printf("[Title] Content-Length: %llu\n", (unsigned long long)request.RemainingLength());
 					printf("[Title] Keep-Alive: %s\n", request.KeepAlive() ? "(true)" : "(false)");
 					printf("[Title] Chunked: %s\n", request.Chunked() ? "(true)" : "(false)");
 

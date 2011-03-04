@@ -22,4 +22,9 @@ namespace Httpd
 	{
 		return 505;
 	}
+
+	Int16 RequestEntityTooLargeException::StatusCode() const
+	{
+		return 413;
+	}
 }

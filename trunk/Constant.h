@@ -31,6 +31,7 @@ namespace Httpd
 	const size_t MaxResponseHeaderSize = 32768;
 
 	// Pipe buffer size
+	const UInt32 BufferBlockSize = 4096;
 	const DWORD PipeBufferSize = 4096;
 }
 

@@ -23,20 +23,6 @@ namespace Httpd
 		NonCopyable(const NonCopyable &);
 		NonCopyable &operator=(const NonCopyable &);
 	};
-
-	class Readable
-	{
-	public:
-		virtual UInt32 Read(char *buffer, UInt32 size) = 0;
-		virtual ~Readable() {};
-	};
-
-	class Writable
-	{
-	public:
-		virtual void Write(const char *buffer, UInt32 size) = 0;
-		virtual ~Writable() {};
-	};
 }
 
 #endif

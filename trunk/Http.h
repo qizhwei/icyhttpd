@@ -2,6 +2,7 @@
 #define _HTTP_H
 
 #include "Types.h"
+#include "Stream.h"
 #include "Socket.h"
 #include <vector>
 #include <utility>
@@ -15,15 +16,15 @@ namespace Httpd
 	class HttpRequest: NonCopyable
 	{
 	public:
-		HttpRequest(Socket &socket);
+		HttpRequest(BufferedReader &reader);
 		void Flush();
 		UInt32 Read(char *buffer, UInt32 size);
 
-		const char *Method() { return &buffer[method]; }
-		const char *URI() { return &buffer[uri]; }
-		const char *Extension() { return ext == NullOffset ? "." : &buffer[ext]; };
-		const char *QueryString() { return query == NullOffset ? "" : &buffer[query]; }
-		const char *Host() { return host == NullOffset ? "" : &buffer[host]; }
+		const char *Method() { return reader.BasePointer() + method; }
+		const char *URI() { return reader.BasePointer() + uri; }
+		const char *Extension() { return ext == NullOffset ? "." : reader.BasePointer() + ext; };
+		const char *QueryString() { return query == NullOffset ? "" : reader.BasePointer() + query; }
+		const char *Host() { return host == NullOffset ? "" : reader.BasePointer() + host; }
 		HttpVersion Version() { return HttpVersion(majorVer, minorVer); }
 		UInt64 RemainingLength() { return remainingLength; }
 		bool Chunked() { return chunked; }
@@ -32,9 +33,7 @@ namespace Httpd
 		HttpHeader GetHeader(size_t index);
 
 	private:
-		Socket &socket;
-		std::vector<char> buffer;
-		size_t begin, end;
+		BufferedReader &reader;
 		std::vector<std::pair<UInt16, UInt16> > headers;
 		UInt16 method, uri, ext, query, host;
 		UInt16 majorVer, minorVer;

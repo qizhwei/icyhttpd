@@ -77,7 +77,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="BufferedWriter.cpp" />
     <ClCompile Include="Connection.cpp" />
     <ClCompile Include="Dispatcher.cpp" />
     <ClCompile Include="Exception.cpp" />
@@ -89,10 +88,11 @@
     <ClCompile Include="Http.cpp" />
     <ClCompile Include="Socket.cpp" />
     <ClCompile Include="SocketPool.cpp" />
+    <ClCompile Include="Stream.cpp" />
     <ClCompile Include="Utility.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BufferedWriter.h" />
+    <ClInclude Include="Stream.h" />
     <ClInclude Include="Utility.h" />
     <ClInclude Include="Connection.h" />
     <ClInclude Include="Constant.h" />

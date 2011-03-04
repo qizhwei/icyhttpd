@@ -1,7 +1,9 @@
 #include "Connection.h"
+#include "Constant.h"
 #include "Dispatcher.h"
 #include "Exception.h"
 #include "Socket.h"
+#include "Stream.h"
 #include "Http.h"
 #include "Endpoint.h"
 #include "Node.h"
@@ -27,14 +29,17 @@ namespace Httpd
 		Endpoint &ep = conn.endpoint;
 
 		printf("[Connection] Connection established\n");
-		
+
 		try {
+			Reader<Socket> socketReader(conn.socket);
+			BufferedReader bufferedReader(socketReader, MaxRequestBufferSize);
+
 			bool keepAlive;
 			HttpVersion requestVer(1, 1);
 			do {
 				try {
 					keepAlive = false;
-					HttpRequest request(conn.socket);
+					HttpRequest request(bufferedReader);
 					keepAlive = request.KeepAlive();
 					requestVer = request.Version();
 
@@ -55,12 +60,15 @@ namespace Httpd
 					Node &node = ep.GetNode(request.Host());
 					Handler &handler = node.GetHandler(request.Extension());
 					HttpResponse response(conn.socket, requestVer, keepAlive);
-					handler.Handle(request, response);
-
+					try {
+						handler.Handle(request, response);
+					} catch (...) {
+						keepAlive = response.KeepAlive();
+						request.Flush();
+						throw;
+					}
 					keepAlive = response.KeepAlive();
-
-					// TODO: Ignore remaining entity data in request
-
+					request.Flush();
 				} catch (const HttpException &ex) {
 					HttpResponse response(conn.socket, requestVer, keepAlive);
 					response.AppendHeader(HttpHeader("Content-Length", "0"));

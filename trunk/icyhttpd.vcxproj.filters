@@ -39,9 +39,6 @@
     <ClCompile Include="Exception.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="BufferedWriter.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="Pipe.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -52,6 +49,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="Utility.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Stream.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -95,13 +95,13 @@
     <ClInclude Include="Connection.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="BufferedWriter.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Http.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Utility.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Stream.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

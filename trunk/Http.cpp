@@ -114,175 +114,151 @@ namespace
 
 namespace Httpd
 {
-	HttpRequest::HttpRequest(Socket &socket)
-		: socket(socket), buffer(MinRequestBufferSize * 2), begin(0), end(0), remainingLength(0), chunked(false)
+	HttpRequest::HttpRequest(BufferedReader &reader)
+		: reader(reader), remainingLength(0), chunked(false)
 	{
 		bool done = false;
 		bool title = true;
 
 		while (!done) {
-			UInt32 bytesRead = socket.Read(&this->buffer[this->end], this->buffer.size() - this->end);
-
-			if (bytesRead == 0)
+			char *first = reader.ReadLine(true);
+			char * const base = this->reader.BasePointer();
+			if (first == nullptr)
 				throw SystemException();
 
-			for (size_t i = this->end; !done && i != this->end + bytesRead; ++i) {
-				if (this->buffer[i] == '\n') {
-					char *const base = &*this->buffer.begin();
-					char *first = &this->buffer[this->begin];
-					char *last = &this->buffer[i];
+			if (title) {
+				// Empty lines are ignored
+				if (first[0] == '\0')
+					continue;
 
-					// Eat CR and LF
-					*last = '\0';
-					if (first != last && last[-1] == '\r')
-						*--last = '\0';
+				// Request method
+				this->method = first - base;
+				if ((first = strchr(first, ' ')) == nullptr)
+					throw BadRequestException();
+				*first++ = '\0';
 
-					// Empty lines are ignored
-					if (title && first != last) {
+				// Version
+				char *uri = first;
+				char *uriLast;
+				if ((first = strchr(first, ' ')) == nullptr) {
+					uriLast = uri + strlen(uri);
+					this->majorVer = 0;
+					this->minorVer = 9;
+					this->keepAlive = false;
 
-						// Request method
-						this->method = first - base;
-						if ((first = strchr(first, ' ')) == nullptr)
-							throw BadRequestException();
-						*first++ = '\0';
+					// HTTP/0.9 requests don't have headers
+					done = true;
+				} else {
+					uriLast = first;
+					*first++ = '\0';
+					if (strncmp(first, "HTTP/", 5))
+						throw BadRequestException();
+					first += 5;
+					this->majorVer = ParseUInt16(first);
+					if (*first++ != '.')
+						throw BadRequestException();
+					this->minorVer = ParseUInt16(first);
+					if (*first != '\0')
+						throw BadRequestException();
 
-						// Version
-						char *uri = first;
-						char *uriLast;
-						if ((first = strchr(first, ' ')) == nullptr) {
-							uriLast = uri + strlen(uri);
-							this->majorVer = 0;
-							this->minorVer = 9;
-							this->keepAlive = false;
+					if (this->majorVer != 1)
+						throw HttpVersionNotSupportedException();
+					if (this->minorVer == 0)
+						this->keepAlive = false;
+					else
+						this->keepAlive = true;
+				}
 
-							// HTTP/0.9 requests don't have headers
-							done = true;
-						} else {
-							uriLast = first;
-							*first++ = '\0';
-							if (strncmp(first, "HTTP/", 5))
-								throw BadRequestException();
-							first += 5;
-							this->majorVer = ParseUInt16(first);
-							if (*first++ != '.')
-								throw BadRequestException();
-							this->minorVer = ParseUInt16(first);
-							if (*first != '\0')
-								throw BadRequestException();
+				// Request URI
+				if (uri[0] == '/' || (uri[0] == '*' && uri[1] == '\0')) {
+					this->host = NullOffset;
+				} else {
+					if (_strnicmp(uri, "http://", 7))
+						throw BadRequestException();
+					char *host = uri;
+					if ((uri = strchr(uri + 7, '/')) == nullptr)
+						uri = uriLast;
+					memmove(host, host + 7, uri - host - 7);
+					host[uri - host - 7] = '\0';
+					if (uri == uriLast)
+						*--uri = '/';
+					uri[-1] = '\0';
 
-							if (this->majorVer != 1)
-								throw HttpVersionNotSupportedException();
-							if (this->minorVer == 0)
-								this->keepAlive = false;
-							else
-								this->keepAlive = true;
-						}
+					this->host = host - base;
+				}
 
-						// Request URI
-						if (uri[0] == '/' || (uri[0] == '*' && uri[1] == '\0')) {
-							this->host = NullOffset;
-						} else {
-							if (_strnicmp(uri, "http://", 7))
-								throw BadRequestException();
-							char *host = uri;
-							if ((uri = strchr(uri + 7, '/')) == nullptr)
-								uri = uriLast;
-							memmove(host, host + 7, uri - host - 7);
-							host[uri - host - 7] = '\0';
-							if (uri == uriLast)
-								*--uri = '/';
-							uri[-1] = '\0';
+				// Query string
+				char *query;
+				if ((query = strchr(uri, '?')) != nullptr) {
+					uriLast = query;
+					*query++ = '\0';
+					this->query = query - base;
+				} else {
+					this->query = NullOffset;
+				}
 
-							this->host = host - base;
-						}
+				// TODO: URI Decode and Rewrite dots and slashes in [uri, uriLast),
+				// DO NOT FORGET to update uriLast
 
-						// Query string
-						char *query;
-						if ((query = strchr(uri, '?')) != nullptr) {
-							uriLast = query;
-							*query++ = '\0';
-							this->query = query - base;
-						} else {
-							this->query = NullOffset;
-						}
-
-						// TODO: URI Decode and Rewrite dots and slashes in [uri, uriLast),
-						// DO NOT FORGET to update uriLast
-
-						// Extension
-						assert(uri[-1] == '\0');
-						char *ext = uriLast;
-						while (true) {
-							char c = *--ext;
-							if (c == '.') {
-								break;
-							} else if (c == '/' || c == '\0') {
-								ext = nullptr;
-								break;
-							}
-						}
-
-						this->uri = uri - base;
-						this->ext = ext != nullptr ? ext - base : -1;
-
-						title = false;
-					} else if (!title) {
-						if (*first == '\0') {
-							done = true;
-						} else if (*first == ' ' || *first == '\t') {
-							// Ignore the standard
-							throw BadRequestException();
-						} else {
-							char *second = strchr(first, ':');
-							if (second == nullptr)
-								throw BadRequestException();
-							*second++ = '\0';
-
-							// Eat leading and trailing LWS
-							while (*second == ' ' || *second == '\t')
-								++second;
-							while (last[-1] == ' ' || last[-1] == '\t')
-								*--last = '\0';
-
-							// Filter out known headers
-							if (this->host == NullOffset && !_stricmp(first, "Host")) {
-								this->host = second - base;
-							} else if (!_stricmp(first, "Content-Length")) {
-								if ((this->remainingLength = ParseUInt64Dec(second)) == UINT64_MAX)
-									throw RequestEntityTooLargeException();
-								this->chunked = false;
-							} else if (!_stricmp(first, "Transfer-Encoding")) {
-								if (_stricmp(second, "identity")) {
-									this->remainingLength = 0;
-									this->chunked = true;
-								}
-							} else if (!_stricmp(first, "Connection")) {
-								do {
-									const char *option = ParseCommaList(second);
-									if (!_stricmp(option, "close"))
-										this->keepAlive = false;
-									else if (!_stricmp(option, "Keep-Alive"))
-										this->keepAlive = true;
-								} while (second != nullptr);
-							} else {
-								this->headers.push_back(std::pair<Int16, Int16>(first - base, second - base));
-							}
-						}
+				// Extension
+				assert(uri[-1] == '\0');
+				char *ext = uriLast;
+				while (true) {
+					char c = *--ext;
+					if (c == '.') {
+						break;
+					} else if (c == '/' || c == '\0') {
+						ext = nullptr;
+						break;
 					}
+				}
 
-					this->begin = i + 1;
+				this->uri = uri - base;
+				this->ext = ext != nullptr ? ext - base : -1;
+
+				title = false;
+			} else {
+				if (*first == '\0') {
+					done = true;
+				} else if (*first == ' ' || *first == '\t') {
+					// Ignore the standard
+					throw BadRequestException();
+				} else {
+					char *second = strchr(first, ':');
+					if (second == nullptr)
+						throw BadRequestException();
+					*second++ = '\0';
+
+					// Eat leading and trailing LWS
+					while (*second == ' ' || *second == '\t')
+						++second;
+
+					// Filter out known headers
+					if (this->host == NullOffset && !_stricmp(first, "Host")) {
+						this->host = second - base;
+					} else if (!_stricmp(first, "Content-Length")) {
+						if ((this->remainingLength = ParseUInt64Dec(second)) == UINT64_MAX)
+							throw RequestEntityTooLargeException();
+						this->chunked = false;
+					} else if (!_stricmp(first, "Transfer-Encoding")) {
+						if (_stricmp(second, "identity")) {
+							this->remainingLength = 0;
+							this->chunked = true;
+						}
+					} else if (!_stricmp(first, "Connection")) {
+						do {
+							const char *option = ParseCommaList(second);
+							if (!_stricmp(option, "close"))
+								this->keepAlive = false;
+							else if (!_stricmp(option, "Keep-Alive"))
+								this->keepAlive = true;
+						} while (second != nullptr);
+					} else {
+						this->headers.push_back(std::pair<Int16, Int16>(first - base, second - base));
+					}
 				}
 			}
-			this->end += bytesRead;
-			if (!done && this->buffer.size() - this->end < MinRequestBufferSize) {
-				size_t newSize = this->end + MinRequestBufferSize * 2;
-				if (newSize >= MaxRequestBufferSize)
-					throw BadRequestException();
-				this->buffer.resize(newSize);
-			}
 		}
-
-		// TODO: Throw BadRequestException if majorVer = 1, minorVer >= 1 and host not presented
 	}
 
 	UInt32 HttpRequest::Read(char *buffer, UInt32 size)
@@ -309,15 +285,15 @@ namespace Httpd
 	HttpHeader HttpRequest::GetHeader(size_t index)
 	{
 		std::pair<Int16, Int16> offsets = this->headers[index];
-		const char *first = &this->buffer[offsets.first];
-		const char *second = &this->buffer[offsets.second];
+		const char *first = reader.BasePointer() + offsets.first;
+		const char *second = reader.BasePointer() + offsets.second;
 		return HttpHeader(first, second);
 	}
 
 	void HttpRequest::Flush()
 	{
-		// TODO: Not implemented
-		throw NotImplementedException();
+		// TODO: Ignore all remaining data
+		this->reader.Flush();
 	}
 
 	HttpResponse::HttpResponse(Socket &socket, HttpVersion requestVersion, bool requestKeepAlive)

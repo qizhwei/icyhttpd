@@ -47,16 +47,20 @@ namespace
 
 	UInt64 ParseUInt64Dec(char *p)
 	{
-		size_t len = strlen(p);
-		if (len > 20 || (len == 20 && memcmp(p, "18446744073709551615", 20) >= 0))
-			return UINT64_MAX;
+		while (*p == '0')
+			++p;
 
 		UInt64 u = 0;
 		while (*p != '\0') {
-			if (*p >= '0' && *p <= '9')
+			if (*p >= '0' && *p <= '9') {
+				if (u > 1844674407370955161U)
+					return UINT64_MAX;
+				else if (u == 1844674407370955161U && *p > '5')
+					return UINT64_MAX;
 				u = u * 10 + (*p - '0');
-			else
+			} else {
 				return UINT64_MAX;
+			}
 			++p;
 		}
 
@@ -65,13 +69,14 @@ namespace
 
 	UInt64 ParseUInt64Hex(char *p)
 	{
-		size_t len = strlen(p);
-		if (len > 16)
-			return UINT64_MAX;
+		while (*p == '0')
+			++p;
 
 		UInt16 u = 0;
 		while (*p != '\0') {
-			if (*p >= '0' && *p <= '9')
+			if (u > 0xfffffffffffffffU)
+				return UINT64_MAX;
+			else if (*p >= '0' && *p <= '9')
 				u = (u << 4) | (*p - '0');
 			else if (*p >= 'a' && *p <= 'f')
 				u = (u << 4) | (*p - 'a' + 10);
@@ -294,8 +299,8 @@ namespace Httpd
 			}
 		}
 
-		if (remainingLength < size)
-			size = remainingLength;
+		if (remainingLength < static_cast<UInt64>(size))
+			size = static_cast<UInt32>(remainingLength);
 
 		// TODO: first read from [this->begin, this->end), then read through, update remainingLength
 		throw NotImplementedException();

@@ -6,10 +6,11 @@
 
 namespace Httpd
 {
-	// Dispatcher thread count
-	const int ThreadCount = 4;
+	// Thread and fiber count
+	const int DispatcherThreadCount = 4;
+	const int AcceptFiberCount = 4;
 
-	// Fiber stack size information
+	// Stack sizes
 	const SIZE_T StackCommitSize = 4096;
 	const SIZE_T StackReserveSize = 16384;
 
@@ -17,22 +18,10 @@ namespace Httpd
 	const ULONG_PTR FiberCreateKey = 0;
 	const ULONG_PTR OverlappedOperationKey = 1;
 
-	// Seek methods
-	const int SeekBegin = 0;
-	const int SeekCurrent = 1;
-	const int SeekEnd = 2;
-
-	// Accept fiber count
-	const int AcceptFiberCount = 4;
-
-	// Request buffer size
-	const size_t MinRequestBufferSize = 2048;
+	// Buffer sizes
 	const size_t MaxRequestBufferSize = 32768; // must be able to represent in UInt16
-	const size_t MaxResponseHeaderSize = 32768;
-
-	// Pipe buffer size
 	const UInt32 BufferBlockSize = 4096;
-	const DWORD PipeBufferSize = 4096;
+	const UInt32 SocketProviderSize = 32;
 }
 
 #endif

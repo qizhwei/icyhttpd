@@ -1,11 +1,15 @@
-#include "SocketPool.h"
+#include "SocketProvider.h"
 #include "Win32.h"
 #include "Exception.h"
+#include "Constant.h"
+#include "Lock.h"
+#include <stack>
+
+using namespace Httpd;
+using namespace std;
 
 namespace
 {
-	using namespace Httpd;
-
 	const GUID guidTransmitFile = WSAID_TRANSMITFILE;
 	const GUID guidAcceptEx = WSAID_ACCEPTEX;
 	const GUID guidGetAcceptExSockaddrs = WSAID_GETACCEPTEXSOCKADDRS;
@@ -27,20 +31,20 @@ namespace
 
 namespace Httpd
 {
-	SocketPool &SocketPool::Instance()
+	SocketProvider &SocketProvider::Instance()
 	{
-		static SocketPool *f(new SocketPool());
+		static SocketProvider *f(new SocketProvider());
 		return *f;
 	}
 
-	SocketPool::SocketPool()
+	SocketProvider::SocketProvider()
 	{
 		WSADATA WSAData;
 
 		if (WSAStartup(MAKEWORD(2, 2), &WSAData))
 			throw FatalException();
 
-		SOCKET s = this->Pop();
+		SOCKET s = this->Create();
 		GetFunctionPointer(s, &guidTransmitFile, &this->pfnTransmitFile);
 		GetFunctionPointer(s, &guidAcceptEx, &this->pfnAcceptEx);
 		GetFunctionPointer(s, &guidGetAcceptExSockaddrs, &this->pfnGetAcceptExSockaddrs);
@@ -48,19 +52,18 @@ namespace Httpd
 		GetFunctionPointer(s, &guidConnectEx, &this->pfnConnectEx);
 		GetFunctionPointer(s, &guidDisconnectEx, &this->pfnDisconnectEx);
 		GetFunctionPointer(s, &guidWSARecvMsg, &this->pfnWSARecvMsg);
-		this->Push(s, true);
+		this->Destroy(s);
 	}
 
-	// TODO: Implement a socket pool, take good care of multithread synchronizing (and performance)
-	SOCKET SocketPool::Pop()
+	SOCKET SocketProvider::Create()
 	{
-		SOCKET s = socket(AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP);
-		if (s == INVALID_SOCKET)
-			throw ResourceInsufficientException();
+		SOCKET s;
+		if ((s = socket(AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP)) == INVALID_SOCKET)
+				throw ResourceInsufficientException();
 		return s;
 	}
 
-	void SocketPool::Push(SOCKET s, bool canReuse)
+	void SocketProvider::Destroy(SOCKET s)
 	{
 		closesocket(s);
 	}

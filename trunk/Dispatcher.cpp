@@ -65,7 +65,7 @@ namespace Httpd
 			|| (hQueue = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0)) == NULL)
 			throw FatalException();
 
-		for (int i = 0; i < ThreadCount; ++i) {
+		for (int i = 0; i < DispatcherThreadCount; ++i) {
 			HANDLE hThread = CreateThread(NULL, StackReserveSize, &ThreadCallback, this, 0, NULL);
 			if (hThread == NULL)
 				throw FatalException();

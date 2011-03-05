@@ -31,36 +31,38 @@ namespace Httpd
 		printf("[%.3lf] Connection established\n", (double)GetTickCount() / 1000);
 
 		try {
-			Reader<Socket> socketReader(conn.socket);
-			BufferedReader bufferedReader(socketReader, MaxRequestBufferSize);
+			try {
+				Reader<Socket> socketReader(conn.socket);
+				BufferedReader bufferedReader(socketReader, MaxRequestBufferSize);
 
-			bool keepAlive;
-			do {
-				HttpVersion requestVer(1, 1);
-				HttpRequest request(bufferedReader);
-				keepAlive = request.KeepAlive();
-				requestVer = request.Version();
-				printf("[%.3lf] Request: Host<%s>, URI<%s>\n", (double)GetTickCount() / 1000, request.Host(), request.URI());
-				try {
-					Node &node = ep.GetNode(request.Host());
-					// TODO: parse
-					Handler &handler = node.GetHandler(request.Extension());
-					HttpResponse response(conn.socket, requestVer, keepAlive);
-					handler.Handle(/* TODO: node, */request, response);
-					keepAlive = response.KeepAlive();
-				} catch (const HttpException &ex) {
-					if (ex.MustClose())
-						keepAlive = false;
-					HttpResponse response(conn.socket, requestVer, keepAlive);
-					response.AppendHeader("Content-Length: 0\r\n");
-					response.EndHeader(ex.StatusCode(), true);
-				}
-				request.Flush();
-			} while (keepAlive);
-		} catch (const HttpException &ex) {
-			HttpResponse response(conn.socket, HttpVersion(1, 1), false);
-			response.AppendHeader("Content-Length: 0\r\n");
-			response.EndHeader(ex.StatusCode(), true);
+				bool keepAlive;
+				do {
+					HttpVersion requestVer(1, 1);
+					HttpRequest request(bufferedReader);
+					keepAlive = request.KeepAlive();
+					requestVer = request.Version();
+					printf("[%.3lf] Request: Host<%s>, URI<%s>\n", (double)GetTickCount() / 1000, request.Host(), request.URI());
+					try {
+						Node &node = ep.GetNode(request.Host());
+						// TODO: parse
+						Handler &handler = node.GetHandler(request.Extension());
+						HttpResponse response(conn.socket, requestVer, keepAlive);
+						handler.Handle(/* TODO: node, */request, response);
+						keepAlive = response.KeepAlive();
+					} catch (const HttpException &ex) {
+						if (ex.MustClose())
+							keepAlive = false;
+						HttpResponse response(conn.socket, requestVer, keepAlive);
+						response.AppendHeader("Content-Length: 0\r\n");
+						response.EndHeader(ex.StatusCode(), true);
+					}
+					request.Flush();
+				} while (keepAlive);
+			} catch (const HttpException &ex) {
+				HttpResponse response(conn.socket, HttpVersion(1, 1), false);
+				response.AppendHeader("Content-Length: 0\r\n");
+				response.EndHeader(ex.StatusCode(), true);
+			} 
 		} catch (const std::exception &) {
 		}
 

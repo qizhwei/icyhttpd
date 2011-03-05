@@ -1,17 +1,17 @@
-#ifndef _SOCKETPOOL_H
-#define _SOCKETPOOL_H
+#ifndef _SocketProvider_H
+#define _SocketProvider_H
 
 #include "Types.h"
 #include "Win32.h"
 
 namespace Httpd
 {
-	class SocketPool: NonCopyable
+	class SocketProvider: NonCopyable
 	{
 	public:
-		static SocketPool &Instance();
-		SOCKET Pop();
-		void Push(SOCKET s, bool canReuse);
+		static SocketProvider &Instance();
+		SOCKET Create();
+		void Destroy(SOCKET s);
 
 	public:
 		LPFN_TRANSMITFILE TransmitFile() const { return pfnTransmitFile; }
@@ -23,10 +23,10 @@ namespace Httpd
 		LPFN_WSARECVMSG WSARecvMsg() const { return pfnWSARecvMsg; }
 
 	private:
-		SocketPool();
+		SocketProvider();
 
 		// this class has no destructor, declaration only
-		~SocketPool();
+		~SocketProvider();
 
 	private:
 		LPFN_TRANSMITFILE pfnTransmitFile;

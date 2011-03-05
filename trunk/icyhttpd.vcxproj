@@ -86,7 +86,7 @@
     <ClCompile Include="Pipe.cpp" />
     <ClCompile Include="Http.cpp" />
     <ClCompile Include="Socket.cpp" />
-    <ClCompile Include="SocketPool.cpp" />
+    <ClCompile Include="SocketProvider.cpp" />
     <ClCompile Include="Stream.cpp" />
     <ClCompile Include="Utility.cpp" />
   </ItemGroup>
@@ -104,7 +104,7 @@
     <ClInclude Include="Pipe.h" />
     <ClInclude Include="Endpoint.h" />
     <ClInclude Include="Socket.h" />
-    <ClInclude Include="SocketPool.h" />
+    <ClInclude Include="SocketProvider.h" />
     <ClInclude Include="Types.h" />
     <ClInclude Include="Win32.h" />
   </ItemGroup>

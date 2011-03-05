@@ -2,6 +2,8 @@
 #define _TYPES_H
 
 #include <cstdint>
+#include <cstddef>
+#include <climits>
 
 namespace Httpd
 {

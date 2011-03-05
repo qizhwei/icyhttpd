@@ -143,6 +143,42 @@ namespace
 
 		*(last = cur) = '\0';
 	}
+
+	void URIRewrite(char *first, char *&last)
+	{
+		char *cur = first;
+		int state = 0;
+
+		while (true) {
+			if (*first == '\\')
+				*first = '/';
+
+			if (*first == '/' || *first == '\0') {
+				if (state == 1) {
+					cur -= 2;
+				} else if (state == 2) {
+					cur -= 3;
+					while (*cur != '\0')
+						if (*--cur == '/')
+							break;
+					if (*cur == '\0')
+						++cur;
+				}
+				state = 0;
+			} else if (*first == '.') {
+				++state;
+			} else {
+				state = INT_MIN;
+			}
+
+			if ((*cur = *first) == '\0')
+				break;
+			++cur;
+			++first;
+		}
+
+		last = cur;
+	}
 }
 
 namespace Httpd
@@ -234,8 +270,7 @@ namespace Httpd
 				}
 
 				URIDecode(uri, uriLast);
-				// TODO: URI rewrite (dots and slashes) in [uri, uriLast),
-				// DO NOT FORGET to update uriLast
+				URIRewrite(uri, uriLast);
 
 				// Extension
 				assert(uri[-1] == '\0');
@@ -299,6 +334,9 @@ namespace Httpd
 				}
 			}
 		}
+
+		if (this->majorVer == 1 && this->minorVer >= 1 && this->host == NullOffset)
+			throw BadRequestException(true);
 	}
 
 	UInt32 HttpRequest::Read(char *buffer, UInt32 size)

@@ -2,8 +2,6 @@
 #include "Win32.h"
 #include "Exception.h"
 #include "Constant.h"
-#include "Lock.h"
-#include <stack>
 
 using namespace Httpd;
 using namespace std;
@@ -59,7 +57,7 @@ namespace Httpd
 	{
 		SOCKET s;
 		if ((s = socket(AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP)) == INVALID_SOCKET)
-				throw ResourceInsufficientException();
+			throw ResourceInsufficientException();
 		return s;
 	}
 

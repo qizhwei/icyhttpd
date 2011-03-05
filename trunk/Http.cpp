@@ -134,7 +134,7 @@ namespace Httpd
 				// Request method
 				this->method = first - base;
 				if ((first = strchr(first, ' ')) == nullptr)
-					throw BadRequestException();
+					throw BadRequestException(true);
 				*first++ = '\0';
 
 				// Version
@@ -152,17 +152,17 @@ namespace Httpd
 					uriLast = first;
 					*first++ = '\0';
 					if (strncmp(first, "HTTP/", 5))
-						throw BadRequestException();
+						throw BadRequestException(true);
 					first += 5;
 					this->majorVer = ParseUInt16(first);
 					if (*first++ != '.')
-						throw BadRequestException();
+						throw BadRequestException(true);
 					this->minorVer = ParseUInt16(first);
 					if (*first != '\0')
-						throw BadRequestException();
+						throw BadRequestException(true);
 
 					if (this->majorVer != 1)
-						throw HttpVersionNotSupportedException();
+						throw HttpVersionNotSupportedException(true);
 					if (this->minorVer == 0)
 						this->keepAlive = false;
 					else
@@ -174,7 +174,7 @@ namespace Httpd
 					this->host = NullOffset;
 				} else {
 					if (_strnicmp(uri, "http://", 7))
-						throw BadRequestException();
+						throw BadRequestException(true);
 					char *host = uri;
 					if ((uri = strchr(uri + 7, '/')) == nullptr)
 						uri = uriLast;
@@ -184,6 +184,9 @@ namespace Httpd
 						*--uri = '/';
 					uri[-1] = '\0';
 
+					char *colon;
+					if ((colon = strchr(host, ':')) != nullptr)
+						*colon = '\0';
 					this->host = host - base;
 				}
 
@@ -222,11 +225,11 @@ namespace Httpd
 					done = true;
 				} else if (*first == ' ' || *first == '\t') {
 					// Ignore the standard
-					throw BadRequestException();
+					throw BadRequestException(true);
 				} else {
 					char *second = strchr(first, ':');
 					if (second == nullptr)
-						throw BadRequestException();
+						throw BadRequestException(true);
 					*second++ = '\0';
 
 					// Eat leading and trailing LWS
@@ -235,10 +238,13 @@ namespace Httpd
 
 					// Filter out known headers
 					if (this->host == NullOffset && !_stricmp(first, "Host")) {
+						char *colon;
+						if ((colon = strchr(second, ':')) != nullptr)
+							*colon = '\0';
 						this->host = second - base;
 					} else if (!_stricmp(first, "Content-Length")) {
 						if ((this->remainingLength = ParseUInt64Dec(second)) == UINT64_MAX)
-							throw RequestEntityTooLargeException();
+							throw RequestEntityTooLargeException(true);
 						this->chunked = false;
 					} else if (!_stricmp(first, "Transfer-Encoding")) {
 						if (_stricmp(second, "identity")) {
@@ -265,7 +271,12 @@ namespace Httpd
 	{
 		if (remainingLength == 0) {
 			if (chunked) {
-				// TODO: read chunk size to remainingLength
+				char *line;
+				do
+					line = this->reader.ReadLine();
+				while (line[0] == '\0');
+				if ((this->remainingLength = ParseUInt64Hex(line)) == UINT64_MAX)
+					throw SystemException();
 				if (remainingLength == 0) {
 					this->chunked = false;
 					return 0;
@@ -277,9 +288,11 @@ namespace Httpd
 
 		if (remainingLength < static_cast<UInt64>(size))
 			size = static_cast<UInt32>(remainingLength);
-
-		// TODO: first read from [this->begin, this->end), then read through, update remainingLength
-		throw NotImplementedException();
+		if ((size = this->reader.Read(buffer, size)) == 0)
+			throw SystemException();
+		this->reader.Flush();
+		remainingLength -= size;
+		return size;
 	}
 
 	HttpHeader HttpRequest::GetHeader(size_t index)
@@ -292,7 +305,8 @@ namespace Httpd
 
 	void HttpRequest::Flush()
 	{
-		// TODO: Ignore all remaining data
+		char buffer[BufferBlockSize];
+		while (this->Read(buffer, sizeof(buffer)) != 0);
 		this->reader.Flush();
 	}
 

@@ -26,38 +26,29 @@ namespace Httpd
 	class HttpException: public std::exception
 	{
 	public:
-		virtual Int16 StatusCode() const = 0;
+		HttpException(UInt16 statusCode, bool mustClose)
+			: statusCode(statusCode), mustClose(mustClose)
+		{}
+
+		UInt16 StatusCode() const { return statusCode; }
+		bool MustClose() const { return mustClose; }
+	private:
+		UInt16 statusCode;
+		bool mustClose;
 	};
 
-	class NotFoundException: public HttpException
-	{
-	public:
-		virtual Int16 StatusCode() const;
-	};
+#define DECLARE_EXCEPTION(code, name) \
+	class name: public HttpException \
+	{ \
+	public: \
+		name(bool mustClose = false): HttpException(code, mustClose) {} \
+	}
 
-	class NotImplementedException: public HttpException
-	{
-	public:
-		virtual Int16 StatusCode() const;
-	};
-
-	class BadRequestException: public HttpException
-	{
-	public:
-		virtual Int16 StatusCode() const;
-	};
-
-	class HttpVersionNotSupportedException: public HttpException
-	{
-	public:
-		virtual Int16 StatusCode() const;
-	};
-
-	class RequestEntityTooLargeException: public HttpException
-	{
-	public:
-		virtual Int16 StatusCode() const;
-	};
+	DECLARE_EXCEPTION(400, BadRequestException);
+	DECLARE_EXCEPTION(404, NotFoundException);
+	DECLARE_EXCEPTION(413, RequestEntityTooLargeException);
+	DECLARE_EXCEPTION(501, NotImplementedException);
+	DECLARE_EXCEPTION(505, HttpVersionNotSupportedException);
 }
 
 #endif

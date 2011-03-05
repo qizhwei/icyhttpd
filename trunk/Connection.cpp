@@ -28,57 +28,42 @@ namespace Httpd
 		Connection &conn = *static_cast<Connection *>(param);
 		Endpoint &ep = conn.endpoint;
 
-		printf("[Connection] Connection established\n");
+		printf("[%.3lf] Connection established\n", (double)GetTickCount() / 1000);
 
 		try {
 			Reader<Socket> socketReader(conn.socket);
 			BufferedReader bufferedReader(socketReader, MaxRequestBufferSize);
 
 			bool keepAlive;
-			HttpVersion requestVer(1, 1);
 			do {
+				HttpVersion requestVer(1, 1);
+				HttpRequest request(bufferedReader);
+				keepAlive = request.KeepAlive();
+				requestVer = request.Version();
+				printf("[%.3lf] Request: Host<%s>, URI<%s>\n", (double)GetTickCount() / 1000, request.Host(), request.URI());
 				try {
-					keepAlive = false;
-					HttpRequest request(bufferedReader);
-					keepAlive = request.KeepAlive();
-					requestVer = request.Version();
-
-					printf("[Title] Method: %s\n", request.Method());
-					printf("[Title] URI: %s\n", request.URI());
-					printf("[Title] Extension: %s\n", request.Extension());
-					printf("[Title] Query String: %s\n", request.QueryString());
-					printf("[Title] Host: %s\n", request.Host());
-					printf("[Title] Content-Length: %llu\n", (unsigned long long)request.RemainingLength());
-					printf("[Title] Keep-Alive: %s\n", request.KeepAlive() ? "(true)" : "(false)");
-					printf("[Title] Chunked: %s\n", request.Chunked() ? "(true)" : "(false)");
-
-					for (size_t i = 0; i != request.HeaderCount(); ++i) {
-						HttpHeader header = request.GetHeader(i);
-						printf("[Header] %s: %s\n", header.first, header.second);
-					}
-
 					Node &node = ep.GetNode(request.Host());
 					Handler &handler = node.GetHandler(request.Extension());
-					HttpResponse response(conn.socket, requestVer, keepAlive);
-					try {
-						handler.Handle(request, response);
-					} catch (...) {
-						keepAlive = response.KeepAlive();
-						request.Flush();
-						throw;
-					}
+					HttpResponse response(conn.socket, requestVer, true);
+					handler.Handle(request, response);
 					keepAlive = response.KeepAlive();
-					request.Flush();
 				} catch (const HttpException &ex) {
+					if (ex.MustClose())
+						keepAlive = false;
 					HttpResponse response(conn.socket, requestVer, keepAlive);
 					response.AppendHeader(HttpHeader("Content-Length", "0"));
 					response.EndHeader(ex.StatusCode(), true);
 				}
+				request.Flush();
 			} while (keepAlive);
+		} catch (const HttpException &ex) {
+			HttpResponse response(conn.socket, HttpVersion(1, 1), false);
+			response.AppendHeader(HttpHeader("Content-Length", "0"));
+			response.EndHeader(ex.StatusCode(), true);
 		} catch (const std::exception &) {
 		}
 
-		printf("[Connection] Connection broken\n");
+		printf("[%.3lf] Connection broken\n", (double)GetTickCount() / 1000);
 		delete &conn;
 	}
 }

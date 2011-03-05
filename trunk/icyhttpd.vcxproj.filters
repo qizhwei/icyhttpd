@@ -36,9 +36,6 @@
     <ClCompile Include="Connection.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Exception.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="Pipe.cpp">
       <Filter>源文件</Filter>
     </ClCompile>

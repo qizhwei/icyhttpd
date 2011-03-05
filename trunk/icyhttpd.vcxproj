@@ -79,7 +79,6 @@
   <ItemGroup>
     <ClCompile Include="Connection.cpp" />
     <ClCompile Include="Dispatcher.cpp" />
-    <ClCompile Include="Exception.cpp" />
     <ClCompile Include="EchoHandler.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Endpoint.cpp" />

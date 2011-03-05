@@ -90,11 +90,11 @@ namespace
 		return u;
 	}
 
-	char *Weekdays[7] = {
+	const char *Weekdays[7] = {
 		"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
 	};
 
-	char *Months[12] = {
+	const char *Months[12] = {
 		"Jan", "Feb", "Mar", "Apr", "May", "Jun",
 		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 	};
@@ -109,6 +109,39 @@ namespace
         wsprintfA(dateBuffer, "Date: %3s, %02d %3s %04d %02d:%02d:%02d GMT\r\n",
             Weekdays[currentTm.tm_wday], currentTm.tm_mday, Months[currentTm.tm_mon],
 			currentTm.tm_year + 1900, currentTm.tm_hour, currentTm.tm_min, currentTm.tm_sec);
+	}
+
+	void URIDecode(char *first, char *&last)
+	{
+		char *cur = first;
+		char state = 0;
+		char escape;
+
+		while (*first != '\0') {
+			*cur = *first;
+			if (state == 0) {
+				state = (*cur == '%');
+			} else {
+				if (*cur >= '0' && *cur <= '9')
+					escape = (escape << 4) | (*cur - '0');
+				else if (*cur >= 'A' && *cur <= 'F')
+					escape = (escape << 4) | (*cur - 'A' + 10);
+				else if (*cur >= 'a' && *cur <= 'f')
+					escape = (escape << 4) | (*cur - 'a' + 10);
+				else
+					state = 0;
+				if (state == 2) {
+					cur -= 2;
+					*cur = escape;
+				}
+				state = (state & 1) << 1;
+			}
+
+			++cur;
+			++first;
+		}
+
+		*(last = cur) = '\0';
 	}
 }
 
@@ -200,7 +233,8 @@ namespace Httpd
 					this->query = NullOffset;
 				}
 
-				// TODO: URI Decode and Rewrite dots and slashes in [uri, uriLast),
+				URIDecode(uri, uriLast);
+				// TODO: URI rewrite (dots and slashes) in [uri, uriLast),
 				// DO NOT FORGET to update uriLast
 
 				// Extension

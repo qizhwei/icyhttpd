@@ -7,7 +7,7 @@ namespace Httpd
 {
 	void EchoHandler::Handle(HttpRequest &request, HttpResponse &response)
 	{
-		//response.AppendHeader("Content-Type: text/plain\r\n");
+		response.AppendHeader("Content-Type: text/plain; charset=utf-8\r\n");
 		response.EndHeader(200, false);
 
 		Writer<HttpResponse> responseWriter(response);

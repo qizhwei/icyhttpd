@@ -7,6 +7,6 @@ using namespace Httpd;
 
 int main()
 {
-	new Endpoint("127.0.0.1", 88, new Node("D:\\wwwroot", new EchoHandler()));
+	new Endpoint("0.0.0.0", 88, new Node("D:\\wwwroot", new EchoHandler()));
 	ExitThread(0);
 }

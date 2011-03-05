@@ -43,9 +43,10 @@ namespace Httpd
 				printf("[%.3lf] Request: Host<%s>, URI<%s>\n", (double)GetTickCount() / 1000, request.Host(), request.URI());
 				try {
 					Node &node = ep.GetNode(request.Host());
+					// TODO: parse
 					Handler &handler = node.GetHandler(request.Extension());
 					HttpResponse response(conn.socket, requestVer, keepAlive);
-					handler.Handle(request, response);
+					handler.Handle(/* TODO: node, */request, response);
 					keepAlive = response.KeepAlive();
 				} catch (const HttpException &ex) {
 					if (ex.MustClose())

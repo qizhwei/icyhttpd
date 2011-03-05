@@ -63,11 +63,13 @@ namespace Httpd
 	{
 		HANDLE hFile;
 
-		if ((hFile = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL,
-			OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL)) == INVALID_HANDLE_VALUE)
+		if ((hFile = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+			FILE_FLAG_OVERLAPPED | FILE_FLAG_SEQUENTIAL_SCAN, NULL)) == INVALID_HANDLE_VALUE)
 		{
 			if (GetLastError() == ERROR_FILE_NOT_FOUND)
 				throw NotFoundException();
+			else if (GetLastError() == ERROR_ACCESS_DENIED)
+				throw ForbiddenException();
 			else
 				throw SystemException();
 		}

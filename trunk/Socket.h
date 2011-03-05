@@ -21,7 +21,7 @@ namespace Httpd
 		UInt32 Read(char *buffer, UInt32 size);
 		void Write(const char *buffer, UInt32 size);
 		void Write(WSABUF *WSABuf, UInt32 count);
-		void TransmitFile(HANDLE hFile, UInt64 offset = 0, UInt32 size = 0);
+		void TransmitFile(HANDLE hFile, UInt64 offset, UInt32 size);
 
 	private:
 		SOCKET hSocket;

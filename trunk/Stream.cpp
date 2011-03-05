@@ -2,6 +2,7 @@
 #include "Types.h"
 #include "Exception.h"
 #include "Constant.h"
+#include "Utility.h"
 #include <algorithm>
 #include <cstring>
 
@@ -131,35 +132,15 @@ namespace Httpd
 	void BufferedWriter::Append(UInt16 i)
 	{
 		char buffer[8];
-		char *p = buffer + 8;
-		
-		if (i == 0) {
-			*--p = '0';
-		} else {
-			do {
-				*--p = '0' + i % 10;
-				i /= 10;
-			} while (i != 0);
-		}
-
+		char *p = ParseUInt<8>(buffer, i);
 		this->Write(p, buffer + 8 - p);
 	}
 
 	void BufferedWriter::Append(UInt64 i)
 	{
 		char buffer[24];
-		char *p = buffer + 8;
-		
-		if (i == 0) {
-			*--p = '0';
-		} else {
-			do {
-				*--p = '0' + i % 10;
-				i /= 10;
-			} while (i != 0);
-		}
-
-		this->Write(p, buffer + 8 - p);
+		char *p = ParseUInt<24>(buffer, i);
+		this->Write(p, buffer + 24 - p);
 	}
 
 	void BufferedWriter::Append(const char *str)

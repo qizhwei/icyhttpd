@@ -4,9 +4,9 @@
 #include "Exception.h"
 #include "Socket.h"
 #include "Win32.h"
+#include "Utility.h"
 #include <cstring>
 #include <utility>
-#include <unordered_map>
 #include <ctime>
 #include <cassert>
 
@@ -394,14 +394,27 @@ namespace Httpd
 		this->buffer.insert(this->buffer.end(), header, header + strlen(header));
 	}
 
-	void HttpResponse::EndHeader(UInt16 status, bool lengthProvided)
+	void HttpResponse::AppendHeader(const char *name, UInt64 value)
+	{
+		size_t nameSize = strlen(name);
+		char valueBuffer[24];
+		char *valueStr = ParseUInt<24>(valueBuffer, value);
+		size_t valueSize = valueBuffer + 24 - valueStr;
+		char *colon = ": ", *crlf = "\r\n";
+		this->buffer.reserve(nameSize + valueSize + 4);
+		this->buffer.insert(this->buffer.end(), name, name + nameSize);
+		this->buffer.insert(this->buffer.end(), colon, colon + 2);
+		this->buffer.insert(this->buffer.end(), valueStr, valueStr + valueSize);
+		this->buffer.insert(this->buffer.end(), crlf, crlf + 2);
+	}
+
+	void HttpResponse::EndHeader(UInt16 status, const char *reason, bool lengthProvided)
 	{
 		if (this->entity)
 			return;
 
 		char titleBuffer[48];
-		wsprintfA(titleBuffer, "HTTP/1.1 %u %s\r\n",
-			static_cast<unsigned int>(status), HttpUtility::Instance().ReasonPhrase(status));
+		wsprintfA(titleBuffer, "HTTP/1.1 %u %s\r\n", static_cast<unsigned int>(status), reason);
 
 		if (lengthProvided)
 			this->chunked = false;
@@ -459,70 +472,8 @@ namespace Httpd
 		}
 	}
 
-	void HttpResponse::EndHeaderAndTransmitFile(HANDLE hFile)
+	void HttpResponse::TransmitFile(HANDLE hFile, UInt64 offset, UInt32 size)
 	{
-		throw NotImplementedException();
-	}
-}
-
-namespace Httpd
-{
-	HttpUtility &HttpUtility::Instance()
-	{
-		static HttpUtility *u(new HttpUtility());
-		return *u;
-	}
-
-	HttpUtility::HttpUtility()
-	{
-		reason.insert(make_pair(100, "Continue"));
-		reason.insert(make_pair(101, "Switching Protocols"));
-		reason.insert(make_pair(200, "OK"));
-		reason.insert(make_pair(201, "Created"));
-		reason.insert(make_pair(202, "Accepted"));
-		reason.insert(make_pair(203, "Non-Authoritative Information"));
-		reason.insert(make_pair(204, "No Content"));
-		reason.insert(make_pair(205, "Reset Content"));
-		reason.insert(make_pair(206, "Partial Content"));
-		reason.insert(make_pair(300, "Multiple Choices"));
-		reason.insert(make_pair(301, "Moved Permanently"));
-		reason.insert(make_pair(302, "Found"));
-		reason.insert(make_pair(303, "See Other"));
-		reason.insert(make_pair(304, "Not Modified"));
-		reason.insert(make_pair(305, "Use Proxy"));
-		// 306 is unused and reserved
-		reason.insert(make_pair(307, "Temporary Redirect"));
-		reason.insert(make_pair(400, "Bad Request"));
-		reason.insert(make_pair(401, "Unauthorized"));
-		reason.insert(make_pair(402, "Payment Required"));
-		reason.insert(make_pair(403, "Forbidden"));
-		reason.insert(make_pair(404, "Not Found"));
-		reason.insert(make_pair(405, "Method Not Allowed"));
-		reason.insert(make_pair(406, "Not Acceptable"));
-		reason.insert(make_pair(407, "Proxy Authentication Required"));
-		reason.insert(make_pair(408, "Request Timeout"));
-		reason.insert(make_pair(409, "Conflict"));
-		reason.insert(make_pair(410, "Gone"));
-		reason.insert(make_pair(411, "Length Required"));
-		reason.insert(make_pair(412, "Precondition Failed"));
-		reason.insert(make_pair(413, "Request Entity Too Large"));
-		reason.insert(make_pair(414, "Request-URI Too Long"));
-		reason.insert(make_pair(415, "Unsupported Media Type"));
-		reason.insert(make_pair(416, "Request Range Not Satisfiable"));
-		reason.insert(make_pair(417, "Expectation Failed"));
-		reason.insert(make_pair(500, "Internal Server Error"));
-		reason.insert(make_pair(501, "Not Implemented"));
-		reason.insert(make_pair(502, "Bad Gateway"));
-		reason.insert(make_pair(503, "Service Unavailable"));
-		reason.insert(make_pair(504, "Gateway Timeout"));
-		reason.insert(make_pair(505, "HTTP Version Not Supported"));
-	}
-
-	const char *HttpUtility::ReasonPhrase(UInt16 status)
-	{
-		auto i = reason.find(status);
-		if (i == reason.end())
-			throw SystemException();
-		return i->second;
+		this->socket.TransmitFile(hFile, offset, size);
 	}
 }

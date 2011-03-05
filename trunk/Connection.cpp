@@ -47,21 +47,25 @@ namespace Httpd
 						// TODO: parse
 						Handler &handler = node.GetHandler(request.Extension());
 						HttpResponse response(conn.socket, requestVer, keepAlive);
-						handler.Handle(/* TODO: node, */request, response);
+						handler.Handle(node, request, response);
 						keepAlive = response.KeepAlive();
 					} catch (const HttpException &ex) {
 						if (ex.MustClose())
 							keepAlive = false;
 						HttpResponse response(conn.socket, requestVer, keepAlive);
-						response.AppendHeader("Content-Length: 0\r\n");
-						response.EndHeader(ex.StatusCode(), true);
+						UInt32 htmlSize = strlen(ex.Html());
+						response.AppendHeader("Content-Length", htmlSize);
+						response.EndHeader(ex.StatusCode(), ex.Reason(), true);
+						response.Write(ex.Html(), htmlSize);
 					}
 					request.Flush();
 				} while (keepAlive);
 			} catch (const HttpException &ex) {
 				HttpResponse response(conn.socket, HttpVersion(1, 1), false);
-				response.AppendHeader("Content-Length: 0\r\n");
-				response.EndHeader(ex.StatusCode(), true);
+				UInt32 htmlSize = strlen(ex.Html());
+				response.AppendHeader("Content-Length", htmlSize);
+				response.EndHeader(ex.StatusCode(), ex.Reason(), true);
+				response.Write(ex.Html(), htmlSize);
 			} 
 		} catch (const std::exception &) {
 		}

@@ -1,24 +1,25 @@
 #include "EchoHandler.h"
-#include "Http.h"
-#include "Stream.h"
 #include "Constant.h"
+#include "Stream.h"
 
 namespace Httpd
 {
-	void EchoHandler::Handle(HttpRequest &request, HttpResponse &response)
+	void EchoHandler::Handle(Node &node, HttpRequest &request, HttpResponse &response)
 	{
 		response.AppendHeader("Content-Type: text/plain; charset=utf-8\r\n");
-		response.EndHeader(200, false);
+		response.EndHeader(200, "OK", false);
 
 		Writer<HttpResponse> responseWriter(response);
 		BufferedWriter writer(responseWriter, BufferBlockSize);
 		writer.AppendLine("icyhttpd echo handler");
 		writer.AppendLine();
-		writer.AppendLine("[Title]");
+		writer.AppendLine("[Information]");
 		writer.Append("Host: ");
 		writer.AppendLine(request.Host());
 		writer.Append("URI: ");
 		writer.AppendLine(request.URI());
+		writer.Append("Path: ");
+		writer.AppendLine(node.Path());
 		writer.Append("Query string: ");
 		writer.AppendLine(request.QueryString());
 		writer.Append("Method: ");

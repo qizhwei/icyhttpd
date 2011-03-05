@@ -15,6 +15,7 @@ namespace Httpd
 	public:
 		Node(const std::string &path, Handler *defaultHandler);
 		Handler &GetHandler(const CiString &ext);
+		const char *Path() { return path.c_str(); }
 
 	private:
 		// this class has no destructor, declaration only

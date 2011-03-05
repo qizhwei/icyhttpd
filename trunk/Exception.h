@@ -26,29 +26,34 @@ namespace Httpd
 	class HttpException: public std::exception
 	{
 	public:
-		HttpException(UInt16 statusCode, bool mustClose)
-			: statusCode(statusCode), mustClose(mustClose)
+		HttpException(UInt16 statusCode, bool mustClose, const char *reason, const char *html)
+			: statusCode(statusCode), mustClose(mustClose), reason(reason), html(html)
 		{}
 
 		UInt16 StatusCode() const { return statusCode; }
 		bool MustClose() const { return mustClose; }
+		const char *Reason() const { return reason; }
+		const char *Html() const { return html; }
 	private:
 		UInt16 statusCode;
 		bool mustClose;
+		const char *reason;
+		const char *html;
 	};
 
-#define DECLARE_EXCEPTION(code, name) \
+#define DECLARE_EXCEPTION(code, name, reason, html) \
 	class name: public HttpException \
 	{ \
 	public: \
-		name(bool mustClose = false): HttpException(code, mustClose) {} \
+		name(bool mustClose = false): HttpException(code, mustClose, reason, html) {} \
 	}
 
-	DECLARE_EXCEPTION(400, BadRequestException);
-	DECLARE_EXCEPTION(404, NotFoundException);
-	DECLARE_EXCEPTION(413, RequestEntityTooLargeException);
-	DECLARE_EXCEPTION(501, NotImplementedException);
-	DECLARE_EXCEPTION(505, HttpVersionNotSupportedException);
+	DECLARE_EXCEPTION(400, BadRequestException, "Bad Request", "<h1>Bad Request</h1>");
+	DECLARE_EXCEPTION(403, ForbiddenException, "Forbidden", "<h1>Forbidden</h1>");
+	DECLARE_EXCEPTION(404, NotFoundException, "Not Found", "<h1>Not Found</h1>");
+	DECLARE_EXCEPTION(413, RequestEntityTooLargeException, "Request Entity Too Large", "<h1>Request Entity Too Large</h1>");
+	DECLARE_EXCEPTION(501, NotImplementedException, "Not Implemented", "<h1>Not Implemented</h1>");
+	DECLARE_EXCEPTION(505, HttpVersionNotSupportedException, "HTTP Version Not Supported", "<h1>HTTP Version Not Supported</h1>");
 }
 
 #endif

@@ -6,7 +6,6 @@
 #include "Socket.h"
 #include <vector>
 #include <utility>
-#include <unordered_map>
 
 namespace Httpd
 {
@@ -49,9 +48,10 @@ namespace Httpd
 	public:
 		HttpResponse(Socket &socket, HttpVersion requestVersion, bool requestKeepAlive);
 		void AppendHeader(const char *header);
-		void EndHeader(UInt16 status, bool lengthProvided);
+		void AppendHeader(const char *name, UInt64 value);
+		void EndHeader(UInt16 status, const char *reason, bool lengthProvided);
 		void Write(const char *buffer, UInt32 size);
-		void EndHeaderAndTransmitFile(HANDLE hFile);
+		void TransmitFile(HANDLE hFile, UInt64 offset, UInt32 size);
 		bool KeepAlive() { return keepAlive; }
 
 	private:
@@ -62,17 +62,6 @@ namespace Httpd
 		bool chunked;
 
 		std::vector<char> buffer;
-	};
-
-	class HttpUtility: NonCopyable
-	{
-	public:
-		static HttpUtility &Instance();
-		const char *ReasonPhrase(UInt16 status);
-	private:
-		HttpUtility();
-		~HttpUtility();
-		std::unordered_map<UInt16, const char *> reason;
 	};
 }
 

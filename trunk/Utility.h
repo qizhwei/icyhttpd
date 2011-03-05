@@ -59,6 +59,23 @@ namespace Httpd
 	extern void CreatePipePair(HANDLE hPipe[2]);
 	extern HANDLE OpenFile(const wchar_t *path);
 	extern UInt64 GetFileSize(HANDLE hFile);
+
+	template<size_t BufferSize, typename UIntType>
+	char *ParseUInt(char buffer[BufferSize], UIntType i)
+	{
+		char *p = buffer + BufferSize;
+		
+		if (i == 0) {
+			*--p = '0';
+		} else {
+			do {
+				*--p = '0' + i % 10;
+				i /= 10;
+			} while (i != 0);
+		}
+
+		return p;
+	}
 }
 
 namespace std

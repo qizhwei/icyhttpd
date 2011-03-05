@@ -44,21 +44,21 @@ namespace Httpd
 				try {
 					Node &node = ep.GetNode(request.Host());
 					Handler &handler = node.GetHandler(request.Extension());
-					HttpResponse response(conn.socket, requestVer, true);
+					HttpResponse response(conn.socket, requestVer, keepAlive);
 					handler.Handle(request, response);
 					keepAlive = response.KeepAlive();
 				} catch (const HttpException &ex) {
 					if (ex.MustClose())
 						keepAlive = false;
 					HttpResponse response(conn.socket, requestVer, keepAlive);
-					response.AppendHeader(HttpHeader("Content-Length", "0"));
+					response.AppendHeader("Content-Length: 0\r\n");
 					response.EndHeader(ex.StatusCode(), true);
 				}
 				request.Flush();
 			} while (keepAlive);
 		} catch (const HttpException &ex) {
 			HttpResponse response(conn.socket, HttpVersion(1, 1), false);
-			response.AppendHeader(HttpHeader("Content-Length", "0"));
+			response.AppendHeader("Content-Length: 0\r\n");
 			response.EndHeader(ex.StatusCode(), true);
 		} catch (const std::exception &) {
 		}

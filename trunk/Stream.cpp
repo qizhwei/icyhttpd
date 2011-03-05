@@ -120,12 +120,36 @@ namespace Httpd
 		}
 	}
 
+	void BufferedWriter::Append(bool b)
+	{
+		if (b)
+			this->Write("true", 4);
+		else
+			this->Write("false", 5);
+	}
+
 	void BufferedWriter::Append(UInt16 i)
 	{
 		char buffer[8];
 		char *p = buffer + 8;
 		
-		*--p = '\0';
+		if (i == 0) {
+			*--p = '0';
+		} else {
+			do {
+				*--p = '0' + i % 10;
+				i /= 10;
+			} while (i != 0);
+		}
+
+		this->Write(p, buffer + 8 - p);
+	}
+
+	void BufferedWriter::Append(UInt64 i)
+	{
+		char buffer[24];
+		char *p = buffer + 8;
+		
 		if (i == 0) {
 			*--p = '0';
 		} else {
@@ -142,6 +166,24 @@ namespace Httpd
 	{
 		UInt32 len = strlen(str);
 		this->Write(str, len);
+	}
+
+	void BufferedWriter::AppendLine(bool b)
+	{
+		this->Append(b);
+		this->Write("\r\n", 2);
+	}
+	
+	void BufferedWriter::AppendLine(UInt16 i)
+	{
+		this->Append(i);
+		this->Write("\r\n", 2);
+	}	
+
+	void BufferedWriter::AppendLine(UInt64 i)
+	{
+		this->Append(i);
+		this->Write("\r\n", 2);
 	}
 
 	void BufferedWriter::AppendLine(const char *str)

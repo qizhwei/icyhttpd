@@ -72,8 +72,13 @@ namespace Httpd
 	public:
 		BufferedWriter(Writable &stream, UInt32 blockSize);
 		void Write(const char *buffer, UInt32 size);
+		void Append(bool b);
 		void Append(UInt16 i);
+		void Append(UInt64 i);
 		void Append(const char *str);
+		void AppendLine(bool b);
+		void AppendLine(UInt16 i);
+		void AppendLine(UInt64 i);
 		void AppendLine(const char *str);
 		void AppendLine();
 		void Flush();

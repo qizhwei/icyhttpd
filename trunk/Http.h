@@ -29,8 +29,8 @@ namespace Httpd
 		UInt64 RemainingLength() { return remainingLength; }
 		bool Chunked() { return chunked; }
 		bool KeepAlive() { return keepAlive; }
-		size_t HeaderCount() { return headers.size(); }
-		HttpHeader GetHeader(size_t index);
+		UInt32 HeaderCount() { return headers.size(); }
+		HttpHeader GetHeader(UInt32 index);
 
 	private:
 		BufferedReader &reader;
@@ -48,10 +48,10 @@ namespace Httpd
 	{
 	public:
 		HttpResponse(Socket &socket, HttpVersion requestVersion, bool requestKeepAlive);
-		void AppendHeader(HttpHeader header);
+		void AppendHeader(const char *header);
 		void EndHeader(UInt16 status, bool lengthProvided);
 		void Write(const char *buffer, UInt32 size);
-		// TODO: TransmitFile
+		void EndHeaderAndTransmitFile(HANDLE hFile);
 		bool KeepAlive() { return keepAlive; }
 
 	private:

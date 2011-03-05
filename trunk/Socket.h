@@ -21,7 +21,7 @@ namespace Httpd
 		void Disconnect(bool reuse);
 		UInt32 Read(char *buffer, UInt32 size);
 		void Write(const char *buffer, UInt32 size);
-		void Write(const char *buffer0, UInt32 size0, const char *buffer1, UInt32 size1);
+		void Write(WSABUF *WSABuf, UInt32 count);
 		void TransmitFile(HANDLE hFile, UInt64 offset = 0, UInt32 size = 0);
 
 	private:

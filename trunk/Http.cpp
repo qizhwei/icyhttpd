@@ -99,14 +99,14 @@ namespace
 		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 	};
 
-	void GetCurrentDate(char dateBuffer[32])
+	void GetCurrentDateBuffer(char dateBuffer[40])
 	{
 		__time64_t currentTime;
 		tm currentTm;
 
 		_time64(&currentTime);
 		_gmtime64_s(&currentTm, &currentTime);
-        wsprintfA(dateBuffer, "%3s, %02d %3s %04d %02d:%02d:%02d GMT",
+        wsprintfA(dateBuffer, "Date: %3s, %02d %3s %04d %02d:%02d:%02d GMT\r\n",
             Weekdays[currentTm.tm_wday], currentTm.tm_mday, Months[currentTm.tm_mon],
 			currentTm.tm_year + 1900, currentTm.tm_hour, currentTm.tm_min, currentTm.tm_sec);
 	}
@@ -295,7 +295,7 @@ namespace Httpd
 		return size;
 	}
 
-	HttpHeader HttpRequest::GetHeader(size_t index)
+	HttpHeader HttpRequest::GetHeader(UInt32 index)
 	{
 		std::pair<Int16, Int16> offsets = this->headers[index];
 		const char *first = reader.BasePointer() + offsets.first;
@@ -317,25 +317,9 @@ namespace Httpd
 		, chunked(requestVersion.first == 1 && requestVersion.second >= 1)
 	{}
 
-	void HttpResponse::AppendHeader(HttpHeader header)
+	void HttpResponse::AppendHeader(const char *header)
 	{
-		if (this->entity)
-			return;
-
-		const size_t first_len = strlen(header.first);
-		const char *colon = ": ";
-		const size_t second_len = strlen(header.second);
-		const char *crlf = "\r\n";
-		const size_t newSize = this->buffer.size() + first_len + second_len + 4;
-
-		if (newSize >= MaxResponseHeaderSize)
-			throw SystemException();
-
-		this->buffer.reserve(newSize);
-		this->buffer.insert(this->buffer.end(), header.first, header.first + first_len);
-		this->buffer.insert(this->buffer.end(), colon, colon + 2);
-		this->buffer.insert(this->buffer.end(), header.second, header.second + second_len);
-		this->buffer.insert(this->buffer.end(), crlf, crlf + 2);
+		this->buffer.insert(this->buffer.end(), header, header + strlen(header));
 	}
 
 	void HttpResponse::EndHeader(UInt16 status, bool lengthProvided)
@@ -346,7 +330,6 @@ namespace Httpd
 		char titleBuffer[48];
 		wsprintfA(titleBuffer, "HTTP/1.1 %u %s\r\n",
 			static_cast<unsigned int>(status), HttpUtility::Instance().ReasonPhrase(status));
-		size_t const titleSize = strlen(titleBuffer);
 
 		if (lengthProvided)
 			this->chunked = false;
@@ -354,37 +337,59 @@ namespace Httpd
 			this->keepAlive = false;
 
 		// Server header
-		AppendHeader(HttpHeader("Server", "icyhttpd/0.0"));
+		AppendHeader("Server: icyhttpd/0.0\r\n");
 
 		// Date header
-		char dateBuffer[32];
-		GetCurrentDate(dateBuffer);
-		AppendHeader(HttpHeader("Date", dateBuffer));
+		char dateBuffer[40];
+		GetCurrentDateBuffer(dateBuffer);
+		AppendHeader(dateBuffer);
 
 		// Transfer encoding header
 		if (this->chunked)
-			AppendHeader(HttpHeader("Transfer-Encoding", "chunked"));
+			AppendHeader("Transfer-Encoding: chunked\r\n");
 
 		// Connection header
 		if (!this->keepAlive)
-			AppendHeader(HttpHeader("Connection", "close"));
+			AppendHeader("Connection: close\r\n");
 		else if (!this->assumeKeepAlive)
-			AppendHeader(HttpHeader("Connection", "keep-alive"));
+			AppendHeader("Connection: keep-alive\r\n");
 
 		// Final CRLF
 		const char *crlf = "\r\n";
 		this->buffer.insert(this->buffer.end(), crlf, crlf + 2);
 
 		// Write socket and clear buffer
-		this->socket.Write(titleBuffer, titleSize, &*this->buffer.begin(), this->buffer.size());
+		WSABUF WSABuf[2];
+		WSABuf[0].buf = titleBuffer;
+		WSABuf[0].len = strlen(titleBuffer);
+		WSABuf[1].buf = &*this->buffer.begin();
+		WSABuf[1].len = this->buffer.size();
+		this->socket.Write(WSABuf, 2);
 		vector<char>().swap(this->buffer);
 		this->entity = true;
 	}
 
 	void HttpResponse::Write(const char *buffer, UInt32 size)
 	{
-		assert(this->entity);
-		socket.Write(buffer, size);
+		if (this->chunked) {
+			char chunkedLength[12];
+			wsprintfA(chunkedLength, "%x\r\n", size);
+			WSABUF WSABuf[3];
+			WSABuf[0].buf = chunkedLength;
+			WSABuf[0].len = strlen(chunkedLength);
+			WSABuf[1].buf = const_cast<char *>(buffer);
+			WSABuf[1].len = size;
+			WSABuf[2].buf = "\r\n";
+			WSABuf[2].len = 2;
+			this->socket.Write(WSABuf, 3);
+		} else if (size != 0) {
+			this->socket.Write(buffer, size);
+		}
+	}
+
+	void HttpResponse::EndHeaderAndTransmitFile(HANDLE hFile)
+	{
+		throw NotImplementedException();
 	}
 }
 

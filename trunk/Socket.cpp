@@ -98,24 +98,20 @@ namespace
 	class WriteOperation2: public OverlappedOperation
 	{
 	public:
-		WriteOperation2(SOCKET hSocket, const char *buffer0, UInt32 size0, const char *buffer1, UInt32 size1)
-			: hSocket(hSocket)
-		{
-			WSABuf[0].buf = const_cast<char *>(buffer0);
-			WSABuf[0].len = size0;
-			WSABuf[1].buf = const_cast<char *>(buffer1);
-			WSABuf[1].len = size1;
-		}
+		WriteOperation2(SOCKET hSocket, WSABUF *WSABuf, UInt32 count)
+			: hSocket(hSocket), WSABuf(WSABuf), count(count)
+		{}
 
 		virtual bool operator()()
 		{
-			return !WSASend(this->hSocket, &this->WSABuf[0], 2, NULL, 0, this, NULL)
+			return !WSASend(this->hSocket, this->WSABuf, this->count, NULL, 0, this, NULL)
 				|| WSAGetLastError() == ERROR_IO_PENDING;
 		}
 
 	private:
 		SOCKET hSocket;
-		WSABUF WSABuf[2];
+		WSABUF *WSABuf;
+		UInt32 count;
 	};
 
 	class TransmitFileOperation: public OverlappedOperation
@@ -207,9 +203,9 @@ namespace Httpd
 		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation);
 	}
 
-	void Socket::Write(const char *buffer0, UInt32 size0, const char *buffer1, UInt32 size1)
+	void Socket::Write(WSABUF *WSABuf, UInt32 count)
 	{
-		WriteOperation2 operation(this->hSocket, buffer0, size0, buffer1, size1);
+		WriteOperation2 operation(this->hSocket, WSABuf, count);
 		this->canReuse = false;
 		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation);
 	}

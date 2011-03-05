@@ -24,10 +24,10 @@ namespace Httpd
 
 		Win32Handle file(OpenFile(&name[0]));
 
-		// TODO: Range, directory, block size <= UINT32_MAX
+		// TODO: Range, directory
 		UInt64 fileSize = GetFileSize(file.Handle());
 		response.AppendHeader("Content-Length", fileSize);
 		response.EndHeader(200, "OK", true);
-		response.TransmitFile(file.Handle(), 0, fileSize);
+		response.TransmitFile(file.Handle(), 0, 0);
 	}
 }

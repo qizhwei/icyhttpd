@@ -2,7 +2,5 @@
 
   * Allocator (Memory Pool)
   * Dynamic Thread Count
-  * Socket Reuse (SocketPool 已预留接口)
   * __declspec(novtable)
   * 对于同步完成的操作不投递完成包
-  * 先切换到调度器，再开始异步操作 (从而避免使用事件)

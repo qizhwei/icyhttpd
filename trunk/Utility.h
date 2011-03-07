@@ -2,12 +2,10 @@
 #define _UTILITY_H
 
 #include "Types.h"
-#include "Exception.h"
 #include "Win32.h"
 #include <string>
 #include <cstring>
 #include <functional>
-#include <cstddef>
 
 namespace
 {
@@ -76,6 +74,45 @@ namespace Httpd
 
 		return p;
 	}
+
+	class Completion
+	{
+	public:
+		Completion()
+		{}
+
+		Completion(LPVOID lpFiber)
+			: lpFiber(lpFiber)
+		{}
+
+		void SwitchBack()
+		{
+			SwitchToFiber(this->lpFiber);
+		}
+
+		virtual bool operator()() { return true; }
+	private:
+		LPVOID lpFiber;
+	};
+
+	class OverlappedCompletion: public OVERLAPPED, public Completion
+	{
+	public:
+		OverlappedCompletion()
+			: Completion(GetCurrentFiber())
+		{
+			std::memset(static_cast<OVERLAPPED *>(this), 0, sizeof(OVERLAPPED));
+		}
+
+		OverlappedCompletion(UInt64 offset)
+		{
+			this->OVERLAPPED::Internal = 0;
+			this->OVERLAPPED::InternalHigh = 0;
+			this->OVERLAPPED::Offset = reinterpret_cast<LARGE_INTEGER *>(&offset)->LowPart;
+			this->OVERLAPPED::OffsetHigh = reinterpret_cast<LARGE_INTEGER *>(&offset)->HighPart;
+			this->OVERLAPPED::hEvent = NULL;
+		}
+	};
 }
 
 namespace std

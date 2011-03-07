@@ -54,6 +54,9 @@
     <ClCompile Include="FileHandler.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="FcgiPool.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Types.h">
@@ -105,6 +108,21 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="FileHandler.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="FcgiHandler.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="FcgiPool.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="FcgiProcess.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="FcgiSession.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Event.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

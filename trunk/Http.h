@@ -2,8 +2,8 @@
 #define _HTTP_H
 
 #include "Types.h"
+#include "Win32.h"
 #include "Stream.h"
-#include "Socket.h"
 #include <vector>
 #include <utility>
 
@@ -42,6 +42,8 @@ namespace Httpd
 
 		static const UInt16 NullOffset = UINT16_MAX;
 	};
+
+	class Socket;
 
 	class HttpResponse: NonCopyable
 	{

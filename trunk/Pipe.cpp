@@ -1,17 +1,16 @@
-#include "Win32.h"
 #include "Pipe.h"
 #include "Dispatcher.h"
-#include "Exception.h"
-#include "Constant.h"
+#include "Utility.h"
+#include "Win32.h"
 
 using namespace Httpd;
 
 namespace
 {
-	class ReadOperation: public OverlappedOperation
+	class ReadCompletion: public OverlappedCompletion
 	{
 	public:
-		ReadOperation(HANDLE hFile, char *buffer, UInt32 size)
+		ReadCompletion(HANDLE hFile, char *buffer, UInt32 size)
 			: hFile(hFile), buffer(buffer), size(size)
 		{}
 
@@ -27,10 +26,10 @@ namespace
 		UInt32 size;
 	};
 
-	class WriteOperation: public OverlappedOperation
+	class WriteCompletion: public OverlappedCompletion
 	{
 	public:
-		WriteOperation(HANDLE hFile, const char *buffer, UInt32 size)
+		WriteCompletion(HANDLE hFile, const char *buffer, UInt32 size)
 			: hFile(hFile), buffer(buffer), size(size)
 		{}
 
@@ -55,13 +54,13 @@ namespace Httpd
 
 	UInt32 Pipe::Read(char *buffer, UInt32 size)
 	{
-		ReadOperation operation(this->pipe.Handle(), buffer, size);
-		return Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->pipe.Handle()), operation);
+		ReadCompletion completion(this->pipe.Handle(), buffer, size);
+		return Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->pipe.Handle()), completion);
 	}
 
 	void Pipe::Write(const char *buffer, UInt32 size)
 	{
-		WriteOperation operation(this->pipe.Handle(), buffer, size);
-		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->pipe.Handle()), operation);
+		WriteCompletion completion(this->pipe.Handle(), buffer, size);
+		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->pipe.Handle()), completion);
 	}
 }

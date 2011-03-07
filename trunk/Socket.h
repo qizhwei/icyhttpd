@@ -2,7 +2,6 @@
 #define _SOCKET_H
 
 #include "Types.h"
-#include "Dispatcher.h"
 #include "Win32.h"
 
 namespace Httpd

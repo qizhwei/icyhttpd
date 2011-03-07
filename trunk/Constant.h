@@ -14,10 +14,6 @@ namespace Httpd
 	const SIZE_T StackCommitSize = 4096;
 	const SIZE_T StackReserveSize = 16384;
 
-	// Completion keys
-	const ULONG_PTR FiberCreateKey = 0;
-	const ULONG_PTR OverlappedOperationKey = 1;
-
 	// Buffer sizes
 	const size_t MaxRequestBufferSize = 32768; // must be able to represent in UInt16
 	const UInt32 BufferBlockSize = 4096;

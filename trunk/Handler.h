@@ -2,11 +2,13 @@
 #define _HANDLER_H
 
 #include "Types.h"
-#include "Http.h"
-#include "Node.h"
 
 namespace Httpd
 {
+	class Node;
+	class HttpRequest;
+	class HttpResponse;
+
 	class Handler: NonCopyable
 	{
 	public:

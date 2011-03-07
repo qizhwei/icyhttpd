@@ -1,4 +1,6 @@
 #include "FileHandler.h"
+#include "Http.h"
+#include "Node.h"
 #include "Types.h"
 #include "Exception.h"
 #include "Utility.h"

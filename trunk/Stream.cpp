@@ -104,16 +104,16 @@ namespace Httpd
 		}
 	}
 
-	BufferedWriter::BufferedWriter(Writable &stream, UInt32 blockSize)
-		: stream(stream), blockSize(blockSize)
+	BufferedWriter::BufferedWriter(Writable &stream)
+		: stream(stream)
 	{
 	}
 
 	void BufferedWriter::Write(const char *buffer, UInt32 size)
 	{
-		if (size < blockSize) {
+		if (size < BufferBlockSize) {
 			this->buffer.insert(this->buffer.end(), buffer, buffer + size);
-			if (this->buffer.size() >= this->blockSize)
+			if (this->buffer.size() >= BufferBlockSize)
 				this->Flush();
 		} else {
 			this->Flush();

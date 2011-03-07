@@ -3,48 +3,14 @@
 
 #include "Types.h"
 #include "Win32.h"
-#include "Exception.h"
 
 namespace Httpd
 {
-	class Operation
-	{
-	public:
-		Operation(LPVOID lpFiber = GetCurrentFiber())
-			: lpFiber(lpFiber)
-		{}
+	class OverlappedCompletion;
 
-		virtual bool operator()() = 0;
-
-		void SwitchBack()
-		{
-			SwitchToFiber(this->lpFiber);
-		}
-
-	private:
-		LPVOID lpFiber;
-
-		// This object should not be allocated on heap
-		void *operator new(size_t);
-		void operator delete(void *);
-	};
-
-	class OverlappedOperation: public OVERLAPPED, public Operation
-	{
-	public:
-		OverlappedOperation(UInt64 offset = 0)
-		{
-			this->Internal = 0;
-			this->InternalHigh = 0;
-
-			LARGE_INTEGER liOffset;
-			liOffset.QuadPart = offset;
-			this->Offset = liOffset.LowPart;
-			this->OffsetHigh = liOffset.HighPart;
-
-			this->hEvent = NULL;
-		}
-	};
+	// Completion keys
+	const ULONG_PTR FiberCreateKey = 0;
+	const ULONG_PTR OverlappedCompletionKey = 1;
 
 	class Dispatcher: NonCopyable
 	{
@@ -53,7 +19,7 @@ namespace Httpd
 	public:
 		void Queue(Callback *callback, void *param);
 		void BindHandle(HANDLE hFile, ULONG_PTR key);
-		UInt32 Block(HANDLE hObject, OverlappedOperation &operation);
+		UInt32 Block(HANDLE hObject, OverlappedCompletion &oc);
 	private:
 		Dispatcher();
 

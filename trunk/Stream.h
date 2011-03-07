@@ -2,7 +2,6 @@
 #define _STREAM_H
 
 #include "Types.h"
-#include "Exception.h"
 #include <vector>
 
 namespace Httpd
@@ -70,7 +69,7 @@ namespace Httpd
 	class BufferedWriter: NonCopyable
 	{
 	public:
-		BufferedWriter(Writable &stream, UInt32 blockSize);
+		BufferedWriter(Writable &stream);
 		void Write(const char *buffer, UInt32 size);
 		void Append(bool b);
 		void Append(UInt16 i);

@@ -1,5 +1,5 @@
 #include "EchoHandler.h"
-#include "Constant.h"
+#include "Http.h"
 #include "Stream.h"
 
 namespace Httpd
@@ -10,7 +10,7 @@ namespace Httpd
 		response.EndHeader(200, "OK", false);
 
 		Writer<HttpResponse> responseWriter(response);
-		BufferedWriter writer(responseWriter, BufferBlockSize);
+		BufferedWriter writer(responseWriter);
 		writer.AppendLine("icyhttpd echo handler");
 		writer.AppendLine();
 		writer.AppendLine("[Information]");

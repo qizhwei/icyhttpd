@@ -1,7 +1,6 @@
 #include "SocketProvider.h"
 #include "Win32.h"
 #include "Exception.h"
-#include "Constant.h"
 
 using namespace Httpd;
 using namespace std;

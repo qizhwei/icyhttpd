@@ -1,8 +1,8 @@
 #include "Socket.h"
-#include "Types.h"
 #include "SocketProvider.h"
+#include "Types.h"
 #include "Dispatcher.h"
-#include "Constant.h"
+#include "Utility.h"
 #include "Exception.h"
 
 using namespace Httpd;
@@ -12,10 +12,10 @@ namespace
 {
 	const int AddressLength = sizeof(sockaddr_in6) + 16;
 
-	class AcceptOperation: public OverlappedOperation
+	class AcceptCompletion: public OverlappedCompletion
 	{
 	public:
-		AcceptOperation(SOCKET hSocket, SOCKET hAcceptSocket)
+		AcceptCompletion(SOCKET hSocket, SOCKET hAcceptSocket)
 			: hSocket(hSocket), hAcceptSocket(hAcceptSocket)
 		{}
 
@@ -33,10 +33,10 @@ namespace
 		char buffer[AddressLength * 2];
 	};
 
-	class ReadOperation: public OverlappedOperation
+	class ReadCompletion: public OverlappedCompletion
 	{
 	public:
-		ReadOperation(SOCKET hSocket, char *buffer, UInt32 size)
+		ReadCompletion(SOCKET hSocket, char *buffer, UInt32 size)
 			: hSocket(hSocket)
 		{
 			WSABuf.buf = buffer;
@@ -55,10 +55,10 @@ namespace
 		WSABUF WSABuf;
 	};
 
-	class WriteOperation: public OverlappedOperation
+	class WriteCompletion: public OverlappedCompletion
 	{
 	public:
-		WriteOperation(SOCKET hSocket, const char *buffer, UInt32 size)
+		WriteCompletion(SOCKET hSocket, const char *buffer, UInt32 size)
 			: hSocket(hSocket)
 		{
 			WSABuf.buf = const_cast<char *>(buffer);
@@ -76,10 +76,10 @@ namespace
 		WSABUF WSABuf;
 	};
 
-	class WriteOperation2: public OverlappedOperation
+	class WriteCompletion2: public OverlappedCompletion
 	{
 	public:
-		WriteOperation2(SOCKET hSocket, WSABUF *WSABuf, UInt32 count)
+		WriteCompletion2(SOCKET hSocket, WSABUF *WSABuf, UInt32 count)
 			: hSocket(hSocket), WSABuf(WSABuf), count(count)
 		{}
 
@@ -95,11 +95,11 @@ namespace
 		UInt32 count;
 	};
 
-	class TransmitFileOperation: public OverlappedOperation
+	class TransmitFileCompletion: public OverlappedCompletion
 	{
 	public:
-		TransmitFileOperation(SOCKET hSocket, HANDLE hFile, UInt64 offset, UInt32 size)
-			: hSocket(hSocket), hFile(hFile), OverlappedOperation(offset), size(size)
+		TransmitFileCompletion(SOCKET hSocket, HANDLE hFile, UInt64 offset, UInt32 size)
+			: hSocket(hSocket), hFile(hFile), OverlappedCompletion(offset), size(size)
 		{}
 
 		virtual bool operator()()
@@ -123,7 +123,7 @@ namespace Httpd
 	{
 		try {
 			// TODO: Is it always safe to treat SOCKET as HANDLE?
-			Dispatcher::Instance().BindHandle((HANDLE)this->hSocket, OverlappedOperationKey);
+			Dispatcher::Instance().BindHandle((HANDLE)this->hSocket, OverlappedCompletionKey);
 		} catch (...) {
 			SocketProvider::Instance().Destroy(this->hSocket);
 			throw;
@@ -142,7 +142,7 @@ namespace Httpd
 		service.sin_port = htons(port);
 		service.sin_addr.s_addr = inet_addr(ip);
 
-		if (bind(this->hSocket, (SOCKADDR *)&service, sizeof(service)))
+		if (::bind(this->hSocket, (SOCKADDR *)&service, sizeof(service)))
 			throw SystemException();
 	}
 
@@ -154,31 +154,31 @@ namespace Httpd
 
 	void Socket::Accept(Socket &acceptSocket)
 	{
-		AcceptOperation operation(this->hSocket, acceptSocket.hSocket);
-		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation);
+		AcceptCompletion completion(this->hSocket, acceptSocket.hSocket);
+		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), completion);
 	}
 
 	UInt32 Socket::Read(char *buffer, UInt32 size)
 	{
-		ReadOperation operation(this->hSocket, buffer, size);
-		return Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation);
+		ReadCompletion completion(this->hSocket, buffer, size);
+		return Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), completion);
 	}
 
 	void Socket::Write(const char *buffer, UInt32 size)
 	{
-		WriteOperation operation(this->hSocket, buffer, size);
-		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation);
+		WriteCompletion completion(this->hSocket, buffer, size);
+		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), completion);
 	}
 
 	void Socket::Write(WSABUF *WSABuf, UInt32 count)
 	{
-		WriteOperation2 operation(this->hSocket, WSABuf, count);
-		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation);
+		WriteCompletion2 completion(this->hSocket, WSABuf, count);
+		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), completion);
 	}
 
 	void Socket::TransmitFile(HANDLE hFile, UInt64 offset, UInt32 size)
 	{
-		TransmitFileOperation operation(this->hSocket, hFile, offset, size);
-		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), operation);
+		TransmitFileCompletion completion(this->hSocket, hFile, offset, size);
+		Dispatcher::Instance().Block(reinterpret_cast<HANDLE>(this->hSocket), completion);
 	}
 }

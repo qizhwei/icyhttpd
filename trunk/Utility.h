@@ -3,9 +3,12 @@
 
 #include "Types.h"
 #include "Win32.h"
+#include "Dispatcher.h"
 #include <string>
 #include <cstring>
 #include <functional>
+#include <queue>
+#include <cassert>
 
 namespace
 {
@@ -112,6 +115,81 @@ namespace Httpd
 			this->OVERLAPPED::OffsetHigh = reinterpret_cast<LARGE_INTEGER *>(&offset)->HighPart;
 			this->OVERLAPPED::hEvent = NULL;
 		}
+	};
+
+	template<typename LockType>
+	class Lock
+	{
+	public:
+		Lock(LockType &lock)
+			: lock(lock)
+		{
+			lock.Lock();
+		}
+
+		~Lock()
+		{
+			lock.Unlock();
+		}
+
+	private:
+		LockType &lock;
+	};
+
+	class ThreadLock: NonCopyable
+	{
+	public:
+		ThreadLock()
+		{
+			InitializeCriticalSection(&cs);
+		}
+
+		~ThreadLock()
+		{
+			DeleteCriticalSection(&cs);
+		}
+
+		void Lock()
+		{
+			EnterCriticalSection(&cs);
+		}
+
+		void Unlock()
+		{
+			LeaveCriticalSection(&cs);
+		}
+
+	private:
+		CRITICAL_SECTION cs;
+	};
+
+	template<typename Type>
+	class Shared
+	{
+	public:
+		Shared()
+			: counter(1)
+		{}
+
+		~Shared()
+		{
+			assert(counter == 0);
+		}
+
+		Type *AddRef()
+		{
+			InterlockedIncrement(&counter);
+			return static_cast<Type *>(this);
+		}
+
+		void Release()
+		{
+			if (InterlockedDecrement(&counter) == 0)
+				delete static_cast<Type *>(this);
+		}
+
+	private:
+		volatile LONG counter;
 	};
 }
 

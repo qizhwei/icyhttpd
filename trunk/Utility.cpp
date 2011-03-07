@@ -16,13 +16,17 @@ namespace Httpd
 	void CreatePipePairDuplex(HANDLE hPipe[2])
 	{
 		wchar_t PipeName[48];
+		SECURITY_ATTRIBUTES sa;
 		HANDLE hPipe0, hPipe1;
 		
 		wsprintfW(PipeName, PipeNameFormat, GetCurrentProcessId(), InterlockedIncrement(&PipeCount));
+		sa.nLength = sizeof(sa);
+		sa.lpSecurityDescriptor = NULL;
+		sa.bInheritHandle = TRUE;
 
-		if ((hPipe0 = CreateNamedPipeW(PipeName, PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
+		if ((hPipe0 = CreateNamedPipeW(PipeName, PIPE_ACCESS_DUPLEX,
 			PIPE_TYPE_BYTE | PIPE_WAIT | PIPE_READMODE_BYTE, 1,
-			BufferBlockSize, BufferBlockSize, 0, NULL)) == INVALID_HANDLE_VALUE)
+			BufferBlockSize, BufferBlockSize, 0, &sa)) == INVALID_HANDLE_VALUE)
 			throw SystemException();
 
 		if ((hPipe1 = CreateFileW(PipeName, GENERIC_READ | GENERIC_WRITE, 0, NULL,

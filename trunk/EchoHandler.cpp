@@ -18,8 +18,6 @@ namespace Httpd
 		writer.AppendLine(request.Host());
 		writer.Append("URI: ");
 		writer.AppendLine(request.URI());
-		writer.Append("Path: ");
-		writer.AppendLine(node.Path());
 		writer.Append("Query string: ");
 		writer.AppendLine(request.QueryString());
 		writer.Append("Method: ");

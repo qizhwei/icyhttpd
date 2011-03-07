@@ -108,7 +108,7 @@ namespace
 		_gmtime64_s(&currentTm, &currentTime);
         wsprintfA(dateBuffer, "Date: %3s, %02d %3s %04d %02d:%02d:%02d GMT\r\n",
             Weekdays[currentTm.tm_wday], currentTm.tm_mday, Months[currentTm.tm_mon],
-			currentTm.tm_year + 1900, currentTm.tm_hour, currentTm.tm_min, currentTm.tm_sec);
+			(currentTm.tm_year + 1900) % 10000, currentTm.tm_hour, currentTm.tm_min, currentTm.tm_sec);
 	}
 
 	void URIDecode(char *first, char *&last)
@@ -328,6 +328,8 @@ namespace Httpd
 							else if (!_stricmp(option, "Keep-Alive"))
 								this->keepAlive = true;
 						} while (second != nullptr);
+					} else if (!_stricmp(first, "Range")) {
+						__asm int 3
 					} else {
 						this->headers.push_back(std::pair<Int16, Int16>(first - base, second - base));
 					}

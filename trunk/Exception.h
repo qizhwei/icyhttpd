@@ -51,6 +51,10 @@ namespace Httpd
 	DECLARE_EXCEPTION(400, BadRequestException, "Bad Request", "<h1>Bad Request</h1>");
 	DECLARE_EXCEPTION(403, ForbiddenException, "Forbidden", "<h1>Forbidden</h1>");
 	DECLARE_EXCEPTION(404, NotFoundException, "Not Found", "<h1>Not Found</h1>");
+
+	// TODO: An Allow header field MUST be present in a 405 (Method Not Allowed) response.
+	// virtual void HttpException::BuildHttpResponse(HttpResponse &);
+	DECLARE_EXCEPTION(405, MethodNotAllowedException, "Method Not Allowed", "<h1>Method Not Allowed</h1>");
 	DECLARE_EXCEPTION(413, RequestEntityTooLargeException, "Request Entity Too Large", "<h1>Request Entity Too Large</h1>");
 	DECLARE_EXCEPTION(501, NotImplementedException, "Not Implemented", "<h1>Not Implemented</h1>");
 	DECLARE_EXCEPTION(505, HttpVersionNotSupportedException, "HTTP Version Not Supported", "<h1>HTTP Version Not Supported</h1>");

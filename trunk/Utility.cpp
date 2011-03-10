@@ -2,8 +2,10 @@
 #include "Types.h"
 #include "Exception.h"
 #include "Constant.h"
+#include <utility>
 
 using namespace Httpd;
+using namespace std;
 
 namespace
 {
@@ -13,7 +15,7 @@ namespace
 
 namespace Httpd
 {
-	void CreatePipePairDuplex(HANDLE hPipe[2])
+	std::pair<HANDLE, HANDLE> CreatePipePairDuplex()
 	{
 		wchar_t PipeName[48];
 		SECURITY_ATTRIBUTES sa;
@@ -36,11 +38,10 @@ namespace Httpd
 			throw SystemException();
 		}
 
-		hPipe[0] = hPipe0;
-		hPipe[1] = hPipe1;
+		return make_pair(hPipe0, hPipe1);
 	}
 	
-	void CreatePipePair(HANDLE hPipe[2])
+	std::pair<HANDLE, HANDLE> CreatePipePair()
 	{
 		wchar_t PipeName[48];
 		HANDLE hPipe0, hPipe1;
@@ -59,8 +60,7 @@ namespace Httpd
 			throw SystemException();
 		}
 
-		hPipe[0] = hPipe0;
-		hPipe[1] = hPipe1;
+		return make_pair(hPipe0, hPipe1);
 	}
 
 	HANDLE OpenFile(const wchar_t *path)

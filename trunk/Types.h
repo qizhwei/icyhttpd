@@ -25,6 +25,13 @@ namespace Httpd
 		NonCopyable(const NonCopyable &);
 		NonCopyable &operator=(const NonCopyable &);
 	};
+
+	class POD
+	{
+	public:
+		char *Buffer() { return reinterpret_cast<char *>(this); }
+		const char *Buffer() const { return reinterpret_cast<const char *>(this); }
+	};
 }
 
 #endif

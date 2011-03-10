@@ -80,8 +80,10 @@
     <ClCompile Include="Connection.cpp" />
     <ClCompile Include="Dispatcher.cpp" />
     <ClCompile Include="EchoHandler.cpp" />
+    <ClCompile Include="Fastcgi.cpp" />
     <ClCompile Include="FcgiPool.cpp" />
     <ClCompile Include="FcgiProcess.cpp" />
+    <ClCompile Include="FcgiSession.cpp" />
     <ClCompile Include="FileHandler.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Endpoint.cpp" />
@@ -94,9 +96,11 @@
     <ClCompile Include="Utility.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Fastcgi.h" />
     <ClInclude Include="FcgiHandler.h" />
     <ClInclude Include="FcgiPool.h" />
     <ClInclude Include="FcgiProcess.h" />
+    <ClInclude Include="FcgiSession.h" />
     <ClInclude Include="FileHandler.h" />
     <ClInclude Include="Stream.h" />
     <ClInclude Include="Utility.h" />

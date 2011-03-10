@@ -57,7 +57,13 @@
     <ClCompile Include="FcgiPool.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Fastcgi.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
     <ClCompile Include="FcgiProcess.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="FcgiSession.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -120,6 +126,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="FcgiProcess.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Fastcgi.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="FcgiSession.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

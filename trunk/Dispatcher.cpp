@@ -155,15 +155,16 @@ namespace Httpd
 		threadData.completion = &oc;
 		SwitchToFiber(threadData.lpMainFiber);
 
-		if (threadData.failed)
-			throw SystemException();
-
 		DWORD dwBytesTransferred;
-		if (!GetOverlappedResult(hObject, &oc, &dwBytesTransferred, FALSE)) {
-			if (GetLastError() == ERROR_HANDLE_EOF)
+		if (threadData.failed
+			|| !GetOverlappedResult(hObject, &oc, &dwBytesTransferred, FALSE)) {
+			switch (GetLastError()) {
+			case ERROR_HANDLE_EOF:
+			case ERROR_BROKEN_PIPE:
 				return 0;
-			else
+			default:
 				throw SystemException();
+			}
 		}
 
 		return dwBytesTransferred;

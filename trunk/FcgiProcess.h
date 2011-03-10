@@ -4,23 +4,31 @@
 #include "Types.h"
 #include "Win32.h"
 #include "Utility.h"
+#include "Pipe.h"
 #include <string>
 
 namespace Httpd
 {
-	class FcgiProcess: NonCopyable, public Shared<FcgiProcess>
+	class FcgiProcess: NonCopyable
 	{
 	public:
-		FcgiProcess(const std::wstring &commandLine, UInt32 maxRequests);
+		static FcgiProcess *Create(const std::wstring &commandLine, UInt16 maxRequests);
 		~FcgiProcess();
-		static void ReadPipeCallback(void *param);
-		// TODO:
-		// Layer 0: Read / Write packets
-		// Layer 1: Sessions and streams
+
+		// Acquires a request id, it's equal to the remaining requests available.
+		// If the result is zero, the process should be closed after the request.
+		UInt16 Acquire();
+
+		UInt32 Read(char *buffer, UInt32 size);
+		void Write(const char *buffer, UInt32 size);
 
 	private:
-		HANDLE hProcess;
-		HANDLE hPipe;
+		FcgiProcess(HANDLE hProcess, HANDLE hPipe, LONG maxRequests);
+
+	private:
+		Win32Handle process;
+		Pipe pipe;
+		volatile LONG remainingRequests;
 	};
 }
 

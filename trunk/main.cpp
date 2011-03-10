@@ -12,13 +12,32 @@ int main()
 }*/
 
 #include "FcgiProcess.h"
+#include "FcgiSession.h"
 #include "Win32.h"
 #include <cstdio>
 
 using namespace Httpd;
 
+void hello(void *)
+{
+	FcgiProcess *fp = FcgiProcess::Create(L"E:\\Tools\\php-5.3.5-nts-Win32-VC9-x86\\php-cgi.exe", 500);
+	FcgiSession fs(*fp);
+	fs.WriteParam("SCRIPT_FILENAME", "d:\\wwwroot\\phpinfo.php");
+	fs.CloseParam();
+
+	char buffer[4097];
+	UInt32 size;
+	while ((size = fs.Read(buffer, 4096)) != 0) {
+		buffer[size] = '\0';
+		printf("%s", buffer);
+	}
+	printf("has error: %d\n", fs.HasError());
+	printf("keep alive: %d\n", fs.KeepAlive());
+	delete fp;
+}
+
 int main()
 {
-	FcgiProcess *fp = new FcgiProcess(L"E:\\Tools\\php-5.3.5-nts-Win32-VC9-x86\\php-cgi.exe", 500);
+	Dispatcher::Instance().Queue(hello, nullptr);
 	ExitThread(0);
 }

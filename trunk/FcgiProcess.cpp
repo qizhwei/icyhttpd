@@ -1,68 +1,67 @@
 #include "FcgiProcess.h"
+#include "Fastcgi.h"
 #include "Exception.h"
 #include "Utility.h"
-#include "Dispatcher.h"
 #include "Pipe.h"
+#include "Win32.h"
 #include <string>
-#include <cstdio>
+#include <utility>
 
 using namespace Httpd;
 using namespace std;
 
 namespace Httpd
 {
-	FcgiProcess::FcgiProcess(const wstring &commandLine, UInt32 maxRequests)
+	FcgiProcess *FcgiProcess::Create(const wstring &commandLine, UInt16 maxRequests)
 	{
 		STARTUPINFOW si = {0};
 		PROCESS_INFORMATION pi;
-		HANDLE hPipe[2];
-
-		CreatePipePairDuplex(hPipe);
+		auto hPipes = CreatePipePairDuplex();
 
 		si.cb = sizeof(si);
 		si.dwFlags = STARTF_USESTDHANDLES;
-		si.hStdInput = hPipe[0];
+		si.hStdInput = hPipes.first;
 		si.hStdOutput = INVALID_HANDLE_VALUE;
 		si.hStdError = INVALID_HANDLE_VALUE;
 
 		if (!CreateProcessW(NULL, const_cast<LPWSTR>(commandLine.c_str()),
 			NULL, NULL, TRUE, CREATE_BREAKAWAY_FROM_JOB, NULL, NULL, &si, &pi))
 		{
-			CloseHandle(hPipe[0]);
-			CloseHandle(hPipe[1]);
+			CloseHandle(hPipes.first);
+			CloseHandle(hPipes.second);
 			throw SystemException();
 		}
 
-		CloseHandle(hPipe[0]);
+		CloseHandle(hPipes.first);
 		CloseHandle(pi.hThread);
 
-		this->hProcess = pi.hProcess;
-		this->hPipe = hPipe[1];
-
-		Dispatcher::Instance().Queue(ReadPipeCallback, this->AddRef());
+		return new FcgiProcess(pi.hProcess, hPipes.second, maxRequests);
 	}
 
-	void FcgiProcess::ReadPipeCallback(void *param)
-	{
-		FcgiProcess *fcp = static_cast<FcgiProcess *>(param);
-		Pipe pipe(fcp->hPipe);
-
-		char buffer[4096];
-
-		printf("read begin.\n");
-
-		while (pipe.Read(buffer, sizeof(buffer)) != 0) {
-			printf("read sth..\n");
-		}
-
-		printf("read eof!\n");
-		fcp->Release();
-	}
+	FcgiProcess::FcgiProcess(HANDLE hProcess, HANDLE hPipe, LONG maxRequests)
+		: process(hProcess), pipe(hPipe), remainingRequests(maxRequests)
+	{}
 
 	FcgiProcess::~FcgiProcess()
 	{
-		TerminateProcess(this->hProcess, 1);
-		CloseHandle(this->hPipe);
-		CloseHandle(this->hProcess);
+		TerminateProcess(this->process.Handle(), 1);
+	}
+
+	UInt16 FcgiProcess::Acquire()
+	{
+		UInt16 requestId = static_cast<UInt16>(InterlockedDecrement(&remainingRequests));
+		FcgiBeginRequestRecord fb(requestId, FcgiResponder, FcgiKeepConn);
+		this->Write(fb.Buffer(), sizeof(fb));
+		return requestId;
+	}
+
+	UInt32 FcgiProcess::Read(char *buffer, UInt32 size)
+	{
+		return pipe.Read(buffer, size);
+	}
+
+	void FcgiProcess::Write(const char *buffer, UInt32 size)
+	{
+		pipe.Write(buffer, size);
 	}
 }

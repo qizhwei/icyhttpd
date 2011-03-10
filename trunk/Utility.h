@@ -9,6 +9,7 @@
 #include <functional>
 #include <queue>
 #include <cassert>
+#include <utility>
 
 namespace
 {
@@ -52,12 +53,18 @@ namespace Httpd
 		{
 			return hObject;
 		}
+
+		void Close()
+		{
+			CloseHandle(hObject);
+			hObject = NULL;
+		}
 	private:
 		HANDLE hObject;
 	};
 
-	extern void CreatePipePairDuplex(HANDLE hPipe[2]);
-	extern void CreatePipePair(HANDLE hPipe[2]);
+	extern std::pair<HANDLE, HANDLE> CreatePipePairDuplex();
+	extern std::pair<HANDLE, HANDLE> CreatePipePair();
 	extern HANDLE OpenFile(const wchar_t *path);
 	extern UInt64 GetFileSize(HANDLE hFile);
 

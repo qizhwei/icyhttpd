@@ -16,6 +16,18 @@ namespace Httpd
 	private:
 		Win32Handle pipe;
 	};
+
+	class LocalPipe
+	{
+	public:
+		LocalPipe(std::pair<HANDLE, HANDLE> hPipes);
+		UInt32 Read(char *buffer, UInt32 size);
+		void Write(const char *buffer, UInt32 size);
+		void CloseRead();
+		void CloseWrite();
+	private:
+		Win32Handle readPipe, writePipe;
+	};
 }
 
 #endif

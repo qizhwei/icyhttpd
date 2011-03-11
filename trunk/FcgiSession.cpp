@@ -13,14 +13,15 @@ using namespace std;
 
 namespace
 {
-	const UInt32 MaxPacketSize = 0x10000;
+	const UInt32 MaxPacketSize = 0x1000;
+	const UInt32 MaxContentSize = MaxPacketSize - sizeof(FcgiHeader);
 }
 
 namespace Httpd
 {
 	void FcgiSession::ReadProc(void *param)
 	{
-		FcgiSession *fs = static_cast<FcgiSession *>(param);
+		FcgiSession *const fs = static_cast<FcgiSession *>(param);
 		FcgiHeader header;
 		char buffer[BufferBlockSize];
 		bool ended = false;
@@ -116,9 +117,9 @@ bed:
 
 	void FcgiSession::PrepareParamBufferForSending()
 	{
-		size_t currentSize = this->paramBuffer.size();
-		UInt16 contentLength = currentSize - sizeof(FcgiHeader);
-		unsigned char paddingLength = 7 - ((currentSize + 7) & 7);
+		const size_t currentSize = this->paramBuffer.size();
+		const UInt16 contentLength = currentSize - sizeof(FcgiHeader);
+		const unsigned char paddingLength = 7 - ((contentLength + 7) & 7);
 		FcgiHeader header(FcgiVersion1, FcgiParams, this->requestId, contentLength, paddingLength);
 		memcpy(&*this->paramBuffer.begin(), header.Buffer(), sizeof(FcgiHeader));
 		this->paramBuffer.resize(currentSize + paddingLength);
@@ -127,8 +128,8 @@ bed:
 	void FcgiSession::PushParamBuffer(const char *buffer, UInt32 size)
 	{
 		while (true) {
-			size_t currentSize = this->paramBuffer.size();
-			UInt32 remainingLength = MaxPacketSize - currentSize;
+			const size_t currentSize = this->paramBuffer.size();
+			const UInt32 remainingLength = MaxPacketSize - currentSize;
 
 			if (size < remainingLength) {
 				this->paramBuffer.resize(currentSize + size);
@@ -147,8 +148,8 @@ bed:
 
 	void FcgiSession::WriteParam(const char *key, const char *value)
 	{
-		size_t keyLength = strlen(key);
-		size_t valueLength = strlen(value);
+		const size_t keyLength = strlen(key);
+		const size_t valueLength = strlen(value);
 		char buffer[8];
 		UInt32 offset = 0;
 
@@ -182,7 +183,28 @@ bed:
 
 	void FcgiSession::Write(const char *buffer, UInt32 size)
 	{
-		// TODO: Not implemented
-		throw NotImplementedException();
+		while (size != 0) {
+			const UInt16 contentLength = std::min(size, MaxContentSize);
+			const unsigned char paddingLength = 7 - ((contentLength + 7) & 7);
+
+			// Write header
+			FcgiHeader header(FcgiVersion1, FcgiStdin, this->requestId, contentLength, paddingLength);
+			this->process.Write(header.Buffer(), sizeof(header));
+
+			// Write data
+			this->process.Write(buffer, contentLength);
+
+			// Write padding
+			this->process.Write(header.Buffer(), paddingLength);
+			
+			buffer += contentLength;
+			size -= contentLength;
+		}
+	}
+
+	void FcgiSession::CloseStdin()
+	{
+		FcgiHeader header(FcgiVersion1, FcgiStdin, this->requestId, 0, 0);
+		this->process.Write(header.Buffer(), sizeof(header));
 	}
 };

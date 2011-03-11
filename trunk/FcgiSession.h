@@ -30,6 +30,7 @@ namespace Httpd
 
 		// Write to stdin
 		void Write(const char *buffer, UInt32 size);
+		void CloseStdin();
 
 		// Read from stdout
 		UInt32 Read(char *buffer, UInt32 size);

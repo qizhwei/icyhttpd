@@ -5,6 +5,7 @@
 #include "Socket.h"
 #include "Win32.h"
 #include "Utility.h"
+#include "Stream.h"
 #include <cstring>
 #include <utility>
 #include <ctime>
@@ -184,7 +185,7 @@ namespace
 namespace Httpd
 {
 	HttpRequest::HttpRequest(BufferedReader &reader)
-		: reader(reader), remainingLength(0), chunked(false)
+		: reader(reader), contentLength(NullOffset), remainingLength(0), chunked(false)
 	{
 		bool done = false;
 		bool title = true;
@@ -286,7 +287,7 @@ namespace Httpd
 				}
 
 				this->uri = uri - base;
-				this->ext = ext != nullptr ? ext - base : -1;
+				this->ext = ext != nullptr ? ext - base : NullOffset;
 
 				title = false;
 			} else {
@@ -312,6 +313,7 @@ namespace Httpd
 							*colon = '\0';
 						this->host = second - base;
 					} else if (!_stricmp(first, "Content-Length")) {
+						this->contentLength = second - base;
 						if ((this->remainingLength = ParseUInt64Dec(second)) == UINT64_MAX)
 							throw RequestEntityTooLargeException(true);
 						this->chunked = false;
@@ -329,9 +331,8 @@ namespace Httpd
 								this->keepAlive = true;
 						} while (second != nullptr);
 					} else if (!_stricmp(first, "Range")) {
-						__asm int 3
-					} else {
-						this->headers.push_back(std::pair<Int16, Int16>(first - base, second - base));
+						// TODO: Implement range and multi-range
+						throw NotImplementedException(true);
 					}
 				}
 			}
@@ -369,19 +370,60 @@ namespace Httpd
 		return size;
 	}
 
-	HttpHeader HttpRequest::GetHeader(UInt32 index)
-	{
-		std::pair<Int16, Int16> offsets = this->headers[index];
-		const char *first = reader.BasePointer() + offsets.first;
-		const char *second = reader.BasePointer() + offsets.second;
-		return HttpHeader(first, second);
-	}
-
 	void HttpRequest::Flush()
 	{
 		char buffer[BufferBlockSize];
 		while (this->Read(buffer, sizeof(buffer)) != 0);
 		this->reader.Flush();
+	}
+
+	const char *HttpRequest::Method()
+	{
+		return reader.BasePointer() + method;
+	}
+
+	const char *HttpRequest::URI() {
+		return reader.BasePointer() + uri;
+	}
+
+	const char *HttpRequest::Extension()
+	{
+		return ext == NullOffset ? "." : reader.BasePointer() + ext;
+	}
+
+	const char *HttpRequest::QueryString()
+	{
+		return query == NullOffset ? "" : reader.BasePointer() + query;
+	}
+
+	const char *HttpRequest::Host()
+	{
+		return host == NullOffset ? "" : reader.BasePointer() + host;
+	}
+
+	const char *HttpRequest::ContentLength()
+	{
+		return contentLength == NullOffset ? "0" : reader.BasePointer() + contentLength;
+	}
+
+	HttpVersion HttpRequest::Version()
+	{
+		return HttpVersion(majorVer, minorVer);
+	}
+
+	UInt64 HttpRequest::RemainingLength()
+	{
+		return remainingLength;
+	}
+
+	bool HttpRequest::Chunked()
+	{
+		return chunked;
+	}
+
+	bool HttpRequest::KeepAlive()
+	{
+		return keepAlive;
 	}
 
 	HttpResponse::HttpResponse(Socket &socket, HttpVersion requestVersion, bool requestKeepAlive)

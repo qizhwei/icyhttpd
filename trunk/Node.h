@@ -13,15 +13,17 @@ namespace Httpd
 	class Node: NonCopyable
 	{
 	public:
-		Node(const std::wstring &path, Handler *defaultHandler);
+		Node(const std::string &path, Handler *defaultHandler);
 		Handler &GetHandler(const CiString &ext);
-		const std::wstring &Path() { return path; }
+		const std::string &PathA() { return pathA; }
+		const std::wstring &PathW() { return pathW; }
 
 	private:
 		// this class has no destructor, declaration only
 		~Node();
 	private:
-		std::wstring path;
+		std::string pathA;
+		std::wstring pathW;
 		std::unordered_map<CiString, Handler *> bindings;
 		Handler *defaultHandler;
 	};

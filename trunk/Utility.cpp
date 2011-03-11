@@ -3,6 +3,8 @@
 #include "Exception.h"
 #include "Constant.h"
 #include <utility>
+#include <string>
+#include <vector>
 
 using namespace Httpd;
 using namespace std;
@@ -82,6 +84,12 @@ namespace Httpd
 			}
 		}
 
+		// Workaround for Win32 pseudo-handle such as CON and NUL
+		if (((ULONG_PTR)hFile & 0x3) != 0) {
+			CloseHandle(hFile);
+			throw NotFoundException();
+		}
+
 		return hFile;
 	}
 
@@ -91,5 +99,21 @@ namespace Httpd
 		if (!GetFileSizeEx(hFile, &liFileSize))
 			throw SystemException();
 		return liFileSize.QuadPart;
+	}
+
+	wstring MB2WC(UINT codePage, const string &s)
+	{
+		size_t originalSize;
+		size_t convertedSize;
+
+		if ((originalSize = s.size()) == 0)
+			return wstring();
+
+		if ((convertedSize = MultiByteToWideChar(codePage, 0, s.c_str(), originalSize, NULL, 0)) == 0)
+			throw SystemException();
+
+		vector<wchar_t> buffer(convertedSize);
+		MultiByteToWideChar(codePage, 0, s.c_str(), originalSize, &*buffer.begin(), convertedSize);
+		return wstring(buffer.begin(), buffer.end());
 	}
 }

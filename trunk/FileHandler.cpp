@@ -23,7 +23,7 @@ namespace Httpd
 		else
 			throw MethodNotAllowedException();
 
-		const wstring &path = node.Path();
+		const wstring path = node.PathW();
 		size_t pathSize = path.size();
 		const char *uri = request.URI();
 		if (*uri != '/')

@@ -9,32 +9,35 @@
 
 namespace Httpd
 {
-	typedef std::pair<const char *, const char *> HttpHeader;
+	class BufferedReader;
+	class Socket;
+
 	typedef std::pair<UInt16, UInt16> HttpVersion;
 
 	class HttpRequest: NonCopyable
 	{
 	public:
 		HttpRequest(BufferedReader &reader);
-		void Flush();
 		UInt32 Read(char *buffer, UInt32 size);
+		void Flush();
 
-		const char *Method() { return reader.BasePointer() + method; }
-		const char *URI() { return reader.BasePointer() + uri; }
-		const char *Extension() { return ext == NullOffset ? "." : reader.BasePointer() + ext; };
-		const char *QueryString() { return query == NullOffset ? "" : reader.BasePointer() + query; }
-		const char *Host() { return host == NullOffset ? "" : reader.BasePointer() + host; }
-		HttpVersion Version() { return HttpVersion(majorVer, minorVer); }
-		UInt64 RemainingLength() { return remainingLength; }
-		bool Chunked() { return chunked; }
-		bool KeepAlive() { return keepAlive; }
-		UInt32 HeaderCount() { return headers.size(); }
-		HttpHeader GetHeader(UInt32 index);
+		// Header fields
+		const char *Method();
+		const char *URI();
+		const char *Extension();
+		const char *QueryString();
+		const char *Host();
+		const char *ContentLength();
+
+		// Status
+		HttpVersion Version();
+		UInt64 RemainingLength();
+		bool Chunked();
+		bool KeepAlive();
 
 	private:
 		BufferedReader &reader;
-		std::vector<std::pair<UInt16, UInt16> > headers;
-		UInt16 method, uri, ext, query, host;
+		UInt16 method, uri, ext, query, host, contentLength;
 		UInt16 majorVer, minorVer;
 		UInt64 remainingLength;
 		bool chunked;
@@ -42,8 +45,6 @@ namespace Httpd
 
 		static const UInt16 NullOffset = UINT16_MAX;
 	};
-
-	class Socket;
 
 	class HttpResponse: NonCopyable
 	{

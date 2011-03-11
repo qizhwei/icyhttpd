@@ -68,6 +68,8 @@ namespace Httpd
 	extern HANDLE OpenFile(const wchar_t *path);
 	extern UInt64 GetFileSize(HANDLE hFile);
 
+	extern std::wstring MB2WC(UINT codePage, const std::string &s);
+
 	template<size_t BufferSize, typename UIntType>
 	char *ParseUInt(char buffer[BufferSize], UIntType i)
 	{
@@ -115,6 +117,7 @@ namespace Httpd
 		}
 
 		OverlappedCompletion(UInt64 offset)
+			: Completion(GetCurrentFiber())
 		{
 			this->OVERLAPPED::Internal = 0;
 			this->OVERLAPPED::InternalHigh = 0;

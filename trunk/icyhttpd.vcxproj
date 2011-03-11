@@ -79,7 +79,6 @@
   <ItemGroup>
     <ClCompile Include="Connection.cpp" />
     <ClCompile Include="Dispatcher.cpp" />
-    <ClCompile Include="EchoHandler.cpp" />
     <ClCompile Include="Fastcgi.cpp" />
     <ClCompile Include="FcgiPool.cpp" />
     <ClCompile Include="FcgiProcess.cpp" />
@@ -107,7 +106,6 @@
     <ClInclude Include="Connection.h" />
     <ClInclude Include="Constant.h" />
     <ClInclude Include="Dispatcher.h" />
-    <ClInclude Include="EchoHandler.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="Handler.h" />
     <ClInclude Include="Http.h" />

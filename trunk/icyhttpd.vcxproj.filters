@@ -39,9 +39,6 @@
     <ClCompile Include="Http.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="EchoHandler.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="Utility.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -96,9 +93,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Handler.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="EchoHandler.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Connection.h">

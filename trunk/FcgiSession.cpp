@@ -19,77 +19,108 @@ namespace
 
 namespace Httpd
 {
-	void FcgiSession::ReadProc(void *param)
+	struct FcgiSessionContext: NonCopyable
 	{
-		SharedPtr<FcgiSession> fs(static_cast<FcgiSession *>(param));
-		FcgiHeader header;
-		char buffer[BufferBlockSize];
-		bool ended = false;
+		FcgiSessionContext(FcgiProcess &process)
+			: process(process), stdoutPipe(CreatePipePair()), requestId(process.Acquire()), hasError(false)
+		{}
 
-		try {
-			do {
-				// Read header
-				if (fs->process.Read(header.Buffer(), sizeof(header)) == 0)
-					break;
+		FcgiProcess &process;
+		LocalPipe stdoutPipe;
+		UInt16 requestId;
+		bool hasError;
+	};
 
-				if (header.Version() != FcgiVersion1 || header.RequestId() != fs->requestId)
-					break;
-
-				UInt32 remainingLength = header.ContentLength();
-
-				// Dispatch data
-				switch (header.Type()) {
-				case FcgiStdout:
-					if (remainingLength == 0) {
-						fs->stdoutPipe.CloseWrite();
-					} else {
-						do {
-							UInt32 readSize = std::min(remainingLength, BufferBlockSize);
-							if (fs->process.Read(buffer, readSize) == 0)
-								goto bed;
-							remainingLength -= readSize;
-							fs->stdoutPipe.Write(buffer, readSize);
-						} while (remainingLength != 0);
-					}
-					break;
-				case FcgiEndRequest:
-					ended = true;
-					break;
-				}
-
-				// Read remaining data
-				remainingLength += header.PaddingLength();
-				while (remainingLength != 0) {
-					UInt32 readSize = std::min(remainingLength, BufferBlockSize);
-					if (fs->process.Read(buffer, readSize) == 0)
-						goto bed;
-					remainingLength -= readSize;
-				}
-			} while (!ended);
-		} catch (const std::exception &) {
+	struct FcgiReadContext: NonCopyable
+	{
+		FcgiReadContext(FcgiSessionContextPtr session)
+			: session(session)
+		{
+			Dispatcher::Instance().Queue(&this->ReadProc, this);
 		}
+
+		~FcgiReadContext()
+		{
+			this->session->stdoutPipe.CloseWrite();
+		}
+
+		FcgiSessionContextPtr session;
+
+		static void ReadProc(void *param)
+		{
+			auto_ptr<FcgiReadContext> frc(static_cast<FcgiReadContext *>(param));
+			FcgiHeader header;
+			char buffer[BufferBlockSize];
+			bool ended = false;
+
+			try {
+				do {
+					// Read header
+					if (frc->session->process.Read(header.Buffer(), sizeof(header)) == 0)
+						break;
+
+					if (header.Version() != FcgiVersion1 || header.RequestId() != frc->session->requestId)
+						break;
+
+					UInt32 remainingLength = header.ContentLength();
+
+					// Dispatch data
+					switch (header.Type()) {
+					case FcgiStdout:
+						if (remainingLength == 0) {
+							ended = true;
+						} else {
+							do {
+								UInt32 readSize = std::min(remainingLength, BufferBlockSize);
+								if (frc->session->process.Read(buffer, readSize) == 0)
+									goto bed;
+								remainingLength -= readSize;
+								frc->session->stdoutPipe.Write(buffer, readSize);
+							} while (remainingLength != 0);
+						}
+						break;
+					case FcgiEndRequest:
+						ended = true;
+						break;
+					}
+
+					// Read remaining data
+					remainingLength += header.PaddingLength();
+					while (remainingLength != 0) {
+						UInt32 readSize = std::min(remainingLength, BufferBlockSize);
+						if (frc->session->process.Read(buffer, readSize) == 0)
+							goto bed;
+						remainingLength -= readSize;
+					}
+				} while (!ended);
+			} catch (const std::exception &) {
+			}
 bed:
-		if (!ended)
-			fs->hasError = true;
-		fs->stdoutPipe.CloseWrite();
-	}
+			if (!ended)
+				frc->session->hasError = true;
+		}
+	};
 
 	FcgiSession::FcgiSession(FcgiProcess &process)
-		: process(process), stdoutPipe(CreatePipePair())
-		, requestId(process.Acquire()), hasError(false)
+		: session(new FcgiSessionContext(process))
 	{
 		this->InitializeParamBuffer();
-		Dispatcher::Instance().Queue(&this->ReadProc, this->AddRef());
+		new FcgiReadContext(session);
 	}
 
-	bool FcgiSession::KeepAlive()
+	FcgiSession::~FcgiSession()
 	{
-		return this->requestId != 0 && this->hasError == false;
+		this->session->stdoutPipe.CloseRead();
 	}
 
-	bool FcgiSession::HasError()
+	bool FcgiSession::KeepAlive() const
 	{
-		return this->hasError;
+		return this->session->requestId != 0 && this->session->hasError == false;
+	}
+
+	bool FcgiSession::HasError() const
+	{
+		return this->session->hasError;
 	}
 
 	void FcgiSession::InitializeParamBuffer()
@@ -101,7 +132,7 @@ bed:
 	{
 		if (this->paramBuffer.size() != sizeof(FcgiHeader)) {
 			this->PrepareParamBufferForSending();
-			this->process.Write(&*this->paramBuffer.begin(), this->paramBuffer.size());
+			this->session->process.Write(&*this->paramBuffer.begin(), this->paramBuffer.size());
 			this->InitializeParamBuffer();
 		}
 	}
@@ -111,7 +142,7 @@ bed:
 		this->FlushParam();
 		this->InitializeParamBuffer();
 		this->PrepareParamBufferForSending();
-		this->process.Write(&*this->paramBuffer.begin(), this->paramBuffer.size());
+		this->session->process.Write(&*this->paramBuffer.begin(), this->paramBuffer.size());
 		vector<char>().swap(this->paramBuffer);
 	}
 
@@ -120,7 +151,7 @@ bed:
 		const size_t currentSize = this->paramBuffer.size();
 		const UInt16 contentLength = currentSize - sizeof(FcgiHeader);
 		const unsigned char paddingLength = 7 - ((contentLength + 7) & 7);
-		FcgiHeader header(FcgiVersion1, FcgiParams, this->requestId, contentLength, paddingLength);
+		FcgiHeader header(FcgiVersion1, FcgiParams, this->session->requestId, contentLength, paddingLength);
 		memcpy(&*this->paramBuffer.begin(), header.Buffer(), sizeof(FcgiHeader));
 		this->paramBuffer.resize(currentSize + paddingLength);
 	}
@@ -178,7 +209,7 @@ bed:
 
 	UInt32 FcgiSession::Read(char *buffer, UInt32 size)
 	{
-		return this->stdoutPipe.Read(buffer, size);
+		return this->session->stdoutPipe.Read(buffer, size);
 	}
 
 	void FcgiSession::Write(const char *buffer, UInt32 size)
@@ -188,14 +219,14 @@ bed:
 			const unsigned char paddingLength = 7 - ((contentLength + 7) & 7);
 
 			// Write header
-			FcgiHeader header(FcgiVersion1, FcgiStdin, this->requestId, contentLength, paddingLength);
-			this->process.Write(header.Buffer(), sizeof(header));
+			FcgiHeader header(FcgiVersion1, FcgiStdin, this->session->requestId, contentLength, paddingLength);
+			this->session->process.Write(header.Buffer(), sizeof(header));
 
 			// Write data
-			this->process.Write(buffer, contentLength);
+			this->session->process.Write(buffer, contentLength);
 
 			// Write padding
-			this->process.Write(header.Buffer(), paddingLength);
+			this->session->process.Write(header.Buffer(), paddingLength);
 			
 			buffer += contentLength;
 			size -= contentLength;
@@ -204,7 +235,7 @@ bed:
 
 	void FcgiSession::CloseStdin()
 	{
-		FcgiHeader header(FcgiVersion1, FcgiStdin, this->requestId, 0, 0);
-		this->process.Write(header.Buffer(), sizeof(header));
+		FcgiHeader header(FcgiVersion1, FcgiStdin, this->session->requestId, 0, 0);
+		this->session->process.Write(header.Buffer(), sizeof(header));
 	}
 };

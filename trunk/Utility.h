@@ -171,61 +171,6 @@ namespace Httpd
 	private:
 		CRITICAL_SECTION cs;
 	};
-
-	template<typename Type>
-	class Shared
-	{
-	public:
-		Shared()
-			: counter(1)
-		{}
-
-		~Shared()
-		{
-			// The counter may be 1 when exception is thrown in constructor
-		}
-
-		Type *AddRef()
-		{
-			InterlockedIncrement(&counter);
-			return static_cast<Type *>(this);
-		}
-
-		void Release()
-		{
-			if (InterlockedDecrement(&counter) == 0)
-				delete static_cast<Type *>(this);
-		}
-
-	private:
-		volatile LONG counter;
-	};
-
-	template<typename Type>
-	class SharedPtr
-	{
-	public:
-		explicit SharedPtr(Type *ptr)
-			: ptr(ptr)
-		{}
-
-		~SharedPtr()
-		{
-			ptr->Release();
-		}
-
-		Type &operator *() const
-		{
-			return *ptr;
-		}
-
-        Type *operator ->() const
-		{
-			return ptr;
-		}
-	private:
-		Type *ptr;
-	};
 }
 
 namespace std

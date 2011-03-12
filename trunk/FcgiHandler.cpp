@@ -18,20 +18,20 @@ namespace Httpd
 	{
 		// TODO: use FcgiPool
 		auto_ptr<FcgiProcess> fp(FcgiProcess::Create(L"E:\\Tools\\php-5.3.5-nts-Win32-VC9-x86\\php-cgi.exe", 500));
-		SharedPtr<FcgiSession> fs(new FcgiSession(*fp));
+		FcgiSession fs(*fp);
 
 		{
 			const char *uri = request.URI();
 			// TODO: what if uri == "*"?
 			string scriptFilename = node.PathA() + uri;
-			fs->WriteParam("SCRIPT_FILENAME", scriptFilename.c_str());
+			fs.WriteParam("SCRIPT_FILENAME", scriptFilename.c_str());
 		}
-		fs->WriteParam("REQUEST_METHOD", request.Method());
-		fs->WriteParam("SERVER_NAME", "icyhttpd");
-		fs->CloseParam();
-		fs->CloseStdin();
+		fs.WriteParam("REQUEST_METHOD", request.Method());
+		fs.WriteParam("SERVER_NAME", "icyhttpd");
+		fs.CloseParam();
+		fs.CloseStdin();
 
-		Reader<FcgiSession> fsReader(*fs);
+		Reader<FcgiSession> fsReader(fs);
 		BufferedReader reader(fsReader, BufferBlockSize);
 
 		char *header;

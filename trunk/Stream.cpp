@@ -70,7 +70,7 @@ namespace Httpd
 		if (remain != 0) {
 			if (remain < size)
 				size = remain;
-			memcpy(buffer, &buffer[current], size);
+			memcpy(buffer, &this->buffer[current], size);
 			current += size;
 			if (current >= next) {
 				next = current;
@@ -79,7 +79,7 @@ namespace Httpd
 						next = UINT32_MAX;
 						break;
 					}
-				} while (buffer[next++] != '\n');
+				} while (this->buffer[next++] != '\n');
 			}
 
 			return size;

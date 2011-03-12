@@ -8,7 +8,6 @@
 #include <cstring>
 #include <functional>
 #include <queue>
-#include <cassert>
 #include <utility>
 
 namespace
@@ -183,7 +182,7 @@ namespace Httpd
 
 		~Shared()
 		{
-			assert(counter == 0);
+			// The counter may be 1 when exception is thrown in constructor
 		}
 
 		Type *AddRef()
@@ -200,6 +199,32 @@ namespace Httpd
 
 	private:
 		volatile LONG counter;
+	};
+
+	template<typename Type>
+	class SharedPtr
+	{
+	public:
+		explicit SharedPtr(Type *ptr)
+			: ptr(ptr)
+		{}
+
+		~SharedPtr()
+		{
+			ptr->Release();
+		}
+
+		Type &operator *() const
+		{
+			return *ptr;
+		}
+
+        Type *operator ->() const
+		{
+			return ptr;
+		}
+	private:
+		Type *ptr;
 	};
 }
 

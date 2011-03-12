@@ -4,13 +4,13 @@
 #include "Types.h"
 #include "Win32.h"
 #include "Stream.h"
+#include "Socket.h"
 #include <vector>
 #include <utility>
 
 namespace Httpd
 {
 	class BufferedReader;
-	class Socket;
 
 	typedef std::pair<UInt16, UInt16> HttpVersion;
 
@@ -18,6 +18,7 @@ namespace Httpd
 	{
 	public:
 		HttpRequest(BufferedReader &reader);
+		void ParseHeaders();
 		UInt32 Read(char *buffer, UInt32 size);
 		void Flush();
 
@@ -50,21 +51,26 @@ namespace Httpd
 	{
 	public:
 		HttpResponse(Socket &socket, HttpVersion requestVersion, bool requestKeepAlive);
+		void BeginHeader(const char *status);
 		void AppendHeader(const char *header);
+		void AppendHeader(const char *name, const char *value);
 		void AppendHeader(const char *name, UInt64 value);
-		void EndHeader(UInt16 status, const char *reason, bool lengthProvided);
+		void EndHeader(bool lengthProvided);
 		void Write(const char *buffer, UInt32 size);
+		void Flush();
 		void TransmitFile(HANDLE hFile, UInt64 offset, UInt32 size);
+
 		bool KeepAlive() { return keepAlive; }
 
 	private:
 		Socket &socket;
+		Writer<Socket> socketWriter;
+		BufferedWriter writer;
+
 		bool assumeKeepAlive;
 		bool entity;
 		bool keepAlive;
 		bool chunked;
-
-		std::vector<char> buffer;
 	};
 }
 

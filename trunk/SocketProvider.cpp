@@ -56,7 +56,7 @@ namespace Httpd
 	{
 		SOCKET s;
 		if ((s = socket(AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP)) == INVALID_SOCKET)
-			throw ResourceInsufficientException();
+			throw SystemException();
 		return s;
 	}
 

@@ -21,13 +21,13 @@ namespace Httpd
 		else if (!strcmp(request.Method(), "HEAD"))
 			head = true;
 		else
-			throw MethodNotAllowedException();
+			throw HttpException(501, false, nullptr);
 
 		const wstring path = node.PathW();
 		size_t pathSize = path.size();
 		const char *uri = request.URI();
 		if (*uri != '/')
-			throw BadRequestException();
+			throw HttpException(400, false, nullptr);
 		int uriSize;
 		if ((uriSize = MultiByteToWideChar(CP_UTF8, 0, uri, -1, NULL, 0)) == 0)
 			throw SystemException();
@@ -38,12 +38,22 @@ namespace Httpd
 		MultiByteToWideChar(CP_UTF8, 0, uri, -1, &name[pathSize], uriSize);
 
 		{
-			Win32Handle file(OpenFile(&name[0]));
+			HANDLE hFile;
+
+			try {
+				hFile = OpenFile(&name[0]);
+			} catch (const ForbiddenException &) {
+				throw HttpException(403, false, nullptr);
+			} catch (const NotFoundException &) {
+				throw HttpException(404, false, nullptr);
+			}
+			Win32Handle file(hFile);
 
 			// TODO: range, multi-range, directory, default file
 			UInt64 fileSize = GetFileSize(file.Handle());
+			response.BeginHeader("200 OK");
 			response.AppendHeader("Content-Length", fileSize);
-			response.EndHeader(200, "OK", true);
+			response.EndHeader(true);
 
 			if (!head)
 				response.TransmitFile(file.Handle(), 0, 0);

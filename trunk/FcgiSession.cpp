@@ -21,7 +21,7 @@ namespace Httpd
 {
 	void FcgiSession::ReadProc(void *param)
 	{
-		FcgiSession *const fs = static_cast<FcgiSession *>(param);
+		SharedPtr<FcgiSession> fs(static_cast<FcgiSession *>(param));
 		FcgiHeader header;
 		char buffer[BufferBlockSize];
 		bool ended = false;
@@ -79,7 +79,7 @@ bed:
 		, requestId(process.Acquire()), hasError(false)
 	{
 		this->InitializeParamBuffer();
-		Dispatcher::Instance().Queue(&this->ReadProc, this);
+		Dispatcher::Instance().Queue(&this->ReadProc, this->AddRef());
 	}
 
 	bool FcgiSession::KeepAlive()

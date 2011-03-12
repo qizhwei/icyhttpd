@@ -100,14 +100,14 @@ namespace
 		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 	};
 
-	void GetCurrentDateBuffer(char dateBuffer[40])
+	void GetCurrentDateBuffer(char dateBuffer[32])
 	{
 		__time64_t currentTime;
 		tm currentTm;
 
 		_time64(&currentTime);
 		_gmtime64_s(&currentTm, &currentTime);
-        wsprintfA(dateBuffer, "Date: %3s, %02d %3s %04d %02d:%02d:%02d GMT\r\n",
+        wsprintfA(dateBuffer, "%3s, %02d %3s %04d %02d:%02d:%02d GMT",
             Weekdays[currentTm.tm_wday], currentTm.tm_mday, Months[currentTm.tm_mon],
 			(currentTm.tm_year + 1900) % 10000, currentTm.tm_hour, currentTm.tm_min, currentTm.tm_sec);
 	}
@@ -186,6 +186,9 @@ namespace Httpd
 {
 	HttpRequest::HttpRequest(BufferedReader &reader)
 		: reader(reader), contentLength(NullOffset), remainingLength(0), chunked(false)
+	{}
+
+	void HttpRequest::ParseHeaders()
 	{
 		bool done = false;
 		bool title = true;
@@ -204,7 +207,7 @@ namespace Httpd
 				// Request method
 				this->method = first - base;
 				if ((first = strchr(first, ' ')) == nullptr)
-					throw BadRequestException(true);
+					throw HttpException(400, true, nullptr);
 				*first++ = '\0';
 
 				// Version
@@ -222,17 +225,17 @@ namespace Httpd
 					uriLast = first;
 					*first++ = '\0';
 					if (strncmp(first, "HTTP/", 5))
-						throw BadRequestException(true);
+						throw HttpException(400, true, nullptr);
 					first += 5;
 					this->majorVer = ParseUInt16(first);
 					if (*first++ != '.')
-						throw BadRequestException(true);
+						throw HttpException(400, true, nullptr);
 					this->minorVer = ParseUInt16(first);
 					if (*first != '\0')
-						throw BadRequestException(true);
+						throw HttpException(400, true, nullptr);
 
 					if (this->majorVer != 1)
-						throw HttpVersionNotSupportedException(true);
+						throw HttpException(505, true, nullptr);
 					if (this->minorVer == 0)
 						this->keepAlive = false;
 					else
@@ -244,7 +247,7 @@ namespace Httpd
 					this->host = NullOffset;
 				} else {
 					if (_strnicmp(uri, "http://", 7))
-						throw BadRequestException(true);
+						throw HttpException(400, true, nullptr);
 					char *host = uri;
 					if ((uri = strchr(uri + 7, '/')) == nullptr)
 						uri = uriLast;
@@ -295,11 +298,11 @@ namespace Httpd
 					done = true;
 				} else if (*first == ' ' || *first == '\t') {
 					// Ignore the standard
-					throw BadRequestException(true);
+					throw HttpException(400, true, nullptr);
 				} else {
 					char *second = strchr(first, ':');
 					if (second == nullptr)
-						throw BadRequestException(true);
+						throw HttpException(400, true, nullptr);
 					*second++ = '\0';
 
 					// Eat leading and trailing LWS
@@ -315,7 +318,7 @@ namespace Httpd
 					} else if (!_stricmp(first, "Content-Length")) {
 						this->contentLength = second - base;
 						if ((this->remainingLength = ParseUInt64Dec(second)) == UINT64_MAX)
-							throw RequestEntityTooLargeException(true);
+							throw HttpException(413, true, nullptr);
 						this->chunked = false;
 					} else if (!_stricmp(first, "Transfer-Encoding")) {
 						if (_stricmp(second, "identity")) {
@@ -332,14 +335,14 @@ namespace Httpd
 						} while (second != nullptr);
 					} else if (!_stricmp(first, "Range")) {
 						// TODO: Implement range and multi-range
-						throw NotImplementedException(true);
+						throw HttpException(505, true, nullptr);
 					}
 				}
 			}
 		}
 
 		if (this->majorVer == 1 && this->minorVer >= 1 && this->host == NullOffset)
-			throw BadRequestException(true);
+			throw HttpException(400, false, " (Invalid hostname)");
 	}
 
 	UInt32 HttpRequest::Read(char *buffer, UInt32 size)
@@ -427,79 +430,89 @@ namespace Httpd
 	}
 
 	HttpResponse::HttpResponse(Socket &socket, HttpVersion requestVersion, bool requestKeepAlive)
-		: socket(socket)
+		: socket(socket), socketWriter(socket), writer(socketWriter)
 		, assumeKeepAlive(requestVersion.first == 1 && requestVersion.second >= 1)
 		, entity(requestVersion.first == 0), keepAlive(requestKeepAlive)
 		, chunked(requestVersion.first == 1 && requestVersion.second >= 1)
 	{}
-
-	void HttpResponse::AppendHeader(const char *header)
-	{
-		this->buffer.insert(this->buffer.end(), header, header + strlen(header));
-	}
-
-	void HttpResponse::AppendHeader(const char *name, UInt64 value)
-	{
-		size_t nameSize = strlen(name);
-		char valueBuffer[24];
-		char *valueStr = ParseUInt<24>(valueBuffer, value);
-		size_t valueSize = valueBuffer + 24 - valueStr;
-		char *colon = ": ", *crlf = "\r\n";
-		this->buffer.reserve(nameSize + valueSize + 4);
-		this->buffer.insert(this->buffer.end(), name, name + nameSize);
-		this->buffer.insert(this->buffer.end(), colon, colon + 2);
-		this->buffer.insert(this->buffer.end(), valueStr, valueStr + valueSize);
-		this->buffer.insert(this->buffer.end(), crlf, crlf + 2);
-	}
-
-	void HttpResponse::EndHeader(UInt16 status, const char *reason, bool lengthProvided)
+	
+	void HttpResponse::BeginHeader(const char *status)
 	{
 		if (this->entity)
 			return;
 
-		char titleBuffer[48];
-		wsprintfA(titleBuffer, "HTTP/1.1 %u %s\r\n", static_cast<unsigned int>(status), reason);
+		this->writer.Write("HTTP/1.1 ", 9);
+		this->writer.AppendLine(status);
+	}
+
+	void HttpResponse::AppendHeader(const char *header)
+	{
+		if (this->entity)
+			return;
+		this->writer.AppendLine(header);
+	}
+
+	void HttpResponse::AppendHeader(const char *name, const char *value)
+	{
+		if (this->entity)
+			return;
+		this->writer.Append(name);
+		this->writer.Write(": ", 2);
+		this->writer.Append(value);
+		this->writer.AppendLine();
+	}
+
+	void HttpResponse::AppendHeader(const char *name, UInt64 value)
+	{
+		if (this->entity)
+			return;
+		this->writer.Append(name);
+		this->writer.Write(": ", 2);
+		this->writer.Append(value);
+		this->writer.AppendLine();
+	}
+
+	void HttpResponse::EndHeader(bool lengthProvided)
+	{
+		if (this->entity)
+			return;
+
+		// Server header
+		this->writer.AppendLine("Server: icyhttpd/0.0");
+
+		// Date header
+		char dateBuffer[32];
+		GetCurrentDateBuffer(dateBuffer);
+		this->writer.Write("Date: ", 6);
+		this->writer.AppendLine(dateBuffer);
 
 		if (lengthProvided)
 			this->chunked = false;
 		else if (!this->chunked)
 			this->keepAlive = false;
 
-		// Server header
-		AppendHeader("Server: icyhttpd/0.0\r\n");
-
-		// Date header
-		char dateBuffer[40];
-		GetCurrentDateBuffer(dateBuffer);
-		AppendHeader(dateBuffer);
-
 		// Transfer encoding header
 		if (this->chunked)
-			AppendHeader("Transfer-Encoding: chunked\r\n");
+			this->writer.AppendLine("Transfer-Encoding: chunked");
 
 		// Connection header
 		if (!this->keepAlive)
-			AppendHeader("Connection: close\r\n");
+			this->writer.AppendLine("Connection: close");
 		else if (!this->assumeKeepAlive)
-			AppendHeader("Connection: keep-alive\r\n");
+			this->writer.AppendLine("Connection: keep-alive");
 
-		// Final CRLF
-		const char *crlf = "\r\n";
-		this->buffer.insert(this->buffer.end(), crlf, crlf + 2);
+		this->writer.AppendLine();
+	}
 
-		// Write socket and clear buffer
-		WSABUF WSABuf[2];
-		WSABuf[0].buf = titleBuffer;
-		WSABuf[0].len = strlen(titleBuffer);
-		WSABuf[1].buf = &*this->buffer.begin();
-		WSABuf[1].len = this->buffer.size();
-		this->socket.Write(WSABuf, 2);
-		vector<char>().swap(this->buffer);
-		this->entity = true;
+	void HttpResponse::Flush()
+	{
+		this->writer.Flush();
 	}
 
 	void HttpResponse::Write(const char *buffer, UInt32 size)
 	{
+		this->writer.Flush();
+
 		if (this->chunked) {
 			char chunkedLength[12];
 			wsprintfA(chunkedLength, "%x\r\n", size);
@@ -518,6 +531,7 @@ namespace Httpd
 
 	void HttpResponse::TransmitFile(HANDLE hFile, UInt64 offset, UInt32 size)
 	{
+		this->writer.Flush();
 		this->socket.TransmitFile(hFile, offset, size);
 	}
 }

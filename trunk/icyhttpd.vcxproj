@@ -79,7 +79,9 @@
   <ItemGroup>
     <ClCompile Include="Connection.cpp" />
     <ClCompile Include="Dispatcher.cpp" />
+    <ClCompile Include="Exception.cpp" />
     <ClCompile Include="Fastcgi.cpp" />
+    <ClCompile Include="FcgiHandler.cpp" />
     <ClCompile Include="FcgiPool.cpp" />
     <ClCompile Include="FcgiProcess.cpp" />
     <ClCompile Include="FcgiSession.cpp" />

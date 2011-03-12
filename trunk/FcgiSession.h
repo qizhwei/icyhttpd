@@ -4,12 +4,13 @@
 #include "Types.h"
 #include "Stream.h"
 #include "Pipe.h"
+#include "Utility.h"
 
 namespace Httpd
 {
 	class FcgiProcess;
 
-	class FcgiSession: NonCopyable
+	class FcgiSession: NonCopyable, public Shared<FcgiSession>
 	{
 	public:
 		FcgiSession(FcgiProcess &process);

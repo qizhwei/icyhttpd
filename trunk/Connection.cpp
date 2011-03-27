@@ -9,29 +9,28 @@
 #include "Node.h"
 #include "Handler.h"
 #include <cstdio>
+#include <memory>
+
+using namespace Httpd;
+using namespace std;
 
 namespace Httpd
 {
-	Connection::Connection(Endpoint &endpoint, Socket &socket)
+	Connection::Connection(Endpoint &endpoint, auto_ptr<Socket> socket)
 		: endpoint(endpoint), socket(socket)
 	{
 		Dispatcher::Instance().Queue(&ConnectionCallback, this);
 	}
-	
-	Connection::~Connection()
-	{
-		delete &socket;
-	}
 
 	void Connection::ConnectionCallback(void *param)
 	{
-		Connection &conn = *static_cast<Connection *>(param);
-		Endpoint &ep = conn.endpoint;
+		auto_ptr<Connection> conn(static_cast<Connection *>(param));
+		Endpoint &ep = conn->endpoint;
 
 		printf("[%.3lf] Connection established\n", (double)GetTickCount() / 1000);
 
 		try {
-			Reader<Socket> socketReader(conn.socket);
+			Reader<Socket> socketReader(*conn->socket);
 			BufferedReader bufferedReader(socketReader, MaxRequestBufferSize);
 
 			while (true) {
@@ -46,13 +45,13 @@ namespace Httpd
 					Node &node = ep.GetNode(request.Host());
 					// TODO: parse
 					Handler &handler = node.GetHandler(request.Extension());
-					HttpResponse response(conn.socket, requestVer, keepAlive);
+					HttpResponse response(*conn->socket, requestVer, keepAlive);
 					handler.Handle(node, request, response);
 					keepAlive = response.KeepAlive();
 				} catch (HttpException &ex) {
 					if (ex.MustClose())
 						keepAlive = false;
-					HttpResponse response(conn.socket, requestVer, keepAlive);
+					HttpResponse response(*conn->socket, requestVer, keepAlive);
 					ex.BuildResponse(response);
 					if (ex.MustClose())
 						keepAlive = false;
@@ -69,6 +68,5 @@ namespace Httpd
 		}
 
 		printf("[%.3lf] Connection broken\n", (double)GetTickCount() / 1000);
-		delete &conn;
 	}
 }

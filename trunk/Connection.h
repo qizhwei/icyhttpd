@@ -2,6 +2,7 @@
 #define _CONNECTION_H
 
 #include "Types.h"
+#include <memory>
 
 namespace Httpd
 {
@@ -11,13 +12,12 @@ namespace Httpd
 	class Connection: NonCopyable
 	{
 	public:
-		Connection(Endpoint &endpoint, Socket &socket);
-		~Connection();
+		Connection(Endpoint &endpoint, std::auto_ptr<Socket> socket);
 
 		static void ConnectionCallback(void *param);
 	private:
 		Endpoint &endpoint;
-		Socket &socket;
+		std::auto_ptr<Socket> socket;
 	};
 }
 

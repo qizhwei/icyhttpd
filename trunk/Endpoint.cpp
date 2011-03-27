@@ -6,6 +6,10 @@
 #include "Node.h"
 #include <unordered_map>
 #include <string>
+#include <memory>
+
+using namespace Httpd;
+using namespace std;
 
 namespace Httpd
 {
@@ -25,14 +29,9 @@ namespace Httpd
 
 		while (true) {
 			try {
-				Socket *socket = new Socket();
-				try {
-					ep.socket.Accept(*socket);
-					new Connection(ep, *socket);
-				} catch (...) {
-					delete socket;
-					throw;
-				}
+				auto_ptr<Socket> socket(new Socket());
+				ep.socket.Accept(*socket);
+				new Connection(ep, socket);
 			} catch (const std::exception &) {
 			}
 		}

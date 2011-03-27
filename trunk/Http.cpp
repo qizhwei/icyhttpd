@@ -10,6 +10,7 @@
 #include <utility>
 #include <ctime>
 #include <cassert>
+#include <algorithm>
 
 using namespace Httpd;
 using namespace std;
@@ -180,12 +181,46 @@ namespace
 
 		last = cur;
 	}
+
+	class HeaderComparePredicate
+	{
+	public:
+		HeaderComparePredicate(char *base)
+			: base(base)
+		{}
+
+		bool operator()(const char *a, pair<UInt16, UInt16> b)
+		{
+			return (*this)(a, this->base + b.first);
+		}
+
+		bool operator()(pair<UInt16, UInt16> a, const char *b)
+		{
+			return (*this)(this->base + a.first, b);
+		}
+
+		bool operator()(pair<UInt16, UInt16> a, pair<UInt16, UInt16> b)
+		{
+			return (*this)(this->base + a.first, this->base + b.first);
+		}
+		
+	private:
+		bool operator()(const char *a, const char *b)
+		{
+			return _stricmp(a, b) < 0;
+		}
+
+		char *const base;
+	};
 }
 
 namespace Httpd
 {
 	HttpRequest::HttpRequest(BufferedReader &reader)
-		: reader(reader), contentLength(NullOffset), remainingLength(0), chunked(false)
+		: reader(reader), remainingLength(0), chunked(false)
+		// unnecessary initialization below, just for consistency
+		, method(NullOffset), uri(NullOffset), ext(NullOffset), query(NullOffset), host(NullOffset)
+		, keepAlive(false), majorVer(0), minorVer(0)
 	{}
 
 	void HttpRequest::ParseHeaders()
@@ -194,7 +229,7 @@ namespace Httpd
 		bool title = true;
 
 		while (!done) {
-			char *first = reader.ReadLine(true);
+			char *first = this->reader.ReadLine(true);
 			char * const base = this->reader.BasePointer();
 			if (first == nullptr)
 				throw SystemException();
@@ -275,6 +310,7 @@ namespace Httpd
 
 				URIDecode(uri, uriLast);
 				URIRewrite(uri, uriLast);
+				// TODO: Check sensitive win32 names (such as CON, NUL, names with trailing dots and spaces)
 
 				// Extension
 				assert(uri[-1] == '\0');
@@ -309,40 +345,66 @@ namespace Httpd
 					while (*second == ' ' || *second == '\t')
 						++second;
 
-					// Filter out known headers
-					if (this->host == NullOffset && !_stricmp(first, "Host")) {
-						char *colon;
-						if ((colon = strchr(second, ':')) != nullptr)
-							*colon = '\0';
-						this->host = second - base;
-					} else if (!_stricmp(first, "Content-Length")) {
-						this->contentLength = second - base;
-						if ((this->remainingLength = ParseUInt64Dec(second)) == UINT64_MAX)
-							throw HttpException(413, true, nullptr);
-						this->chunked = false;
-					} else if (!_stricmp(first, "Transfer-Encoding")) {
-						if (_stricmp(second, "identity")) {
-							this->remainingLength = 0;
-							this->chunked = true;
-						}
-					} else if (!_stricmp(first, "Connection")) {
-						do {
-							const char *option = ParseCommaList(second);
-							if (!_stricmp(option, "close"))
-								this->keepAlive = false;
-							else if (!_stricmp(option, "Keep-Alive"))
-								this->keepAlive = true;
-						} while (second != nullptr);
-					} else if (!_stricmp(first, "Range")) {
-						// TODO: Implement range and multi-range
-						throw HttpException(505, true, nullptr);
-					}
+					// Push headers
+					headers.push_back(std::make_pair<UInt16, UInt16>(first - base, second - base));
 				}
 			}
 		}
 
+		char *const base = this->reader.BasePointer();
+
+		// Sort headers for binary searching
+		sort(this->headers.begin(), this->headers.end(), HeaderComparePredicate(base));
+
+		// Interpret some headers
+		char *hdrHost = this->Header("Host");
+		if (this->host == NullOffset && hdrHost != nullptr) {
+			char *colon;
+			if ((colon = strchr(hdrHost, ':')) != nullptr)
+				*colon = '\0';
+			this->host = hdrHost - base;
+		}
+
 		if (this->majorVer == 1 && this->minorVer >= 1 && this->host == NullOffset)
 			throw HttpException(400, false, " (Invalid hostname)");
+
+		char *hdrContentLength = this->Header("Content-Length");
+		if (hdrContentLength != nullptr) {
+			if ((this->remainingLength = ParseUInt64Dec(hdrContentLength)) == UINT64_MAX)
+				throw HttpException(413, true, nullptr);
+			this->chunked = false;
+		}
+		
+		char *hdrTransferEncoding = this->Header("Transfer-Encoding");
+		if (hdrTransferEncoding != nullptr && _stricmp(hdrTransferEncoding, "identity")) {
+			this->remainingLength = 0;
+			this->chunked = true;
+		}
+
+		char *hdrConnection = this->Header("Connection");
+		if (hdrConnection != nullptr) {
+			do {
+				const char *option = ParseCommaList(hdrConnection);
+				if (!_stricmp(option, "close"))
+					this->keepAlive = false;
+				else if (!_stricmp(option, "Keep-Alive"))
+					this->keepAlive = true;
+			} while (hdrConnection != nullptr);
+		}
+	}
+
+	char *HttpRequest::Header(const char *Name)
+	{
+		char *const base = this->reader.BasePointer();
+		auto range = std::equal_range(this->headers.begin(), this->headers.end(), Name,
+			HeaderComparePredicate(base));
+		
+		if (range.first == range.second)
+			return nullptr;
+		else if (range.first + 1 == range.second)
+			return base + range.first->second;
+		else
+			return nullptr;
 	}
 
 	UInt32 HttpRequest::Read(char *buffer, UInt32 size)
@@ -402,11 +464,6 @@ namespace Httpd
 	const char *HttpRequest::Host()
 	{
 		return host == NullOffset ? "" : reader.BasePointer() + host;
-	}
-
-	const char *HttpRequest::ContentLength()
-	{
-		return contentLength == NullOffset ? "0" : reader.BasePointer() + contentLength;
 	}
 
 	HttpVersion HttpRequest::Version()

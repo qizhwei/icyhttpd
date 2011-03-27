@@ -19,6 +19,7 @@ namespace Httpd
 	public:
 		HttpRequest(BufferedReader &reader);
 		void ParseHeaders();
+		char *Header(const char *Name);
 		UInt32 Read(char *buffer, UInt32 size);
 		void Flush();
 
@@ -28,7 +29,6 @@ namespace Httpd
 		const char *Extension();
 		const char *QueryString();
 		const char *Host();
-		const char *ContentLength();
 
 		// Status
 		HttpVersion Version();
@@ -38,11 +38,12 @@ namespace Httpd
 
 	private:
 		BufferedReader &reader;
-		UInt16 method, uri, ext, query, host, contentLength;
-		UInt16 majorVer, minorVer;
-		UInt64 remainingLength;
+		UInt16 method, uri, ext, query, host;
 		bool chunked;
 		bool keepAlive;
+		UInt16 majorVer, minorVer;
+		UInt64 remainingLength;
+		std::vector<std::pair<UInt16, UInt16> > headers;
 
 		static const UInt16 NullOffset = UINT16_MAX;
 	};

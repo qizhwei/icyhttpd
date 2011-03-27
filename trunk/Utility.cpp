@@ -76,18 +76,13 @@ namespace Httpd
 			switch (lastErr) {
 			case ERROR_FILE_NOT_FOUND:
 			case ERROR_PATH_NOT_FOUND:
+			case ERROR_INVALID_NAME:
 				throw NotFoundException();
 			case ERROR_ACCESS_DENIED:
 				throw ForbiddenException();
 			default:
 				throw SystemException();
 			}
-		}
-
-		// Workaround for Win32 pseudo-handle such as CON and NUL
-		if (((ULONG_PTR)hFile & 0x3) != 0) {
-			CloseHandle(hFile);
-			throw NotFoundException();
 		}
 
 		return hFile;

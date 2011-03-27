@@ -61,7 +61,11 @@ namespace Httpd
 					break;
 				request.Flush();
 			}
+
+			bufferedReader.Flush();
 		} catch (const std::exception &) {
+			// Other unhandled recoverable exception
+			// The connection should be broken now
 		}
 
 		printf("[%.3lf] Connection broken\n", (double)GetTickCount() / 1000);

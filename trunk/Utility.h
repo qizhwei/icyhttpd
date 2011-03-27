@@ -7,8 +7,6 @@
 #include <string>
 #include <cstring>
 #include <functional>
-#include <queue>
-#include <utility>
 
 namespace
 {

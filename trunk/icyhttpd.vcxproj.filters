@@ -51,21 +51,6 @@
     <ClCompile Include="FileHandler.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="FcgiPool.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Fastcgi.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="FcgiProcess.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="FcgiSession.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="FcgiHandler.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="Exception.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -117,21 +102,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="FileHandler.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="FcgiHandler.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="FcgiPool.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="FcgiProcess.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Fastcgi.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="FcgiSession.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

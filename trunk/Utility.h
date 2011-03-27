@@ -66,6 +66,26 @@ namespace Httpd
 	extern UInt64 GetFileSize(HANDLE hFile);
 
 	extern std::wstring MB2WC(UINT codePage, const std::string &s);
+	extern char *ParseCommaList(char *&next);
+	extern UInt64 ParseUInt64Dec(char *p);
+
+	inline void EatLWS(char *&p)
+	{
+		while (*p == ' ' || *p == '\t')
+			++p;
+	}
+
+	inline void EatLWSBackwards(char *first, char *&last)
+	{
+		while (first != last && (last[-1] == ' ' || last[-1] == '\t'))
+			*--last = '\0';
+	}
+
+	inline void EatLWSBackwardsUnsafe(char *&last)
+	{
+		while (last[-1] == ' ' || last[-1] == '\t')
+			*--last = '\0';
+	}
 
 	template<size_t BufferSize, typename UIntType>
 	char *ParseUInt(char buffer[BufferSize], UIntType i)

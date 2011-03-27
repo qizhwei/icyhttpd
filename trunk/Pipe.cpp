@@ -72,8 +72,7 @@ namespace Httpd
 		Dispatcher::Instance().BindHandle(hPipes.first, OverlappedCompletionKey);
 		Dispatcher::Instance().BindHandle(hPipes.second, OverlappedCompletionKey);
 	}
-
-
+	
 	UInt32 LocalPipe::Read(char *buffer, UInt32 size)
 	{
 		ReadCompletion completion(this->readPipe.Handle(), buffer, size);

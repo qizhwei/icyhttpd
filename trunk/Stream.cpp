@@ -47,9 +47,8 @@ namespace Httpd
 		if (last[-1] == '\r')
 			*--last = '\0';
 
-		// Trim right
-		while (trimRight && (last[-1] == ' ' || last[-1] == '\t'))
-			*--last = '\0';
+		if (trimRight)
+			EatLWSBackwardsUnsafe(last);
 
 		// Maintain pointers
 		current = next;

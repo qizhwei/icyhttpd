@@ -111,4 +111,44 @@ namespace Httpd
 		MultiByteToWideChar(codePage, 0, s.c_str(), originalSize, &*buffer.begin(), convertedSize);
 		return wstring(buffer.begin(), buffer.end());
 	}
+
+	char *ParseCommaList(char *&next)
+	{
+		char *first = next, *last;
+	
+		if ((next = strchr(first, ',')) != nullptr) {
+			last = next;
+			*next++ = '\0';
+		} else {
+			last = first + strlen(first);
+		}
+
+		EatLWS(first);
+		EatLWSBackwards(first, last);
+
+		return first;
+	}
+
+	
+	UInt64 ParseUInt64Dec(char *p)
+	{
+		while (*p == '0')
+			++p;
+
+		UInt64 u = 0;
+		while (*p != '\0') {
+			if (*p >= '0' && *p <= '9') {
+				if (u > 1844674407370955161U)
+					return UINT64_MAX;
+				else if (u == 1844674407370955161U && *p > '5')
+					return UINT64_MAX;
+				u = u * 10 + (*p - '0');
+			} else {
+				return UINT64_MAX;
+			}
+			++p;
+		}
+
+		return u;
+	}
 }

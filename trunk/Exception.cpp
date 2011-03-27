@@ -25,6 +25,9 @@ namespace Httpd
 			case 413:
 				status = "413 Request Entity Too Large";
 				break;
+			case 416:
+				status = "416 Requested Range Not Satisfiable";
+				break;
 			case 501:
 				status = "501 Not Implemented";
 				break;

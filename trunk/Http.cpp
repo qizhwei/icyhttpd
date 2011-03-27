@@ -17,25 +17,6 @@ using namespace std;
 
 namespace
 {
-	const char *ParseCommaList(char *&next)
-	{
-		char *first = next, *last;
-	
-		if ((next = strchr(first, ',')) != nullptr) {
-			last = next;
-			*next++ = '\0';
-		} else {
-			last = first + strlen(first);
-		}
-
-		while (*first == ' ' || *first == '\t')
-			++first;
-		while (first != last && (last[-1] == ' ' || last[-1] == '\t'))
-			*--last = '\0';
-
-		return first;
-	}
-
 	UInt16 ParseUInt16(char *&p)
 	{
 		int i = 0;
@@ -45,28 +26,6 @@ namespace
 			++p;
 		}
 		return i;
-	}
-
-	UInt64 ParseUInt64Dec(char *p)
-	{
-		while (*p == '0')
-			++p;
-
-		UInt64 u = 0;
-		while (*p != '\0') {
-			if (*p >= '0' && *p <= '9') {
-				if (u > 1844674407370955161U)
-					return UINT64_MAX;
-				else if (u == 1844674407370955161U && *p > '5')
-					return UINT64_MAX;
-				u = u * 10 + (*p - '0');
-			} else {
-				return UINT64_MAX;
-			}
-			++p;
-		}
-
-		return u;
 	}
 
 	UInt64 ParseUInt64Hex(char *p)
@@ -341,7 +300,7 @@ namespace Httpd
 						throw HttpException(400, true, nullptr);
 					*second++ = '\0';
 
-					// Eat leading and trailing LWS
+					// Eat leading LWS (trailing LWSes are already eaten by BufferedReader::ReadLine)
 					while (*second == ' ' || *second == '\t')
 						++second;
 
@@ -529,6 +488,21 @@ namespace Httpd
 		this->writer.AppendLine();
 	}
 
+	void HttpResponse::AppendHeader(const char *name, const char *leading, UInt64 begin, UInt64 end, UInt64 total)
+	{
+		if (this->entity)
+			return;
+		this->writer.Append(name);
+		this->writer.Write(": ", 2);
+		this->writer.Append(leading);
+		this->writer.Append(begin);
+		this->writer.Write("-", 1);
+		this->writer.Append(end);
+		this->writer.Write("/", 1);
+		this->writer.Append(total);
+		this->writer.AppendLine();
+	}
+
 	void HttpResponse::EndHeader(bool lengthProvided)
 	{
 		if (this->entity)
@@ -590,5 +564,18 @@ namespace Httpd
 	{
 		this->writer.Flush();
 		this->socket.TransmitFile(hFile, offset, size);
+	}
+
+	void HttpResponse::TransmitFileRange(HANDLE hFile, const pair<UInt64, UInt64> &range)
+	{
+		this->writer.Flush();
+		UInt64 offset = range.first, size = range.second - range.first + 1;
+
+		while (size != 0) {
+			UInt32 transmitSize = size >= 0x80000000UL ? 0x80000000UL : static_cast<UInt32>(size);
+			this->TransmitFile(hFile, offset, transmitSize);
+			offset += transmitSize;
+			size -= transmitSize;
+		}
 	}
 }

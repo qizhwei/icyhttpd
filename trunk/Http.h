@@ -56,10 +56,12 @@ namespace Httpd
 		void AppendHeader(const char *header);
 		void AppendHeader(const char *name, const char *value);
 		void AppendHeader(const char *name, UInt64 value);
+		void AppendHeader(const char *name, const char *leading, UInt64 begin, UInt64 end, UInt64 total);
 		void EndHeader(bool lengthProvided);
 		void Write(const char *buffer, UInt32 size);
 		void Flush();
 		void TransmitFile(HANDLE hFile, UInt64 offset, UInt32 size);
+		void TransmitFileRange(HANDLE hFile, const std::pair<UInt64, UInt64> &range);
 
 		bool KeepAlive() { return keepAlive; }
 

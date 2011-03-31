@@ -12,12 +12,12 @@ namespace Httpd
 	class Connection: NonCopyable
 	{
 	public:
-		Connection(Endpoint &endpoint, std::auto_ptr<Socket> socket);
+		Connection(Endpoint &endpoint, std::unique_ptr<Socket> socket);
 
 		static void ConnectionCallback(void *param);
 	private:
 		Endpoint &endpoint;
-		std::auto_ptr<Socket> socket;
+		std::unique_ptr<Socket> socket;
 	};
 }
 

@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <string>
 #include <memory>
+#include <utility>
 
 using namespace Httpd;
 using namespace std;
@@ -29,9 +30,9 @@ namespace Httpd
 
 		while (true) {
 			try {
-				auto_ptr<Socket> socket(new Socket());
+				unique_ptr<Socket> socket(new Socket());
 				ep.socket.Accept(*socket);
-				new Connection(ep, socket);
+				new Connection(ep, move(socket));
 			} catch (const std::exception &) {
 			}
 		}

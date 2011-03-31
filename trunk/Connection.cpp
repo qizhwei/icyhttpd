@@ -10,21 +10,22 @@
 #include "Handler.h"
 #include <cstdio>
 #include <memory>
+#include <utility>
 
 using namespace Httpd;
 using namespace std;
 
 namespace Httpd
 {
-	Connection::Connection(Endpoint &endpoint, auto_ptr<Socket> socket)
-		: endpoint(endpoint), socket(socket)
+	Connection::Connection(Endpoint &endpoint, unique_ptr<Socket> socket)
+		: endpoint(endpoint), socket(move(socket))
 	{
 		Dispatcher::Instance().Queue(&ConnectionCallback, this);
 	}
 
 	void Connection::ConnectionCallback(void *param)
 	{
-		auto_ptr<Connection> conn(static_cast<Connection *>(param));
+		unique_ptr<Connection> conn(static_cast<Connection *>(param));
 		Endpoint &ep = conn->endpoint;
 
 		printf("[%.3lf] Connection established\n", (double)GetTickCount() / 1000);

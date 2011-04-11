@@ -143,8 +143,9 @@ namespace
 
 	bool URIValidateWin32(char *first)
 	{
-		// This is a table to filter con, nul, aux, prn, con[0-9] and nul[0-9]
+		// This is a table to filter out con, nul, aux, prn, com[0-9] and lpt[0-9]
 		// And this is an excellent place to explain where to write comment
+
 		static char table[][5] = {
 			{'n', 'a', 'p', 'l', 'c'}, // 0
 			{'\0', '\0', '\0', '\0', 'u'}, // 1

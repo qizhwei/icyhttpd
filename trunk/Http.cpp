@@ -560,20 +560,20 @@ namespace Httpd
 		}
 	}
 
-	void HttpResponse::TransmitFile(HANDLE hFile, UInt64 offset, UInt32 size)
+	void HttpResponse::TransmitFile(HANDLE hFile)
 	{
 		this->writer.Flush();
-		this->socket.TransmitFile(hFile, offset, size);
+		this->socket.TransmitFile(hFile, 0, 0);
 	}
 
-	void HttpResponse::TransmitFileRange(HANDLE hFile, const pair<UInt64, UInt64> &range)
+	void HttpResponse::TransmitFile(HANDLE hFile, const pair<UInt64, UInt64> &range)
 	{
 		this->writer.Flush();
 		UInt64 offset = range.first, size = range.second - range.first + 1;
 
 		while (size != 0) {
 			UInt32 transmitSize = size >= 0x80000000UL ? 0x80000000UL : static_cast<UInt32>(size);
-			this->TransmitFile(hFile, offset, transmitSize);
+			this->socket.TransmitFile(hFile, offset, transmitSize);
 			offset += transmitSize;
 			size -= transmitSize;
 		}

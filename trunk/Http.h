@@ -60,8 +60,8 @@ namespace Httpd
 		void EndHeader(bool lengthProvided);
 		void Write(const char *buffer, UInt32 size);
 		void Flush();
-		void TransmitFile(HANDLE hFile, UInt64 offset, UInt32 size);
-		void TransmitFileRange(HANDLE hFile, const std::pair<UInt64, UInt64> &range);
+		void TransmitFile(HANDLE hFile);
+		void TransmitFile(HANDLE hFile, const std::pair<UInt64, UInt64> &range);
 
 		bool KeepAlive() { return keepAlive; }
 

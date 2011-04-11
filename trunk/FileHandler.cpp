@@ -118,7 +118,7 @@ namespace Httpd
 				response.EndHeader(true);
 
 				if (!head)
-					response.TransmitFile(file.Handle(), 0, 0);
+					response.TransmitFile(file.Handle());
 			} else {
 				response.BeginHeader("206 Partial Content");
 				auto range = ranges.begin();
@@ -127,7 +127,7 @@ namespace Httpd
 				response.EndHeader(true);
 
 				if (!head)
-					response.TransmitFileRange(file.Handle(), *range);
+					response.TransmitFile(file.Handle(), *range);
 			}
 		}
 		response.Write(nullptr, 0);

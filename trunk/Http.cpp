@@ -161,11 +161,9 @@ namespace
 		};
 
 		int state = 0;
-		int i;
-		char ch;
 
 		while (true) {
-			ch = *first;
+			char ch = *first;
 			if (ch == '\0' || ch == '/') {
 				if (state == 11) {
 					return false;
@@ -181,7 +179,7 @@ namespace
 				ch += ('a' - 'A');
 			}
 			if (state >= 0 && state <= 10) {
-				for (i = 0; i < 5; ++i) {
+				for (int i = 0; i < 5; ++i) {
 					if (ch == table[state][i]) {
 						state += (i + 1);
 						goto bed;

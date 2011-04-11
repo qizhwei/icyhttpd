@@ -141,6 +141,62 @@ namespace
 		last = cur;
 	}
 
+	bool URIValidateWin32(char *first)
+	{
+		// This is a table to filter con, nul, aux, prn, con[0-9] and nul[0-9]
+		// And this is an excellent place to explain where to write comment
+		static char table[][5] = {
+			{'n', 'a', 'p', 'l', 'c'}, // 0
+			{'\0', '\0', '\0', '\0', 'u'}, // 1
+			{'\0', '\0', '\0', '\0', 'u'}, // 2
+			{'\0', '\0', '\0', '\0', 'r'}, // 3
+			{'\0', '\0', '\0', '\0', 'p'}, // 4
+			{'\0', '\0', '\0', '\0', 'o'}, // 5
+			{'\0', '\0', '\0', '\0', 'l'}, // 6
+			{'\0', '\0', '\0', 'x', '\0'}, // 7
+			{'\0', '\0', 'n', '\0', '\0'}, // 8
+			{'\0', '\0', 't', '\0', '\0'}, // 9
+			{'n', 'm', '\0', '\0', '\0'}, // 10
+		};
+
+		int state = 0;
+		int i;
+		char ch;
+
+		while (true) {
+			ch = *first;
+			if (ch == '\0' || ch == '/') {
+				if (state == 11) {
+					return false;
+				} else if (ch == '\0') {
+					return true;
+				}
+				state = 0;
+				goto bed;
+			} else if (ch == '.' || ch == ' ') {
+				state = 11;
+				goto bed;
+			} else if (ch >= 'A' && ch <= 'Z') {
+				ch += ('a' - 'A');
+			}
+			if (state >= 0 && state <= 10) {
+				for (i = 0; i < 5; ++i) {
+					if (ch == table[state][i]) {
+						state += (i + 1);
+						goto bed;
+					}
+				}
+				state = 13;
+			} else if (state == 12 && (ch >= '0' && ch <= '9')) {
+				state = 11;
+			} else {
+				state = 13;
+			}
+	bed:
+			++first;
+		}
+	}
+
 	class HeaderComparePredicate
 	{
 	public:
@@ -186,6 +242,7 @@ namespace Httpd
 	{
 		bool done = false;
 		bool title = true;
+		bool valid = true;
 
 		while (!done) {
 			char *first = this->reader.ReadLine(true);
@@ -269,7 +326,7 @@ namespace Httpd
 
 				URIDecode(uri, uriLast);
 				URIRewrite(uri, uriLast);
-				// TODO: Check sensitive win32 names (such as CON, NUL, names with trailing dots and spaces)
+				valid = URIValidateWin32(uri);
 
 				// Extension
 				assert(uri[-1] == '\0');
@@ -326,6 +383,8 @@ namespace Httpd
 
 		if (this->majorVer == 1 && this->minorVer >= 1 && this->host == NullOffset)
 			throw HttpException(400, false, " (Invalid hostname)");
+		if (!valid)
+			throw HttpException(403, false, " (Unsupported filename)");
 
 		char *hdrContentLength = this->Header("Content-Length");
 		if (hdrContentLength != nullptr) {

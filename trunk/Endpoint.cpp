@@ -32,7 +32,7 @@ namespace Httpd
 			try {
 				unique_ptr<Socket> socket(new Socket());
 				ep.socket.Accept(*socket);
-				new Connection(ep, move(socket));
+				Connection::Create(ep, move(socket));
 			} catch (const std::exception &) {
 			}
 		}

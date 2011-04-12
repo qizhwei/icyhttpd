@@ -17,11 +17,15 @@ using namespace std;
 
 namespace Httpd
 {
+	void Connection::Create(Endpoint &endpoint, unique_ptr<Socket> socket)
+	{
+		Connection *conn = new Connection(endpoint, move(socket));
+		Dispatcher::Instance().Queue(&ConnectionCallback, conn);
+	}
+
 	Connection::Connection(Endpoint &endpoint, unique_ptr<Socket> socket)
 		: endpoint(endpoint), socket(move(socket))
-	{
-		Dispatcher::Instance().Queue(&ConnectionCallback, this);
-	}
+	{}
 
 	void Connection::ConnectionCallback(void *param)
 	{

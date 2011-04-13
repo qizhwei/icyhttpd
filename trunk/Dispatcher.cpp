@@ -244,13 +244,13 @@ namespace Httpd
 
 	UInt32 Dispatcher::Block(HANDLE hObject, OverlappedCompletion &oc)
 	{
-		ThreadData &threadData = *static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
-		threadData.completion = &oc;
-		SwitchToFiber(threadData.lpMainFiber);
+		ThreadData *threadData = static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
+		threadData->completion = &oc;
+		SwitchToFiber(threadData->lpMainFiber);
 
 		// N.B. Thread may changed
-		threadData = *static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
-		if (threadData.failed) {
+		threadData = static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
+		if (threadData->failed) {
 			throw SystemException();
 		}
 
@@ -270,14 +270,14 @@ namespace Httpd
 
 	void Dispatcher::Sleep(int due)
 	{
-		ThreadData &threadData = *static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
+		ThreadData *threadData = static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
 		SleepCompletion sc(due);
-		threadData.completion = &sc;
-		SwitchToFiber(threadData.lpMainFiber);
+		threadData->completion = &sc;
+		SwitchToFiber(threadData->lpMainFiber);
 
 		// N.B. Thread may changed
-		threadData = *static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
-		if (threadData.failed) {
+		threadData = static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
+		if (threadData->failed) {
 			throw SystemException();
 		}
 	}

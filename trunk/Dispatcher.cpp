@@ -154,9 +154,6 @@ namespace Httpd
 
 	DWORD WINAPI Dispatcher::ThreadCallback(LPVOID lpParameter)
 	{
-		// The dispatcher class may be partially constructed since that
-		// the thread creation was in the constructor
-
 		Dispatcher *disp = reinterpret_cast<Dispatcher *>(lpParameter);
 		ThreadData threadData;
 		Completion nullCompletion;

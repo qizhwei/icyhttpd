@@ -3,8 +3,10 @@
 #include "Exception.h"
 #include "Types.h"
 #include "Constant.h"
+#include "Win32.h"
 
 using namespace Httpd;
+using namespace std;
 
 namespace
 {
@@ -21,26 +23,59 @@ namespace
 		bool failed;
 	};
 
-	struct DeleteFiberCompletion: public Completion
+	class DeleteFiberCompletion: public Completion
 	{
+	public:
 		DeleteFiberCompletion()
-			: lpFiber(GetCurrentFiber())
+			: Completion(GetCurrentFiber())
 		{}
 
 		virtual bool operator()()
 		{
-			DeleteFiber(this->lpFiber);
+			this->Release();
 			// This object is allocated on stack and no longer exist after fiber deletion
 
 			return true;
 		}
-
-		LPVOID lpFiber;
 	};
 }
 
 namespace Httpd
 {
+	class SleepCompletion: public Completion
+	{
+	public:
+		SleepCompletion(int due)
+			: Completion(GetCurrentFiber()), due(due)
+		{}
+
+		virtual bool operator()()
+		{
+			Dispatcher &d = Dispatcher::Instance();
+			if (!QueueUserAPC(&SetTimerApc, d.hTimerThread, reinterpret_cast<ULONG_PTR>(this))) {
+				return false;
+			}
+
+			return true;
+		}
+
+	private:
+		static void CALLBACK SetTimerApc(ULONG_PTR dwParam)
+		{
+			// N.B. We're executing in timer thread context, and we need not to
+			// acquire any lock because APC is conservative.
+
+			Dispatcher &d = Dispatcher::Instance();
+			SleepCompletion &sc = *reinterpret_cast<SleepCompletion *>(dwParam);
+
+			// FIXME: This may fail
+			d.timerQueue.insert(make_pair(d.GetTickCount64Unsafe() + sc.due, &sc));
+		}
+
+	private:
+		int due;
+	};
+
 	Dispatcher &Dispatcher::Instance()
 	{
 		static Dispatcher *d(new Dispatcher());
@@ -48,16 +83,61 @@ namespace Httpd
 	}
 
 	Dispatcher::Dispatcher()
+		: hTimerThread(NULL)
 	{
-		if ((dwTlsIndex = TlsAlloc()) == TLS_OUT_OF_INDEXES
-			|| (hQueue = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0)) == NULL)
+		if ((this->dwTlsIndex = TlsAlloc()) == TLS_OUT_OF_INDEXES
+			|| (this->hQueue = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0)) == NULL)
 			throw FatalException();
+	}
 
+	UInt64 Dispatcher::GetTickCount64Unsafe()
+	{
+		static UInt32 tickHi = 0, tickLoPrevious = 0;
+		ULONG tickLo = GetTickCount();
+		if (tickLo < tickLoPrevious) {
+			++tickHi;
+		}
+		tickLoPrevious = tickLo;
+		return (static_cast<UInt64>(tickHi) << 32) | tickLo;
+	}
+
+	void Dispatcher::ThreadEntry()
+	{
+		if (!DuplicateHandle(GetCurrentProcess(), GetCurrentThread(), GetCurrentProcess(),
+			&this->hTimerThread, 0, FALSE, DUPLICATE_SAME_ACCESS))
+		{
+			throw FatalException();
+		}
+
+		// Create dispatcher threads
 		for (int i = 0; i < DispatcherThreadCount; ++i) {
 			HANDLE hThread = CreateThread(NULL, StackReserveSize, &ThreadCallback, this, 0, NULL);
 			if (hThread == NULL)
 				throw FatalException();
 			CloseHandle(hThread);
+		}
+
+		while (true) {
+			// Fire expired timers
+			UInt64 tick = GetTickCount64Unsafe();
+
+			auto iter = timerQueue.begin();
+			while (iter != timerQueue.end() && iter->first <= tick) {
+				auto cur = iter;
+				SleepCompletion &sc = *(cur->second);
+				++iter;
+				timerQueue.erase(cur);
+
+				// FIXME: This may fail, too
+				PostQueuedCompletionStatus(this->hQueue, 0, SleepCompletionKey,
+					reinterpret_cast<LPOVERLAPPED>(&sc));
+			}
+
+			if (iter == timerQueue.end()) {
+				SleepEx(INFINITE, TRUE);
+			} else {
+				SleepEx(static_cast<DWORD>(iter->first - tick + 50), TRUE);
+			}
 		}
 	}
 
@@ -92,8 +172,11 @@ namespace Httpd
 			if (CompletionKey == FiberCreateKey) {
 				SwitchToFiber(lpOverlapped);
 			} else if (CompletionKey == OverlappedCompletionKey) {
-				OverlappedCompletion *overlapped = static_cast<OverlappedCompletion *>(lpOverlapped);
-				overlapped->SwitchBack();
+				OverlappedCompletion &oc = *static_cast<OverlappedCompletion *>(lpOverlapped);
+				oc.SwitchBack();
+			} else if (CompletionKey == SleepCompletionKey) {
+				SleepCompletion &sc = *reinterpret_cast<SleepCompletion *>(lpOverlapped);
+				sc.SwitchBack();
 			}
 
 			while (!(*threadData.completion)()) {
@@ -140,7 +223,11 @@ namespace Httpd
 
 		if (!PostQueuedCompletionStatus(this->hQueue, 0, FiberCreateKey,
 			reinterpret_cast<LPOVERLAPPED>(lpFiber)))
-			throw FatalException();
+		{
+			delete fcr;
+			DeleteFiber(lpFiber);
+			throw SystemException();
+		}
 	}
 
 	void Dispatcher::BindHandle(HANDLE hFile, ULONG_PTR key)
@@ -155,9 +242,12 @@ namespace Httpd
 		threadData.completion = &oc;
 		SwitchToFiber(threadData.lpMainFiber);
 
+		if (threadData.failed) {
+			throw SystemException();
+		}
+
 		DWORD dwBytesTransferred;
-		if (threadData.failed
-			|| !GetOverlappedResult(hObject, &oc, &dwBytesTransferred, FALSE)) {
+		if (!GetOverlappedResult(hObject, &oc, &dwBytesTransferred, FALSE)) {
 			switch (GetLastError()) {
 			case ERROR_HANDLE_EOF:
 			case ERROR_BROKEN_PIPE:
@@ -168,5 +258,17 @@ namespace Httpd
 		}
 
 		return dwBytesTransferred;
+	}
+
+	void Dispatcher::Sleep(int due)
+	{
+		ThreadData &threadData = *static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
+		SleepCompletion sc(due);
+		threadData.completion = &sc;
+		SwitchToFiber(threadData.lpMainFiber);
+
+		if (threadData.failed) {
+			throw SystemException();
+		}
 	}
 }

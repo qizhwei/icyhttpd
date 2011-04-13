@@ -3,6 +3,7 @@
 
 #include "Types.h"
 #include "Win32.h"
+#include <map>
 
 namespace Httpd
 {
@@ -11,15 +12,20 @@ namespace Httpd
 	// Completion keys
 	const ULONG_PTR FiberCreateKey = 0;
 	const ULONG_PTR OverlappedCompletionKey = 1;
+	const ULONG_PTR SleepCompletionKey = 2;
 
 	class Dispatcher: NonCopyable
 	{
+		friend class SleepCompletion;
 	public:
 		static Dispatcher &Instance();
 	public:
+		void ThreadEntry();
 		void Queue(Callback *callback, void *param);
 		void BindHandle(HANDLE hFile, ULONG_PTR key);
 		UInt32 Block(HANDLE hObject, OverlappedCompletion &oc);
+		void Sleep(int due);
+
 	private:
 		Dispatcher();
 
@@ -27,9 +33,12 @@ namespace Httpd
 		~Dispatcher();
 		static DWORD WINAPI ThreadCallback(LPVOID);
 		static VOID CALLBACK FiberCallback(PVOID);
+		static UInt64 GetTickCount64Unsafe();
 	private:
 		HANDLE hQueue;
 		DWORD dwTlsIndex;
+		HANDLE hTimerThread;
+		std::multimap<UInt64, SleepCompletion *> timerQueue;
 	};
 }
 

@@ -1,10 +1,11 @@
 #include "Node.h"
 #include "Utility.h"
+#include <utility>
 
 namespace Httpd
 {
-	Node::Node(const std::string &path, Handler *defaultHandler)
-		: pathA(path), pathW(MB2WC(CP_ACP, path)), defaultHandler(defaultHandler)
+	Node::Node(std::string path, Handler *defaultHandler)
+		: pathA(move(path)), pathW(MB2WC(CP_ACP, pathA)), defaultHandler(defaultHandler)
 	{}
 
 	Handler &Node::GetHandler(const CiString &ext)

@@ -13,7 +13,7 @@ namespace Httpd
 	class Node: NonCopyable
 	{
 	public:
-		Node(const std::string &path, Handler *defaultHandler);
+		Node(std::string path, Handler *defaultHandler);
 		Handler &GetHandler(const CiString &ext);
 		const std::string &PathA() { return pathA; }
 		const std::wstring &PathW() { return pathW; }

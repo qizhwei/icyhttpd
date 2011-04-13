@@ -108,6 +108,7 @@ namespace Httpd
 	{
 	public:
 		Completion()
+			: lpFiber(NULL)
 		{}
 
 		Completion(LPVOID lpFiber)
@@ -120,6 +121,13 @@ namespace Httpd
 		}
 
 		virtual bool operator()() { return true; }
+
+	protected:
+		void Release()
+		{
+			DeleteFiber(this->lpFiber);
+		}
+
 	private:
 		LPVOID lpFiber;
 	};

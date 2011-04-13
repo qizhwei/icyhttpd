@@ -4,6 +4,7 @@
 #include "Types.h"
 #include "Constant.h"
 #include "Win32.h"
+#include <stdexcept>
 
 using namespace Httpd;
 using namespace std;
@@ -68,8 +69,11 @@ namespace Httpd
 			Dispatcher &d = Dispatcher::Instance();
 			SleepCompletion &sc = *reinterpret_cast<SleepCompletion *>(dwParam);
 
-			// FIXME: This may fail
-			d.timerQueue.insert(make_pair(d.GetTickCount64Unsafe() + sc.due, &sc));
+			try {
+				d.timerQueue.insert(make_pair(d.GetTickCount64Unsafe() + sc.due, &sc));
+			} catch (const exception &) {
+				d.Post(1, SleepCompletionKey, reinterpret_cast<LPOVERLAPPED>(&sc));
+			}
 		}
 
 	private:
@@ -88,6 +92,16 @@ namespace Httpd
 		if ((this->dwTlsIndex = TlsAlloc()) == TLS_OUT_OF_INDEXES
 			|| (this->hQueue = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0)) == NULL)
 			throw FatalException();
+	}
+
+	void Dispatcher::Post(DWORD dwNumberOfBytesTransferred,
+		ULONG_PTR dwCompletionKey, LPOVERLAPPED lpOverlapped)
+	{
+		if (!PostQueuedCompletionStatus(this->hQueue, dwNumberOfBytesTransferred,
+			dwCompletionKey, lpOverlapped))
+		{
+			throw FatalException();
+		}
 	}
 
 	UInt64 Dispatcher::GetTickCount64Unsafe()
@@ -127,10 +141,7 @@ namespace Httpd
 				SleepCompletion &sc = *(cur->second);
 				++iter;
 				timerQueue.erase(cur);
-
-				// FIXME: This may fail, too
-				PostQueuedCompletionStatus(this->hQueue, 0, SleepCompletionKey,
-					reinterpret_cast<LPOVERLAPPED>(&sc));
+				this->Post(0, SleepCompletionKey, reinterpret_cast<LPOVERLAPPED>(&sc));
 			}
 
 			if (iter == timerQueue.end()) {
@@ -176,6 +187,8 @@ namespace Httpd
 				oc.SwitchBack();
 			} else if (CompletionKey == SleepCompletionKey) {
 				SleepCompletion &sc = *reinterpret_cast<SleepCompletion *>(lpOverlapped);
+				if (NumberOfBytes != 0)
+					threadData.failed = true;
 				sc.SwitchBack();
 			}
 
@@ -220,14 +233,7 @@ namespace Httpd
 
 		fcr->callback = callback;
 		fcr->param = param;
-
-		if (!PostQueuedCompletionStatus(this->hQueue, 0, FiberCreateKey,
-			reinterpret_cast<LPOVERLAPPED>(lpFiber)))
-		{
-			delete fcr;
-			DeleteFiber(lpFiber);
-			throw SystemException();
-		}
+		this->Post(0, FiberCreateKey, reinterpret_cast<LPOVERLAPPED>(lpFiber));
 	}
 
 	void Dispatcher::BindHandle(HANDLE hFile, ULONG_PTR key)
@@ -242,6 +248,8 @@ namespace Httpd
 		threadData.completion = &oc;
 		SwitchToFiber(threadData.lpMainFiber);
 
+		// N.B. Thread may changed
+		threadData = *static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
 		if (threadData.failed) {
 			throw SystemException();
 		}
@@ -267,6 +275,8 @@ namespace Httpd
 		threadData.completion = &sc;
 		SwitchToFiber(threadData.lpMainFiber);
 
+		// N.B. Thread may changed
+		threadData = *static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
 		if (threadData.failed) {
 			throw SystemException();
 		}

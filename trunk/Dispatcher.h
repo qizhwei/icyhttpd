@@ -31,6 +31,9 @@ namespace Httpd
 
 		// this class has no destructor, declaration only
 		~Dispatcher();
+		void Post(DWORD dwNumberOfBytesTransferred,
+			ULONG_PTR dwCompletionKey, LPOVERLAPPED lpOverlapped);
+
 		static DWORD WINAPI ThreadCallback(LPVOID);
 		static VOID CALLBACK FiberCallback(PVOID);
 		static UInt64 GetTickCount64Unsafe();

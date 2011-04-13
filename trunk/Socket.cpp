@@ -122,8 +122,9 @@ namespace Httpd
 		: hSocket(SocketProvider::Instance().Create())
 	{
 		try {
-			// TODO: Is it always safe to treat SOCKET as HANDLE?
-			Dispatcher::Instance().BindHandle((HANDLE)this->hSocket, OverlappedCompletionKey);
+			Dispatcher::Instance().BindHandle(
+				reinterpret_cast<HANDLE>(this->hSocket),
+				OverlappedCompletionKey);
 		} catch (...) {
 			SocketProvider::Instance().Destroy(this->hSocket);
 			throw;

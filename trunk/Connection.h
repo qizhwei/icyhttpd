@@ -16,6 +16,7 @@ namespace Httpd
 
 	private:
 		Connection(Endpoint &endpoint, std::unique_ptr<Socket> socket);
+		static void ConnectionCallback(void *param);
 
 	private:
 		Endpoint &endpoint;

@@ -5,6 +5,7 @@
 #include "Win32.h"
 #include <map>
 #include <memory>
+#include <utility>
 
 namespace Httpd
 {
@@ -49,7 +50,7 @@ namespace Httpd
 		template<typename Lambda>
 		void Queue(Lambda &l)
 		{
-			Lambda *p = new Lambda(l);
+			Lambda *p = new Lambda(std::move(l));
 			this->Queue(&LambdaCallback<Lambda>, static_cast<void *>(p));
 		}
 

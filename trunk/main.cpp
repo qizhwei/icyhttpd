@@ -4,6 +4,7 @@
 #include "Win32.h"
 #include "Utility.h"
 #include <memory>
+#include <cstdio>
 
 using namespace Httpd;
 using namespace std;

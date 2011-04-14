@@ -48,14 +48,14 @@ namespace Httpd
 		bool Sleep(int due, WakeToken &wt);
 
 		template<typename Lambda>
-		void Queue(Lambda &l)
+		void Queue(Lambda &&l)
 		{
 			Lambda *p = new Lambda(std::move(l));
 			this->Queue(&LambdaCallback<Lambda>, static_cast<void *>(p));
 		}
 
 		template<typename Lambda>
-		void *InvokeApc(Lambda &l)
+		void *InvokeApc(Lambda &&l)
 		{
 			return this->InvokeApc(&LambdaInvokeCallback<Lambda>, static_cast<void *>(&l)); 
 		}

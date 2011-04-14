@@ -50,12 +50,12 @@ namespace Httpd
 		
 		wsprintfW(PipeName, PipeNameFormat, GetCurrentProcessId(), InterlockedIncrement(&PipeCount));
 
-		if ((hPipe0 = CreateNamedPipe(PipeName, PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED,
+		if ((hPipe0 = CreateNamedPipeW(PipeName, PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED,
 			PIPE_TYPE_BYTE | PIPE_WAIT | PIPE_READMODE_BYTE, 1,
 			BufferBlockSize, BufferBlockSize, 0, NULL)) == INVALID_HANDLE_VALUE)
 			throw SystemException();
 
-		if ((hPipe1 = CreateFile(PipeName, GENERIC_WRITE, 0, NULL,
+		if ((hPipe1 = CreateFileW(PipeName, GENERIC_WRITE, 0, NULL,
 			OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL)) == INVALID_HANDLE_VALUE)
 		{
 			CloseHandle(hPipe0);

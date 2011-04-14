@@ -1,7 +1,7 @@
 #ifndef _WIN32_H
 #define _WIN32_H
 
-#if _WIN32_WINNT < 0x0501
+#ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0501
 #endif
 
@@ -16,6 +16,6 @@
 #include <Windows.h>
 #include <WinSock2.h>
 #include <MSWSock.h>
-#include <ws2ipdef.h>
+#include <ws2tcpip.h>
 
 #endif

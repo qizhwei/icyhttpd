@@ -610,7 +610,7 @@ namespace Httpd
 			WSABuf[0].len = strlen(chunkedLength);
 			WSABuf[1].buf = const_cast<char *>(buffer);
 			WSABuf[1].len = size;
-			WSABuf[2].buf = "\r\n";
+			WSABuf[2].buf = const_cast<char *>("\r\n");
 			WSABuf[2].len = 2;
 			this->socket.Write(WSABuf, 3);
 		} else if (size != 0) {

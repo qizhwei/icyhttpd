@@ -22,7 +22,7 @@ namespace
 	{
 		LPVOID lpMainFiber;
 		Completion *completion;
-		int result;
+		bool failed;
 	};
 
 	class DeleteFiberCompletion: public Completion
@@ -47,6 +47,7 @@ namespace Httpd
 	class SleepCompletion: public Completion
 	{
 		friend class Dispatcher;
+		friend class WakeToken;
 	public:
 		SleepCompletion(int due, WakeToken *wt)
 			: Completion(GetCurrentFiber()), due(due), wt(wt)
@@ -85,48 +86,46 @@ namespace Httpd
 		}
 
 	private:
-		int due;
+		union {
+			int due;
+			bool awaken;
+		};
 		WakeToken *wt;
 	};
 
-	class WakeCompletion: public Completion
+	class InvokeApcCompletion: public Completion
 	{
+		friend class Dispatcher;
 	public:
-		WakeCompletion(WakeToken &wt)
-			: Completion(GetCurrentFiber()), wt(wt)
+		InvokeApcCompletion(InvokeCallback *callback, void *param)
+			: Completion(GetCurrentFiber()), callback(callback), param(param)
 		{}
-			
+
 		virtual bool operator()()
 		{
-			if (!QueueUserAPC(&WakeTimerApc, Dispatcher::Instance().hTimerThread,
+			if (!::QueueUserAPC(&InvokeApcApc, Dispatcher::Instance().hTimerThread,
 				reinterpret_cast<ULONG_PTR>(this)))
 			{
 				return false;
 			}
 			return true;
 		}
+
 	private:
-		static VOID CALLBACK WakeTimerApc(ULONG_PTR dwParam)
+		static VOID CALLBACK InvokeApcApc(ULONG_PTR dwParam)
 		{
-			// N.B. We're executing in timer thread context, and we need not to
-			// acquire any lock because APC is conservative.
-
-			Dispatcher &d = Dispatcher::Instance();
-			WakeCompletion &wc = *reinterpret_cast<WakeCompletion *>(dwParam);
-
-			if (wc.wt.iterator == d.timerQueue.end()) {
-				d.Post(2, WakeCompletionKey, reinterpret_cast<LPOVERLAPPED>(&wc));
-			} else {
-				SleepCompletion &sc = *(wc.wt.iterator->second);
-				d.timerQueue.erase(wc.wt.iterator);
-				wc.wt.iterator = d.timerQueue.end();
-				d.Post(2, SleepCompletionKey, reinterpret_cast<LPOVERLAPPED>(&sc));
-				d.Post(0, WakeCompletionKey, reinterpret_cast<LPOVERLAPPED>(&wc));
-			}
+			InvokeApcCompletion &iac = *reinterpret_cast<InvokeApcCompletion *>(dwParam);
+			iac.result = (*iac.callback)(iac.param);
+			Dispatcher::Instance().Post(0, InvokeApcCompletionKey,
+				reinterpret_cast<LPOVERLAPPED>(&iac));
 		}
 
 	private:
-		WakeToken &wt;
+		InvokeCallback *callback;
+		union {
+			void *param;
+			void *result;
+		};
 	};
 
 	WakeToken::WakeToken()
@@ -137,20 +136,20 @@ namespace Httpd
 	bool WakeToken::Wake()
 	{
 		Dispatcher &d = Dispatcher::Instance();
-		ThreadData *threadData = static_cast<ThreadData *>(TlsGetValue(d.dwTlsIndex));
-		WakeCompletion wc(*this);
-		threadData->completion = &wc;
-		SwitchToFiber(threadData->lpMainFiber);
+		void *result = d.InvokeApc([this, &d]()->void *{
+			if (this->iterator == d.timerQueue.end()) {
+				return reinterpret_cast<void *>(1);
+			} else {
+				SleepCompletion &sc = *(this->iterator->second);
+				d.timerQueue.erase(this->iterator);
+				this->iterator = d.timerQueue.end();
+				sc.awaken = true;
+				d.Post(0, SleepCompletionKey, reinterpret_cast<LPOVERLAPPED>(&sc));
+				return nullptr;
+			}
+		});
 
-		// N.B. Thread may changed
-		threadData = static_cast<ThreadData *>(TlsGetValue(d.dwTlsIndex));
-		if (threadData->result == 0) {
-			return true;
-		} else if (threadData->result == 2) {
-			return false;
-		} else {
-			throw SystemException();
-		}
+		return (result == nullptr);
 	}
 
 	Dispatcher &Dispatcher::Instance()
@@ -217,6 +216,7 @@ namespace Httpd
 				if (sc.wt != nullptr) {
 					sc.wt->iterator = timerQueue.end();
 				}
+				sc.awaken = false;
 				this->Post(0, SleepCompletionKey, reinterpret_cast<LPOVERLAPPED>(&sc));
 			}
 
@@ -237,7 +237,7 @@ namespace Httpd
 		if ((threadData.lpMainFiber = ConvertThreadToFiber(NULL)) == NULL)
 			throw FatalException();
 		threadData.completion = &nullCompletion;
-		threadData.result = 0;
+		threadData.failed = false;
 
 		TlsSetValue(disp->dwTlsIndex, &threadData);
 
@@ -256,25 +256,22 @@ namespace Httpd
 			if (CompletionKey == FiberCreateKey) {
 				SwitchToFiber(lpOverlapped);
 			} else if (CompletionKey == OverlappedCompletionKey) {
-				OverlappedCompletion &oc = *static_cast<OverlappedCompletion *>(lpOverlapped);
-				oc.SwitchBack();
+				static_cast<OverlappedCompletion *>(lpOverlapped)->SwitchBack();
 			} else if (CompletionKey == SleepCompletionKey) {
-				SleepCompletion &sc = *reinterpret_cast<SleepCompletion *>(lpOverlapped);
-				threadData.result = static_cast<int>(NumberOfBytes);
-				sc.SwitchBack();
-			} else if (CompletionKey == WakeCompletionKey) {
-				WakeCompletion &wc = *reinterpret_cast<WakeCompletion *>(lpOverlapped);
-				threadData.result = static_cast<int>(NumberOfBytes);
-				wc.SwitchBack();
+				if (NumberOfBytes != 0)
+					threadData.failed = true;
+				reinterpret_cast<SleepCompletion *>(lpOverlapped)->SwitchBack();
+			} else if (CompletionKey == InvokeApcCompletionKey) {
+				reinterpret_cast<InvokeApcCompletion *>(lpOverlapped)->SwitchBack();
 			}
 
 			while (!(*threadData.completion)()) {
-				threadData.result = 1;
+				threadData.failed = true;
 				threadData.completion->SwitchBack();
 			}
 
 			threadData.completion = &nullCompletion;
-			threadData.result = 0;
+			threadData.failed = false;
 		}
 	}
 
@@ -326,7 +323,7 @@ namespace Httpd
 
 		// N.B. Thread may changed
 		threadData = static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
-		if (threadData->result != 0) {
+		if (threadData->failed) {
 			throw SystemException();
 		}
 
@@ -344,22 +341,45 @@ namespace Httpd
 		return dwBytesTransferred;
 	}
 
-	bool Dispatcher::Sleep(int due, shared_ptr<WakeToken> wt)
+	bool Dispatcher::SleepInternal(int due, WakeToken *wt)
 	{
 		ThreadData *threadData = static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
-		WakeToken *pwt = wt.get();
-		SleepCompletion sc(due, pwt);
+		SleepCompletion sc(due, wt);
 		threadData->completion = &sc;
 		SwitchToFiber(threadData->lpMainFiber);
 
 		// N.B. Thread may changed
 		threadData = static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
-		if (threadData->result == 0) {
-			return true;
-		} else if (threadData->result == 2) {
-			return false;
-		} else {
+		if (threadData->failed) {
 			throw SystemException();
 		}
+
+		return sc.awaken;
+	}
+
+	void Dispatcher::Sleep(int due)
+	{
+		this->SleepInternal(due, nullptr);
+	}
+
+	bool Dispatcher::Sleep(int due, WakeToken &wt)
+	{
+		return this->SleepInternal(due, &wt);
+	}
+
+	void *Dispatcher::InvokeApc(InvokeCallback *callback, void *param)
+	{
+		ThreadData *threadData = static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
+		InvokeApcCompletion iac(callback, param);
+		threadData->completion = &iac;
+		SwitchToFiber(threadData->lpMainFiber);
+
+		// N.B. Thread may changed
+		threadData = static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
+		if (threadData->failed) {
+			throw SystemException();
+		}
+
+		return iac.result;
 	}
 }

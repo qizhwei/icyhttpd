@@ -16,7 +16,6 @@ namespace Httpd
 	{
 		friend class Dispatcher;
 		friend class SleepCompletion;
-		friend class WakeCompletion;
 	public:
 		WakeToken();
 		bool Wake();
@@ -29,13 +28,13 @@ namespace Httpd
 	const ULONG_PTR FiberCreateKey = 0;
 	const ULONG_PTR OverlappedCompletionKey = 1;
 	const ULONG_PTR SleepCompletionKey = 2;
-	const ULONG_PTR WakeCompletionKey = 3;
+	const ULONG_PTR InvokeApcCompletionKey = 3;
 
 	class Dispatcher: NonCopyable
 	{
-		friend class SleepCompletion;
-		friend class WakeCompletion;
 		friend class WakeToken;
+		friend class SleepCompletion;
+		friend class InvokeApcCompletion;
 	public:
 		static Dispatcher &Instance();
 	public:
@@ -43,7 +42,15 @@ namespace Httpd
 		void Queue(Callback *callback, void *param);
 		void BindHandle(HANDLE hFile, ULONG_PTR key);
 		UInt32 Block(HANDLE hObject, OverlappedCompletion &oc);
-		bool Sleep(int due, std::shared_ptr<WakeToken> ct = nullptr);
+		void *InvokeApc(InvokeCallback *callback, void *param);
+		void Sleep(int due);
+		bool Sleep(int due, WakeToken &wt);
+
+		template<typename Lambda>
+		void *InvokeApc(Lambda &l)
+		{
+			return InvokeApc(&LambdaInvokeCallback<Lambda>, reinterpret_cast<void *>(&l)); 
+		}
 
 	private:
 		Dispatcher();
@@ -56,6 +63,15 @@ namespace Httpd
 		static DWORD WINAPI ThreadCallback(LPVOID);
 		static VOID CALLBACK FiberCallback(PVOID);
 		static UInt64 GetTickCount64Unsafe();
+
+		template<typename Lambda>
+		static void *LambdaInvokeCallback(void *param)
+		{
+			Lambda &l = *reinterpret_cast<Lambda *>(param);
+			return l();
+		}
+
+		bool SleepInternal(int due, WakeToken *wt);
 	private:
 		HANDLE hQueue;
 		DWORD dwTlsIndex;

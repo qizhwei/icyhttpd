@@ -10,7 +10,7 @@ using namespace std;
 
 namespace
 {
-	shared_ptr<WakeToken> wt(new WakeToken());
+	WakeToken wt;
 
 	void test1(void *)
 	{
@@ -22,8 +22,8 @@ namespace
 	void test2(void *)
 	{
 		while (true) {
-			printf("wake test: %d\n", (int)wt->Wake());
-			Dispatcher::Instance().Sleep(2500);
+			printf("wake test: %d\n", (int)wt.Wake());
+			Dispatcher::Instance().Sleep(1500);
 		}
 	}
 }

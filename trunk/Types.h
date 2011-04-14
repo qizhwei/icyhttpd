@@ -15,6 +15,7 @@ namespace Httpd
 	typedef uint64_t UInt64;
 
 	typedef void Callback(void *);
+	typedef void *InvokeCallback(void *);
 
 	class NonCopyable
 	{

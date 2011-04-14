@@ -8,30 +8,21 @@
 using namespace Httpd;
 using namespace std;
 
-namespace
+int main()
 {
 	WakeToken wt;
 
-	void test1(void *)
-	{
+	new Endpoint("0.0.0.0", 88, new Node("F:\\iceboy\\www", new FileHandler()));
+	Dispatcher::Instance().Queue([&wt](){
 		while (true) {
 			printf("sleep test %d\n", (int)Dispatcher::Instance().Sleep(1000, wt));
 		}
-	}
-
-	void test2(void *)
-	{
+	});
+	Dispatcher::Instance().Queue([&wt](){
 		while (true) {
 			printf("wake test: %d\n", (int)wt.Wake());
 			Dispatcher::Instance().Sleep(1500);
 		}
-	}
-}
-
-int main()
-{
-	new Endpoint("0.0.0.0", 88, new Node("F:\\iceboy\\www", new FileHandler()));
-	Dispatcher::Instance().Queue(test1, nullptr);
-	Dispatcher::Instance().Queue(test2, nullptr);
+	});
 	Dispatcher::Instance().ThreadEntry();
 }

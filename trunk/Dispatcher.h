@@ -47,9 +47,16 @@ namespace Httpd
 		bool Sleep(int due, WakeToken &wt);
 
 		template<typename Lambda>
+		void Queue(Lambda &l)
+		{
+			Lambda *p = new Lambda(l);
+			this->Queue(&LambdaCallback<Lambda>, static_cast<void *>(p));
+		}
+
+		template<typename Lambda>
 		void *InvokeApc(Lambda &l)
 		{
-			return InvokeApc(&LambdaInvokeCallback<Lambda>, reinterpret_cast<void *>(&l)); 
+			return this->InvokeApc(&LambdaInvokeCallback<Lambda>, static_cast<void *>(&l)); 
 		}
 
 	private:
@@ -65,9 +72,16 @@ namespace Httpd
 		static UInt64 GetTickCount64Unsafe();
 
 		template<typename Lambda>
+		static void LambdaCallback(void *param)
+		{
+			std::unique_ptr<Lambda> l(static_cast<Lambda *>(param));
+			l->operator()();
+		}
+
+		template<typename Lambda>
 		static void *LambdaInvokeCallback(void *param)
 		{
-			Lambda &l = *reinterpret_cast<Lambda *>(param);
+			Lambda &l = *static_cast<Lambda *>(param);
 			return l();
 		}
 

@@ -20,21 +20,17 @@ namespace Httpd
 		socket.BindIP(ip.c_str(), port);
 		socket.Listen();
 
-		for (int i = 0; i < AcceptFiberCount; ++i)
-			Dispatcher::Instance().Queue(&AcceptCallback, this);
-	}
-
-	void Endpoint::AcceptCallback(void *param)
-	{
-		Endpoint &ep = *static_cast<Endpoint *>(param);
-
-		while (true) {
-			try {
-				unique_ptr<Socket> socket(new Socket());
-				ep.socket.Accept(*socket);
-				Connection::Create(ep, move(socket));
-			} catch (const std::exception &) {
-			}
+		for (int i = 0; i < AcceptFiberCount; ++i) {
+			Dispatcher::Instance().Queue([this](){
+				while (true) {
+					try {
+						unique_ptr<Socket> socket(new Socket());
+						this->socket.Accept(*socket);
+						Connection::Create(*this, move(socket));
+					} catch (const std::exception &) {
+					}
+				}
+			});
 		}
 	}
 

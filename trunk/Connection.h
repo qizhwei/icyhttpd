@@ -13,9 +13,11 @@ namespace Httpd
 	{
 	public:
 		static void Create(Endpoint &endpoint, std::unique_ptr<Socket> socket);
+
 	private:
 		Connection(Endpoint &endpoint, std::unique_ptr<Socket> socket);
-		static void ConnectionCallback(void *param);
+
+	private:
 		Endpoint &endpoint;
 		std::unique_ptr<Socket> socket;
 	};

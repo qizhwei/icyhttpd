@@ -21,7 +21,6 @@ namespace Httpd
 		// this class has no destructor, declaration only
 		~Endpoint();
 
-		static void AcceptCallback(void *param);
 	private:
 		Socket socket;
 		std::unordered_map<CiString, Node *> bindings;

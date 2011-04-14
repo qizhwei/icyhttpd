@@ -62,14 +62,12 @@ namespace
 
 	void GetCurrentDateBuffer(char dateBuffer[32])
 	{
-		__time64_t currentTime;
-		tm currentTm;
+		SYSTEMTIME systemTime;
 
-		_time64(&currentTime);
-		_gmtime64_s(&currentTm, &currentTime);
+		GetSystemTime(&systemTime);
         wsprintfA(dateBuffer, "%3s, %02d %3s %04d %02d:%02d:%02d GMT",
-            Weekdays[currentTm.tm_wday], currentTm.tm_mday, Months[currentTm.tm_mon],
-			(currentTm.tm_year + 1900) % 10000, currentTm.tm_hour, currentTm.tm_min, currentTm.tm_sec);
+			Weekdays[systemTime.wDayOfWeek], systemTime.wDay, Months[systemTime.wMonth - 1],
+			systemTime.wYear, systemTime.wHour, systemTime.wMinute, systemTime.wSecond);
 	}
 
 	void URIDecode(char *first, char *&last)

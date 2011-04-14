@@ -9,7 +9,9 @@ LDFLAGS := -g
 LIBS := -lws2_32
 BINDIR := bin
 OBJDIR := obj
-OBJS := $($(wildcard *.cpp).cpp=.o)
+SOURCES := $(wildcard *.cpp)
+HEADERS := $(wildcard *.h)
+OBJS := $(SOURCES:.cpp=.o)
 
 build: $(BINDIR)/icyhttpd.exe
 
@@ -23,7 +25,7 @@ $(BINDIR)/icyhttpd.exe: $(addprefix $(OBJDIR)/,$(OBJS)) | $(BINDIR)
 	@echo LD	$@
 	@$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-$(OBJDIR)/%.o: %.cpp | $(OBJDIR)
+$(OBJDIR)/%.o: %.cpp $(HEADERS) | $(OBJDIR)
 	@echo CXX	$@
 	@$(CXX) -c $(CXXFLAGS) -o $@ $<
 

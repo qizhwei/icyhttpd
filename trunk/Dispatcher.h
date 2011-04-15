@@ -48,16 +48,17 @@ namespace Httpd
 		bool Sleep(int due, WakeToken &wt);
 
 		template<typename Lambda>
-		void Queue(Lambda &&l)
+		void Queue(Lambda l)
 		{
 			Lambda *p = new Lambda(std::move(l));
 			this->Queue(&LambdaCallback<Lambda>, static_cast<void *>(p));
 		}
 
 		template<typename Lambda>
-		void *InvokeApc(Lambda &&l)
+		void *InvokeApc(Lambda l)
 		{
-			return this->InvokeApc(&LambdaInvokeCallback<Lambda>, static_cast<void *>(&l)); 
+			return this->InvokeApc(&LambdaInvokeCallback<Lambda>,
+				static_cast<void *>(&l)); 
 		}
 
 	private:
@@ -82,8 +83,7 @@ namespace Httpd
 		template<typename Lambda>
 		static void *LambdaInvokeCallback(void *param)
 		{
-			Lambda &l = *static_cast<Lambda *>(param);
-			return l();
+			return static_cast<Lambda *>(param)->operator()();
 		}
 
 		bool SleepInternal(int due, WakeToken *wt);

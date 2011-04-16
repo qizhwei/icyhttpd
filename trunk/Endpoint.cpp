@@ -17,14 +17,14 @@ namespace Httpd
 	Endpoint::Endpoint(const std::string &ip, UInt16 port, Node *defaultNode)
 		: defaultNode(defaultNode)
 	{
-		socket.BindIP(ip.c_str(), port);
-		socket.Listen();
+		socket.CreateListenerIpv4(ip.c_str(), port);
 
 		for (int i = 0; i < AcceptFiberCount; ++i) {
 			Dispatcher::Instance().Queue([this](){
 				while (true) {
 					try {
 						unique_ptr<Socket> socket(new Socket());
+						socket->CreateClientIpv4();
 						this->socket.Accept(*socket);
 						Connection::Create(*this, move(socket));
 					} catch (const std::exception &) {

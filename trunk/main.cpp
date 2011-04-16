@@ -14,16 +14,5 @@ int main()
 	WakeToken wt;
 
 	new Endpoint("0.0.0.0", 88, new Node("F:\\iceboy\\www", new FileHandler()));
-	Dispatcher::Instance().Queue([&wt](){
-		while (true) {
-			printf("sleep test %d\n", (int)Dispatcher::Instance().Sleep(1000, wt));
-		}
-	});
-	Dispatcher::Instance().Queue([&wt](){
-		while (true) {
-			printf("wake test: %d\n", (int)wt.Wake());
-			Dispatcher::Instance().Sleep(1500);
-		}
-	});
 	Dispatcher::Instance().ThreadEntry();
 }

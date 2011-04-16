@@ -42,7 +42,7 @@ namespace Httpd
 		if (WSAStartup(MAKEWORD(2, 2), &WSAData))
 			throw FatalException();
 
-		SOCKET s = this->Create();
+		SOCKET s = this->Create(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		GetFunctionPointer(s, &guidTransmitFile, &this->pfnTransmitFile);
 		GetFunctionPointer(s, &guidAcceptEx, &this->pfnAcceptEx);
 		GetFunctionPointer(s, &guidGetAcceptExSockaddrs, &this->pfnGetAcceptExSockaddrs);
@@ -53,10 +53,10 @@ namespace Httpd
 		this->Destroy(s);
 	}
 
-	SOCKET SocketProvider::Create()
+	SOCKET SocketProvider::Create(int af, int type, int protocol)
 	{
 		SOCKET s;
-		if ((s = socket(AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP)) == INVALID_SOCKET)
+		if ((s = socket(af, type, protocol)) == INVALID_SOCKET)
 			throw SystemException();
 		return s;
 	}

@@ -12,9 +12,8 @@ namespace Httpd
 		Socket();
 		~Socket();
 
-		void BindIP(const char *ip, UInt16 port);
-		// TODO: BindIPv6. But inet_pton is not implemented before Windows Vista.
-
+		void CreateListenerIpv4(const char *ip, UInt16 port);
+		void CreateClientIpv4();
 		void Listen(int backlog = SOMAXCONN);
 		void Accept(Socket &acceptSocket);
 		UInt32 Read(char *buffer, UInt32 size);

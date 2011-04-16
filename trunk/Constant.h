@@ -9,7 +9,6 @@ namespace Httpd
 	// Dispatcher unit count
 	const int DispatcherThreadCount = 4;
 	const int AcceptFiberCount = 4;
-	const int FcgiPoolThreadCount = 4;
 
 	// Stack sizes
 	const SIZE_T StackCommitSize = 4096;

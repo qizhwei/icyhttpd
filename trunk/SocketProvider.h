@@ -10,7 +10,7 @@ namespace Httpd
 	{
 	public:
 		static SocketProvider &Instance();
-		SOCKET Create();
+		SOCKET Create(int af, int type, int protocol);
 		void Destroy(SOCKET s);
 
 	public:

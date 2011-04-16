@@ -119,38 +119,55 @@ namespace
 namespace Httpd
 {
 	Socket::Socket()
-		: hSocket(SocketProvider::Instance().Create())
-	{
-		try {
-			Dispatcher::Instance().BindHandle(
-				reinterpret_cast<HANDLE>(this->hSocket),
-				OverlappedCompletionKey);
-		} catch (...) {
-			SocketProvider::Instance().Destroy(this->hSocket);
-			throw;
-		}
-	}
+		: hSocket(INVALID_SOCKET)
+	{}
 
 	Socket::~Socket()
 	{
 		SocketProvider::Instance().Destroy(this->hSocket);
 	}
 
-	void Socket::BindIP(const char *ip, UInt16 port)
+	void Socket::CreateListenerIpv4(const char *ip, UInt16 port)
 	{
-		struct sockaddr_in service;
-		service.sin_family = AF_INET;
-		service.sin_port = htons(port);
-		service.sin_addr.s_addr = inet_addr(ip);
+		if (this->hSocket != INVALID_SOCKET)
+			throw FatalException();
+		SocketProvider &sp = SocketProvider::Instance();
+		this->hSocket = sp.Create(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		try {
+			Dispatcher::Instance().BindHandle(
+				reinterpret_cast<HANDLE>(this->hSocket), OverlappedCompletionKey);
 
-		if (::bind(this->hSocket, (SOCKADDR *)&service, sizeof(service)))
-			throw SystemException();
+			struct sockaddr_in service = {0};
+			service.sin_family = AF_INET;
+			service.sin_port = htons(port);
+			service.sin_addr.s_addr = inet_addr(ip);
+			
+			if (::bind(this->hSocket, (SOCKADDR *)&service, sizeof(service)))
+				throw SystemException();
+
+			if (::listen(this->hSocket, SOMAXCONN))
+				throw SystemException();
+		} catch (...) {
+			sp.Destroy(this->hSocket);
+			this->hSocket = INVALID_SOCKET;
+			throw;
+		}
 	}
 
-	void Socket::Listen(int backlog)
+	void Socket::CreateClientIpv4()
 	{
-		if (listen(this->hSocket, backlog))
-			throw SystemException();
+		if (this->hSocket != INVALID_SOCKET)
+			throw FatalException();
+		SocketProvider &sp = SocketProvider::Instance();
+		this->hSocket = sp.Create(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		try {
+			Dispatcher::Instance().BindHandle(
+				reinterpret_cast<HANDLE>(this->hSocket), OverlappedCompletionKey);
+		} catch (...) {
+			sp.Destroy(this->hSocket);
+			this->hSocket = INVALID_SOCKET;
+			throw;
+		}
 	}
 
 	void Socket::Accept(Socket &acceptSocket)

@@ -17,7 +17,6 @@ namespace Httpd
 	// Buffer sizes
 	const UInt32 MaxRequestBufferSize = 32768; // must be able to represent in UInt16
 	const UInt32 BufferBlockSize = 4096;
-	const UInt32 SocketProviderSize = 32;
 }
 
 #endif

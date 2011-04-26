@@ -13,18 +13,28 @@ namespace Httpd
 		friend class FcgiProcess;
 	public:
 		FcgiPool(std::string commandLine);
+		FcgiProcess *Pop();
+		void Push(FcgiProcess *process);
 
 	private:
-		std::list<FcgiProcess *> idleList;
-		std::list<FcgiProcess *> busyList;
 		ThreadLock lock;
+		std::list<FcgiProcess *> idleList;
 
+	private:
+		std::string commandLine;
+
+	private:
 		// this class has no destructor, declaration only
 		~FcgiPool();
 	};
 
 	class FcgiProcess: public NonCopyable
 	{
+	private:
+		FcgiProcess(FcgiPool &pool);
+
+	private:
+		FcgiPool &pool;
 	};
 
 	class FcgiSession: public NonCopyable

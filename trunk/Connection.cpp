@@ -24,7 +24,12 @@ namespace Httpd
 	void Connection::Create(Endpoint &endpoint, unique_ptr<Socket> socket)
 	{
 		Connection *conn = new Connection(endpoint, move(socket));
-		Dispatcher::Instance().Queue(&Connection::ConnectionCallback, conn);
+		try {
+			Dispatcher::Instance().Queue(&Connection::ConnectionCallback, conn);
+		} catch (...) {
+			delete conn;
+			throw;
+		}
 	}
 
 	void Connection::ConnectionCallback(void *param)

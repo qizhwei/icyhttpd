@@ -37,13 +37,29 @@ namespace Httpd
 	class Win32Handle: NonCopyable
 	{
 	public:
+		Win32Handle()
+			: hObject(NULL)
+		{}
+
 		Win32Handle(HANDLE hObject)
 			: hObject(hObject)
 		{}
 
+		Win32Handle(Win32Handle &&h)
+			: hObject(h.hObject)
+		{
+			h.hObject = NULL;
+		}
+
 		~Win32Handle()
 		{
-			CloseHandle(hObject);
+			this->Close();
+		}
+
+		void Handle(HANDLE hObject)
+		{
+			this->Close();
+			this->hObject = hObject;
 		}
 
 		HANDLE Handle() const
@@ -51,17 +67,26 @@ namespace Httpd
 			return hObject;
 		}
 
+		HANDLE Release()
+		{
+			HANDLE hObject = this->hObject;
+			this->hObject = NULL;
+			return hObject;
+		}
+
 		void Close()
 		{
-			CloseHandle(hObject);
-			hObject = NULL;
+			if (hObject != NULL) {
+				CloseHandle(hObject);
+				hObject = NULL;
+			}
 		}
 	private:
 		HANDLE hObject;
 	};
 
-	extern std::pair<HANDLE, HANDLE> CreatePipePairDuplex();
-	extern std::pair<HANDLE, HANDLE> CreatePipePair();
+	extern std::pair<Win32Handle, Win32Handle> CreatePipePairDuplex();
+	extern std::pair<Win32Handle, Win32Handle> CreatePipePair();
 	extern HANDLE OpenFile(const wchar_t *path);
 	extern UInt64 GetFileSize(HANDLE hFile);
 
@@ -104,7 +129,7 @@ namespace Httpd
 		return p;
 	}
 
-	class Completion
+	class Completion: NonCopyable
 	{
 	public:
 		Completion()

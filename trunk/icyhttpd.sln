@@ -2,8 +2,17 @@
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "icyhttpd", "icyhttpd.vcxproj", "{9F359CEF-F4FC-4084-95AE-E8D7659C4500}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5A14BD32-D100-419C-A80F-6F1518CE37D6} = {5A14BD32-D100-419C-A80F-6F1518CE37D6}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fastcgi", "fastcgi\fastcgi.vcxproj", "{5A14BD32-D100-419C-A80F-6F1518CE37D6}"
 EndProject
 Global
+	GlobalSection(SubversionScc) = preSolution
+		Svn-Managed = True
+		Manager = AnkhSVN - Subversion Support for Visual Studio
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
 		Release|Win32 = Release|Win32
@@ -13,6 +22,10 @@ Global
 		{9F359CEF-F4FC-4084-95AE-E8D7659C4500}.Debug|Win32.Build.0 = Debug|Win32
 		{9F359CEF-F4FC-4084-95AE-E8D7659C4500}.Release|Win32.ActiveCfg = Release|Win32
 		{9F359CEF-F4FC-4084-95AE-E8D7659C4500}.Release|Win32.Build.0 = Release|Win32
+		{5A14BD32-D100-419C-A80F-6F1518CE37D6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5A14BD32-D100-419C-A80F-6F1518CE37D6}.Debug|Win32.Build.0 = Debug|Win32
+		{5A14BD32-D100-419C-A80F-6F1518CE37D6}.Release|Win32.ActiveCfg = Release|Win32
+		{5A14BD32-D100-419C-A80F-6F1518CE37D6}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

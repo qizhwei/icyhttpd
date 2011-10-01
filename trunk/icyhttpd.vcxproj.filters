@@ -33,9 +33,6 @@
     <ClCompile Include="Connection.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Pipe.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="Http.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -74,9 +71,6 @@
     <ClInclude Include="Socket.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Pipe.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Endpoint.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -104,7 +98,7 @@
     <ClInclude Include="FileHandler.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Fastcgi.h">
+    <ClInclude Include="FcgiHandler.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

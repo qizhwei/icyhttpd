@@ -10,19 +10,44 @@
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="fastcgi.h" />
+    <ClInclude Include="fc.h" />
+    <ClInclude Include="fcp.h" />
+    <ClInclude Include="ob.h" />
+    <ClInclude Include="obp.h" />
+    <ClInclude Include="rtl.h" />
+    <ClInclude Include="win32.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="fcdisp.c" />
+    <ClCompile Include="fcinit.c" />
+    <ClCompile Include="fcpool.c" />
+    <ClCompile Include="fcproc.c" />
+    <ClCompile Include="fcreq.c" />
+    <ClCompile Include="obdir.c" />
+    <ClCompile Include="obinit.c" />
+    <ClCompile Include="obobject.c" />
+    <ClCompile Include="obtype.c" />
+    <ClCompile Include="rtlfifo.c" />
+    <ClCompile Include="rtlheap.c" />
+    <ClCompile Include="rtlmap.c" />
+    <ClCompile Include="rtlpipe.c" />
+    <ClCompile Include="rtlstr.c" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{9F359CEF-F4FC-4084-95AE-E8D7659C4500}</ProjectGuid>
+    <ProjectGuid>{5A14BD32-D100-419C-A80F-6F1518CE37D6}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>icyhttpd</RootNamespace>
+    <RootNamespace>fastcgi</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
@@ -37,26 +62,18 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LinkIncremental>true</LinkIncremental>
-    <IncludePath>.\fastcgi;$(IncludePath)</IncludePath>
-    <LibraryPath>$(OutputPath);$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LinkIncremental>false</LinkIncremental>
-  </PropertyGroup>
+  <PropertyGroup />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>fastcgi.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -67,49 +84,15 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="Connection.cpp" />
-    <ClCompile Include="Dispatcher.cpp" />
-    <ClCompile Include="Exception.cpp" />
-    <ClCompile Include="FileHandler.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="Endpoint.cpp" />
-    <ClCompile Include="Node.cpp" />
-    <ClCompile Include="Http.cpp" />
-    <ClCompile Include="Socket.cpp" />
-    <ClCompile Include="SocketProvider.cpp" />
-    <ClCompile Include="Stream.cpp" />
-    <ClCompile Include="Utility.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="FcgiHandler.h" />
-    <ClInclude Include="FileHandler.h" />
-    <ClInclude Include="Stream.h" />
-    <ClInclude Include="Utility.h" />
-    <ClInclude Include="Connection.h" />
-    <ClInclude Include="Constant.h" />
-    <ClInclude Include="Dispatcher.h" />
-    <ClInclude Include="Exception.h" />
-    <ClInclude Include="Handler.h" />
-    <ClInclude Include="Http.h" />
-    <ClInclude Include="Node.h" />
-    <ClInclude Include="Endpoint.h" />
-    <ClInclude Include="Socket.h" />
-    <ClInclude Include="SocketProvider.h" />
-    <ClInclude Include="Types.h" />
-    <ClInclude Include="Win32.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

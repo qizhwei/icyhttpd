@@ -17,52 +17,44 @@ namespace
 
 namespace Httpd
 {
-	std::pair<HANDLE, HANDLE> CreatePipePairDuplex()
+	pair<Win32Handle, Win32Handle> CreatePipePairDuplex()
 	{
 		wchar_t PipeName[48];
-		SECURITY_ATTRIBUTES sa;
-		HANDLE hPipe0, hPipe1;
-		
-		wsprintfW(PipeName, PipeNameFormat, GetCurrentProcessId(), InterlockedIncrement(&PipeCount));
-		sa.nLength = sizeof(sa);
-		sa.lpSecurityDescriptor = NULL;
-		sa.bInheritHandle = TRUE;
-
-		if ((hPipe0 = CreateNamedPipeW(PipeName, PIPE_ACCESS_DUPLEX,
-			PIPE_TYPE_BYTE | PIPE_WAIT | PIPE_READMODE_BYTE, 1,
-			BufferBlockSize, BufferBlockSize, 0, &sa)) == INVALID_HANDLE_VALUE)
-			throw SystemException();
-
-		if ((hPipe1 = CreateFileW(PipeName, GENERIC_READ | GENERIC_WRITE, 0, NULL,
-			OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL)) == INVALID_HANDLE_VALUE)
-		{
-			CloseHandle(hPipe0);
-			throw SystemException();
-		}
-
-		return make_pair(hPipe0, hPipe1);
-	}
-	
-	std::pair<HANDLE, HANDLE> CreatePipePair()
-	{
-		wchar_t PipeName[48];
-		HANDLE hPipe0, hPipe1;
+		HANDLE hPipe;
 		
 		wsprintfW(PipeName, PipeNameFormat, GetCurrentProcessId(), InterlockedIncrement(&PipeCount));
 
-		if ((hPipe0 = CreateNamedPipeW(PipeName, PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED,
+		if ((hPipe = CreateNamedPipeW(PipeName, PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
 			PIPE_TYPE_BYTE | PIPE_WAIT | PIPE_READMODE_BYTE, 1,
 			BufferBlockSize, BufferBlockSize, 0, NULL)) == INVALID_HANDLE_VALUE)
 			throw SystemException();
+		Win32Handle pipe0(hPipe);
 
-		if ((hPipe1 = CreateFileW(PipeName, GENERIC_WRITE, 0, NULL,
+		if ((hPipe = CreateFileW(PipeName, GENERIC_READ | GENERIC_WRITE, 0, NULL,
 			OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL)) == INVALID_HANDLE_VALUE)
-		{
-			CloseHandle(hPipe0);
 			throw SystemException();
-		}
 
-		return make_pair(hPipe0, hPipe1);
+		return make_pair(move(pipe0), hPipe);
+	}
+	
+	pair<Win32Handle, Win32Handle> CreatePipePair()
+	{
+		wchar_t PipeName[48];
+		HANDLE hPipe;
+		
+		wsprintfW(PipeName, PipeNameFormat, GetCurrentProcessId(), InterlockedIncrement(&PipeCount));
+
+		if ((hPipe = CreateNamedPipeW(PipeName, PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED,
+			PIPE_TYPE_BYTE | PIPE_WAIT | PIPE_READMODE_BYTE, 1,
+			BufferBlockSize, BufferBlockSize, 0, NULL)) == INVALID_HANDLE_VALUE)
+			throw SystemException();
+		Win32Handle pipe0(hPipe);
+
+		if ((hPipe = CreateFileW(PipeName, GENERIC_WRITE, 0, NULL,
+			OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL)) == INVALID_HANDLE_VALUE)
+			throw SystemException();
+
+		return make_pair(move(pipe0), hPipe);
 	}
 
 	HANDLE OpenFile(const wchar_t *path)

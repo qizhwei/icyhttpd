@@ -2,7 +2,8 @@
 
 ObDirectoryObject * ObCreateDirectoryObject(void *root, const char *path)
 {
-	ObDirectoryObject *dir = ObCreateObject(&ObDirectoryObjectType, sizeof(ObDirectoryObject), root, path);
+	ObDirectoryObject *dir = (ObDirectoryObject *)
+		ObCreateObject(&ObDirectoryObjectType, sizeof(ObDirectoryObject), root, path);
 	if (dir == NULL) {
 		return NULL;
 	}
@@ -18,7 +19,7 @@ ObDirectoryObject * ObCreateDirectoryObject(void *root, const char *path)
 
 void * ObpDirectoryParse(void *object, const char *name)
 {
-	ObDirectoryObject *dir = object;
+	ObDirectoryObject *dir = (ObDirectoryObject *)object;
 	void *value;
 	
 	if (RtlQueryMap(&dir->NameMap, (void *)name, &value, 0)) {
@@ -30,7 +31,7 @@ void * ObpDirectoryParse(void *object, const char *name)
 
 int ObpDirectoryInsert(void *object, const char *name, void *target)
 {
-	ObDirectoryObject *dir = object;
+	ObDirectoryObject *dir = (ObDirectoryObject *)object;
 	char *dupName = RtlDuplicateString(name);
 	
 	if (dupName == NULL) {

@@ -18,14 +18,14 @@ int FcpDispatchProcess(FcpProcess *process)
 	FcpDispatchProcessState *dpstate;
 	
 	// Allocate memory for asynchronous state object
-	dpstate = RtlAllocateHeap(sizeof(FcpDispatchProcessState));
+	dpstate = (FcpDispatchProcessState *)RtlAllocateHeap(sizeof(FcpDispatchProcessState));
 	if (dpstate == NULL) {
 		return 1;
 	}
 	
 	// Initialize the state object
 	memset(&dpstate->Overlapped, 0, sizeof(OVERLAPPED));
-	dpstate->Process = ObReferenceObjectByPointer(process, NULL);
+	dpstate->Process = (FcpProcess *)ObReferenceObjectByPointer(process, NULL);
 	dpstate->Length = 0;
 	
 	// Begin reading from the process pipe
@@ -78,7 +78,7 @@ static void CALLBACK FcpDispatchProcessComplete(DWORD errorCode, DWORD bytesTran
 		
 		switch (header->type) {
 			case FCGI_STDOUT:
-				if (RtlWriteFifo(request->StdoutFifo, &dpstate->Buffer[FCGI_HEADER_LEN],
+				if (RtlWriteFifo(request->StdoutFifo, (char *)&dpstate->Buffer[FCGI_HEADER_LEN],
 					 contentLength, &FcpWriteStdoutCompletion, dpstate))
 				{
 					goto Error;

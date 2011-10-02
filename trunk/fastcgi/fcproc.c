@@ -66,7 +66,7 @@ FcpProcess * FcpCreateProcess(FcPool *pool)
 	CloseHandle(pi.hThread);
 	
 	// Allocate memory for the object
-	process = ObCreateObject(&FcpProcessObjectType, sizeof(FcpProcess), NULL, NULL);
+	process = (FcpProcess *)ObCreateObject(&FcpProcessObjectType, sizeof(FcpProcess), NULL, NULL);
 	if (process == NULL) {
 		TerminateProcess(pi.hProcess, 1);
 		CloseHandle(pi.hProcess);
@@ -76,7 +76,7 @@ FcpProcess * FcpCreateProcess(FcPool *pool)
 	
 	// Initialize the object
 	process->RemainingRequests = pool->MaxRequests;
-	process->Pool = ObReferenceObjectByPointer(pool, NULL);
+	process->Pool = (FcPool *)ObReferenceObjectByPointer(pool, NULL);
 	InsertHeadList(&pool->RunningList, &process->PoolEntry);
 	process->State = FCP_STATE_READY;
 	process->ProcessHandle = pi.hProcess;

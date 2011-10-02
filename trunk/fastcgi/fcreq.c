@@ -55,7 +55,7 @@ static void FcpSendParam(FcpBeginRequestState *brstate, const char *key, const c
 {
 	FcRequest *request = brstate->Request;
 	FcpProcess *process = request->Process;
-	unsigned char *buffer = brstate->Buffer;
+	unsigned char *buffer = (unsigned char *)brstate->Buffer;
 	FCGI_Header *header;
 	size_t oldLength, oldSize;
 	size_t keyLength, keySize;
@@ -65,7 +65,7 @@ static void FcpSendParam(FcpBeginRequestState *brstate, const char *key, const c
 	
 	// Allocate buffer if we don't have one
 	if (buffer == NULL) {
-		buffer = RtlAllocateHeap(sizeof(FcpBeginRequestState *) + sizeof(FCGI_Header));
+		buffer = (unsigned char *)RtlAllocateHeap(sizeof(FcpBeginRequestState *) + sizeof(FCGI_Header));
 		if (buffer == NULL) {
 			brstate->PendingIos += 1;
 			FcpBeginTrigger(brstate, 0, 1);

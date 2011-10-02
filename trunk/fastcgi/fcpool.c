@@ -9,7 +9,7 @@ FcPool * FcCreatePool(const char *name, const char *commandLine, int idleTime, i
 	FcPool *pool;
 	
 	// Allocate memory for the object
-	pool = ObCreateObject(&FcpPoolObjectType, sizeof(FcPool), FcpPoolDirectory, name);
+	pool = (FcPool *)ObCreateObject(&FcpPoolObjectType, sizeof(FcPool), FcpPoolDirectory, name);
 	if (pool == NULL) {
 		return NULL;
 	}
@@ -40,7 +40,7 @@ int FcpPushPoolProcess(FcpProcess *process)
 	assert(process->State == FCP_STATE_READY);
 	
 	// Allocate memory for the wait block
-	waitBlock = ObCreateObject(&FcpWaitBlockObjectType, sizeof(FcpWaitBlock), NULL, NULL);
+	waitBlock = (FcpWaitBlock *)ObCreateObject(&FcpWaitBlockObjectType, sizeof(FcpWaitBlock), NULL, NULL);
 	if (waitBlock == NULL) {
 		return 1;
 	}
@@ -67,7 +67,7 @@ int FcpPushPoolProcess(FcpProcess *process)
 	
 	// Assign the wait block to the process
 	process->State = FCP_STATE_POOLING;
-	process->WaitBlock = ObReferenceObjectByPointer(waitBlock, NULL);
+	process->WaitBlock = (FcpWaitBlock *)ObReferenceObjectByPointer(waitBlock, NULL);
 	
 	// Switch the process to the pooling list
 	RemoveEntryList(&process->PoolEntry);

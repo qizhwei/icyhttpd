@@ -23,7 +23,7 @@ static void RtlpCancelFifo(RtlFifo *fifo);
 
 RtlFifo * RtlCreateFifo(void)
 {
-	RtlFifo *fifo = RtlAllocateHeap(sizeof(RtlFifo));
+	RtlFifo *fifo = (RtlFifo *)RtlAllocateHeap(sizeof(RtlFifo));
 	
 	if (fifo == NULL) {
 		return NULL;

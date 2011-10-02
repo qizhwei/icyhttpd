@@ -7,7 +7,7 @@
 
 static size_t RtlpStringHash(void *string)
 {
-	char *p = string;
+	char *p = (char *)string;
 	size_t hash = OFFSET_BASIS;
 	
 	while (*p) {
@@ -21,7 +21,7 @@ static size_t RtlpStringHash(void *string)
 
 static size_t RtlpStringHashInsensitive(void *string)
 {
-	char *p = string;
+	char *p = (char *)string;
 	size_t hash = OFFSET_BASIS;
 	
 	while (*p) {
@@ -40,13 +40,13 @@ static int RtlpStringEqual(void *string0, void *string1)
 
 static int RtlpStringEqualInsensitive(void *string0, void *string1)
 {
-	return stricmp(string0, string1);
+	return _stricmp(string0, string1);
 }
 
 RtlMap * RtlpCreateMap(RtlHashFunc *hash, RtlEqualFunc *equal, size_t slots)
 {
 	RtlMap *map = RtlAllocateHeap(sizeof(RtlMap) + INITIAL_SLOTS * sizeof(RtlMapRecord *));
-	int index;
+	size_t index;
 	
 	if (map == NULL) {
 		return NULL;

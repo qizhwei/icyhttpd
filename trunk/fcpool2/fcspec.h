@@ -1,19 +1,5 @@
-/* 
- * fastcgi.h --
- *
- *	Defines for the FastCGI protocol.
- *
- *
- * Copyright (c) 1995-1996 Open Market, Inc.
- *
- * See the file "LICENSE.TERMS" for information on usage and redistribution
- * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
- *
- * $Id: fastcgi.h,v 1.1.1.1 1997/09/16 15:36:32 stanleyg Exp $
- */
-
-#ifndef _FASTCGI_H
-#define _FASTCGI_H
+#ifndef _FCSPEC_H
+#define _FCSPEC_H
 
 /*
  * Listening socket file number
@@ -30,8 +16,6 @@ typedef struct {
     unsigned char paddingLength;
     unsigned char reserved;
 } FCGI_Header;
-
-#define FCGI_MAX_LENGTH 0xffff
 
 /*
  * Number of bytes in a FCGI_Header.  Future versions of the protocol
@@ -65,7 +49,6 @@ typedef struct {
  */
 #define FCGI_NULL_REQUEST_ID     0
 
-
 typedef struct {
     unsigned char roleB1;
     unsigned char roleB0;
@@ -90,7 +73,6 @@ typedef struct {
 #define FCGI_AUTHORIZER 2
 #define FCGI_FILTER     3
 
-
 typedef struct {
     unsigned char appStatusB3;
     unsigned char appStatusB2;
@@ -113,14 +95,12 @@ typedef struct {
 #define FCGI_OVERLOADED       2
 #define FCGI_UNKNOWN_ROLE     3
 
-
 /*
  * Variable names for FCGI_GET_VALUES / FCGI_GET_VALUES_RESULT records
  */
 #define FCGI_MAX_CONNS  "FCGI_MAX_CONNS"
 #define FCGI_MAX_REQS   "FCGI_MAX_REQS"
 #define FCGI_MPXS_CONNS "FCGI_MPXS_CONNS"
-
 
 typedef struct {
     unsigned char type;    
@@ -132,4 +112,4 @@ typedef struct {
     FCGI_UnknownTypeBody body;
 } FCGI_UnknownTypeRecord;
 
-#endif	/* _FASTCGI_H */
+#endif

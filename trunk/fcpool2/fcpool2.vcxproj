@@ -10,35 +10,14 @@
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="fastcgi.h" />
-    <ClInclude Include="fc.h" />
-    <ClInclude Include="fcp.h" />
-    <ClInclude Include="ob.h" />
-    <ClInclude Include="obp.h" />
-    <ClInclude Include="rtl.h" />
-    <ClInclude Include="win32.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="fcdisp.c" />
-    <ClCompile Include="fcinit.c" />
-    <ClCompile Include="fcpool.c" />
-    <ClCompile Include="fcproc.c" />
-    <ClCompile Include="fcreq.c" />
-    <ClCompile Include="obdir.c" />
-    <ClCompile Include="obinit.c" />
-    <ClCompile Include="obobject.c" />
-    <ClCompile Include="obtype.c" />
-    <ClCompile Include="rtlfifo.c" />
-    <ClCompile Include="rtlheap.c" />
-    <ClCompile Include="rtlmap.c" />
-    <ClCompile Include="rtlpipe.c" />
-    <ClCompile Include="rtlstr.c" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{5A14BD32-D100-419C-A80F-6F1518CE37D6}</ProjectGuid>
+    <ProjectGuid>{89D08A8A-07B3-47CD-96B7-E8EF053F7079}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>fastcgi</RootNamespace>
+    <RootNamespace>fcpool2</RootNamespace>
+    <SccProjectName>Svn</SccProjectName>
+    <SccAuxPath>Svn</SccAuxPath>
+    <SccLocalPath>Svn</SccLocalPath>
+    <SccProvider>SubversionScc</SccProvider>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -75,6 +54,12 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Lib>
+      <ModuleDefinitionFile>
+      </ModuleDefinitionFile>
+      <ExportNamedFunctions>
+      </ExportNamedFunctions>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -93,7 +78,33 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <Lib>
+      <ModuleDefinitionFile>
+      </ModuleDefinitionFile>
+    </Lib>
   </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="fcpool.h" />
+    <ClInclude Include="fcspec.h" />
+    <ClInclude Include="fifo.h" />
+    <ClInclude Include="inst.h" />
+    <ClInclude Include="list.h" />
+    <ClInclude Include="obj.h" />
+    <ClInclude Include="pool.h" />
+    <ClInclude Include="internal.h" />
+    <ClInclude Include="req.h" />
+    <ClInclude Include="timer.h" />
+    <ClInclude Include="types.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="fifo.c" />
+    <ClCompile Include="fcpool.c" />
+    <ClCompile Include="inst.c" />
+    <ClCompile Include="obj.c" />
+    <ClCompile Include="pool.c" />
+    <ClCompile Include="req.c" />
+    <ClCompile Include="timer.c" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -28,8 +28,7 @@ namespace Httpd
 	// Completion keys
 	const ULONG_PTR FiberCreateKey = 0;
 	const ULONG_PTR OverlappedCompletionKey = 1;
-	const ULONG_PTR SleepCompletionKey = 2;
-	const ULONG_PTR InvokeApcCompletionKey = 3;
+	const ULONG_PTR GeneralCompletionKey = 2;
 
 	class Dispatcher: NonCopyable
 	{
@@ -43,7 +42,8 @@ namespace Httpd
 		void Queue(Callback *callback, void *param);
 		void BindHandle(HANDLE hFile, ULONG_PTR key);
 		UInt32 Block(HANDLE hObject, OverlappedCompletion &oc);
-		void *InvokeApc(InvokeCallback *callback, void *param);
+		void *InvokeApc(BinaryCallback *callback, void *param);
+		void CompleteApc(void *completion, void *result);
 		void Sleep(int due);
 		bool Sleep(int due, WakeToken &wt);
 
@@ -57,7 +57,7 @@ namespace Httpd
 		template<typename Lambda>
 		void *InvokeApc(Lambda l)
 		{
-			return this->InvokeApc(&LambdaInvokeCallback<Lambda>,
+			return this->InvokeApc(&LambdaBinaryInvokeCallback<Lambda>,
 				static_cast<void *>(&l)); 
 		}
 
@@ -81,9 +81,9 @@ namespace Httpd
 		}
 
 		template<typename Lambda>
-		static void *LambdaInvokeCallback(void *param)
+		static void LambdaBinaryInvokeCallback(void *param, void *completion)
 		{
-			return static_cast<Lambda *>(param)->operator()();
+			static_cast<Lambda *>(param)->operator()(completion);
 		}
 
 		bool SleepInternal(int due, WakeToken *wt);

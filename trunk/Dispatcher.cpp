@@ -76,7 +76,8 @@ namespace Httpd
 			try {
 				iterator = d.timerQueue.insert(make_pair(d.GetTickCount64Unsafe() + sc.due, &sc));
 			} catch (const exception &) {
-				d.Post(1, SleepCompletionKey, reinterpret_cast<LPOVERLAPPED>(&sc));
+				d.Post(1, GeneralCompletionKey, reinterpret_cast<LPOVERLAPPED>(
+					static_cast<Completion *>(&sc)));
 				iterator = d.timerQueue.end();
 			}
 
@@ -97,7 +98,7 @@ namespace Httpd
 	{
 		friend class Dispatcher;
 	public:
-		InvokeApcCompletion(InvokeCallback *callback, void *param)
+		InvokeApcCompletion(BinaryCallback *callback, void *param)
 			: Completion(GetCurrentFiber()), callback(callback), param(param)
 		{}
 
@@ -111,17 +112,22 @@ namespace Httpd
 			return true;
 		}
 
+		void Complete(void *result)
+		{
+			this->result = result;
+			Dispatcher::Instance().Post(0, GeneralCompletionKey,
+				reinterpret_cast<LPOVERLAPPED>(static_cast<Completion *>(this)));
+		}
+
 	private:
 		static VOID CALLBACK InvokeApcApc(ULONG_PTR dwParam)
 		{
 			InvokeApcCompletion &iac = *reinterpret_cast<InvokeApcCompletion *>(dwParam);
-			iac.result = (*iac.callback)(iac.param);
-			Dispatcher::Instance().Post(0, InvokeApcCompletionKey,
-				reinterpret_cast<LPOVERLAPPED>(&iac));
+			(*iac.callback)(iac.param, reinterpret_cast<void *>(&iac));
 		}
 
 	private:
-		InvokeCallback *callback;
+		BinaryCallback *callback;
 		union {
 			void *param;
 			void *result;
@@ -136,16 +142,18 @@ namespace Httpd
 	bool WakeToken::Wake()
 	{
 		Dispatcher &d = Dispatcher::Instance();
-		void *result = d.InvokeApc([this, &d]()->void *{
+		void *result = d.InvokeApc([this, &d](void *completion)->void
+		{
 			if (this->iterator == d.timerQueue.end()) {
-				return reinterpret_cast<void *>(1);
+				d.CompleteApc(completion, reinterpret_cast<void *>(1));
 			} else {
 				SleepCompletion &sc = *(this->iterator->second);
 				d.timerQueue.erase(this->iterator);
 				this->iterator = d.timerQueue.end();
 				sc.awaken = true;
-				d.Post(0, SleepCompletionKey, reinterpret_cast<LPOVERLAPPED>(&sc));
-				return nullptr;
+				d.Post(0, GeneralCompletionKey, reinterpret_cast<LPOVERLAPPED>(
+					static_cast<Completion *>(&sc)));
+				d.CompleteApc(completion, nullptr);
 			}
 		});
 
@@ -217,7 +225,7 @@ namespace Httpd
 					sc.wt->iterator = timerQueue.end();
 				}
 				sc.awaken = false;
-				this->Post(0, SleepCompletionKey, reinterpret_cast<LPOVERLAPPED>(&sc));
+				this->Post(0, GeneralCompletionKey, reinterpret_cast<LPOVERLAPPED>(&sc));
 			}
 
 			if (iter == timerQueue.end()) {
@@ -257,12 +265,10 @@ namespace Httpd
 				SwitchToFiber(lpOverlapped);
 			} else if (CompletionKey == OverlappedCompletionKey) {
 				static_cast<OverlappedCompletion *>(lpOverlapped)->SwitchBack();
-			} else if (CompletionKey == SleepCompletionKey) {
+			} else if (CompletionKey == GeneralCompletionKey) {
 				if (NumberOfBytes != 0)
 					threadData.failed = true;
-				reinterpret_cast<SleepCompletion *>(lpOverlapped)->SwitchBack();
-			} else if (CompletionKey == InvokeApcCompletionKey) {
-				reinterpret_cast<InvokeApcCompletion *>(lpOverlapped)->SwitchBack();
+				reinterpret_cast<Completion *>(lpOverlapped)->SwitchBack();
 			}
 
 			while (!(*threadData.completion)()) {
@@ -367,7 +373,7 @@ namespace Httpd
 		return this->SleepInternal(due, &wt);
 	}
 
-	void *Dispatcher::InvokeApc(InvokeCallback *callback, void *param)
+	void *Dispatcher::InvokeApc(BinaryCallback *callback, void *param)
 	{
 		ThreadData *threadData = static_cast<ThreadData *>(TlsGetValue(this->dwTlsIndex));
 		InvokeApcCompletion iac(callback, param);
@@ -381,5 +387,11 @@ namespace Httpd
 		}
 
 		return iac.result;
+	}
+
+	void Dispatcher::CompleteApc(void *completion, void *result)
+	{
+		InvokeApcCompletion &iac = *reinterpret_cast<InvokeApcCompletion *>(completion);
+		iac.Complete(result);
 	}
 }

@@ -15,69 +15,60 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="fastcgi.h">
+    <ClInclude Include="fifo.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="fc.h">
+    <ClInclude Include="list.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="fcp.h">
+    <ClInclude Include="types.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="ob.h">
+    <ClInclude Include="obj.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="obp.h">
+    <ClInclude Include="pool.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="rtl.h">
+    <ClInclude Include="fcpool.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="win32.h">
+    <ClInclude Include="inst.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="timer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="req.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="internal.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="fcspec.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="fcdisp.c">
+    <ClCompile Include="fifo.c">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="fcinit.c">
+    <ClCompile Include="obj.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="pool.c">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="fcpool.c">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="fcproc.c">
+    <ClCompile Include="inst.c">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="fcreq.c">
+    <ClCompile Include="timer.c">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="obdir.c">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="obinit.c">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="obobject.c">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="obtype.c">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="rtlfifo.c">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="rtlheap.c">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="rtlmap.c">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="rtlpipe.c">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="rtlstr.c">
+    <ClCompile Include="req.c">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

@@ -6,7 +6,7 @@ typedef struct pool pool_t;
 typedef struct inst_handle {
 	// reference to inst object, user should always reference by handle
 	struct inst *i;
-	// TODO: abort flag (for cases that instance behave abnormally)
+	int reuse;
 } inst_handle_t;
 
 typedef void begin_req_callback_t(void *u, struct req *req);

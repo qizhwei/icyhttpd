@@ -129,6 +129,7 @@ static void write_stdout_cb(void *u, ssize_t s)
 
 static void write_eof_cb(void *u, ssize_t s)
 {
+	req_abort((req_t *)u);
 }
 
 // d has transfer semantic even if fail
@@ -158,21 +159,16 @@ static int on_packet(in_packet_t *d, size_t len)
 		req = i->req;
 		assert(req->state == REQ_ACTIVE);
 		assert(req->hi->i == i);
+		req->hi->reuse = 1;
+		free(d);
+		obj_release(i);
 
 		// gracefully close stdout stream
-		if (fifo_write(&req->f_stdout, NULL, 0, &write_eof_cb, NULL)) {
-			fifo_abort(&req->f_stdout);
+		if (fifo_write(&req->f_stdout, NULL, 0, &write_eof_cb, req)) {
+			// unlink inst and req
+			req_abort(req);
+			return -1;
 		}
-		free(d);
-
-		// abort other streams
-		fifo_abort(&req->f_params);
-		fifo_abort(&req->f_stdin);
-
-		// unlink inst and req
-		req->state = REQ_END;
-		obj_release(i);
-		obj_release(req->hi);
 		return 0;
 	default:
 		// undefined packet type

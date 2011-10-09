@@ -43,7 +43,7 @@ static void inst_handle_uninit(inst_handle_t *hi)
 		obj_release(hi->i->req);
 		assert(hi->i->remain > 0);
 		hi->i->state = INST_IDLE;
-		if (--hi->i->remain <= 0) {
+		if (!hi->reuse || --hi->i->remain <= 0) {
 			inst_abort(hi->i);
 		}
 	}
@@ -151,6 +151,7 @@ inst_handle_t *pool_acquire_inst(pool_t *pool)
 		list_remove(&hi->i->pool_entry);
 		hi->i->state = INST_IDLE;
 	}
+	hi->reuse = 0;
 	return hi;
 }
 
@@ -250,8 +251,7 @@ static int transfer_req(req_t *r, unsigned char type)
 static void marry_cb(void *u, ssize_t size)
 {
 	req_t *req = (req_t *)u;
-	assert(req->state == REQ_BEGIN);
-	if (size == sizeof(FCGI_BeginRequestRecord)) {
+	if (req->state == REQ_BEGIN && size == sizeof(FCGI_BeginRequestRecord)) {
 		req->state = REQ_ACTIVE;
 		(*req->begin_cb)(req->begin_u, 0);
 		if (transfer_req(req, FCGI_PARAMS)) {
@@ -262,8 +262,7 @@ static void marry_cb(void *u, ssize_t size)
 		}
 	} else {
 		// failed to send begin record
-		obj_release(req->hi);
-		req->state = REQ_END;
+		req_abort(req);
 		(*req->begin_cb)(req->begin_u, -1);
 	}
 	obj_release(req);
@@ -319,8 +318,7 @@ void pool_marry(pool_t *pool)
 		}
 		if (inst_write(hi->i, (const char *)rec, sizeof(*rec), &marry_cb, req)) {
 			// failed to send begin record
-			obj_release(req->hi);
-			req->state = REQ_END;
+			req_abort(req);
 			(*req->begin_cb)(req->begin_u, -1);
 			obj_release(req);
 			continue;

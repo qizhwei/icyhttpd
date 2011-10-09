@@ -7,7 +7,6 @@ typedef struct hdr {
 	int ref_count;
 } hdr_t;
 
-#define REF_MAX (32)
 #define HDR_TO_BODY(h) ((void *)((char *)(h) + sizeof(hdr_t)))
 #define BODY_TO_HDR(b) ((void *)((char *)(b) - sizeof(hdr_t)))
 
@@ -29,7 +28,7 @@ void obj_free(void *o)
 void *obj_add_ref(void *o)
 {
 	hdr_t *h = (hdr_t *)BODY_TO_HDR(o);
-	assert(h->ref_count > 0 && h->ref_count < REF_MAX);
+	assert(h->ref_count > 0);
 	++h->ref_count;
 	return o;
 }
@@ -37,7 +36,7 @@ void *obj_add_ref(void *o)
 void obj_release(void *o)
 {
 	hdr_t *h = (hdr_t *)BODY_TO_HDR(o);
-	assert(h->ref_count > 0 && h->ref_count < REF_MAX);
+	assert(h->ref_count > 0);
 	if (--h->ref_count == 0) {
 		(*h->type->uninit)(o);
 		obj_free(o);

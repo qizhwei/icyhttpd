@@ -272,15 +272,10 @@ void pool_marry(pool_t *pool)
 {
 	req_t *req;
 	inst_handle_t *hi;
-	static const FCGI_BeginRequestRecord rec_close = {
-		{ FCGI_VERSION_1, FCGI_BEGIN_REQUEST, 0, 0, 0, 8, },
-		{ 0, FCGI_RESPONDER, 0, },
-	};
-	static const FCGI_BeginRequestRecord rec_keep_conn = {
+	static const FCGI_BeginRequestRecord rec = {
 		{ FCGI_VERSION_1, FCGI_BEGIN_REQUEST, 0, 0, 0, 8, },
 		{ 0, FCGI_RESPONDER, FCGI_KEEP_CONN, },
 	};
-	const FCGI_BeginRequestRecord *rec;
 
 	while (pool->req_cnt != 0 &&
 		(!list_is_empty(&pool->inst_list)
@@ -310,13 +305,7 @@ void pool_marry(pool_t *pool)
 		hi->i->state = INST_RUNNING;
 		hi->i->req = (req_t *)obj_add_ref(req);
 		// send begin record
-		assert(hi->i->remain > 0);
-		if (hi->i->remain <= 1) {
-			rec = &rec_close;
-		} else {
-			rec = &rec_keep_conn;
-		}
-		if (inst_write(hi->i, (const char *)rec, sizeof(*rec), &marry_cb, req)) {
+		if (inst_write(hi->i, (const char *)&rec, sizeof(rec), &marry_cb, req)) {
 			// failed to send begin record
 			req_abort(req);
 			(*req->begin_cb)(req->begin_u, -1);

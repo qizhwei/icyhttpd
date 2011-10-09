@@ -69,7 +69,7 @@ extern void *fc_duplicate(void *object);
 // queue_length - maximum length of the queue containing pending requests
 // max_instances - maximum simutaneously running instances
 // idle_time - time (in milliseconds) to pooling an instance before killing it
-// max_requests - maximum requests an instance can handle, typically 500 for php-cgi
+// max_requests - maximum requests an instance can handle, typically 499 for php-cgi
 // returns a reference to the pool object on success, NULL on error
 extern fc_pool_t *fc_create_pool(const char *cmd_line, int queue_length,
 	int max_instances, int idle_time, int max_requests);

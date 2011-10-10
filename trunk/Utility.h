@@ -85,8 +85,6 @@ namespace Httpd
 		HANDLE hObject;
 	};
 
-	extern std::pair<Win32Handle, Win32Handle> CreatePipePairDuplex();
-	extern std::pair<Win32Handle, Win32Handle> CreatePipePair();
 	extern HANDLE OpenFile(const wchar_t *path);
 	extern UInt64 GetFileSize(HANDLE hFile);
 
@@ -175,52 +173,6 @@ namespace Httpd
 			this->OVERLAPPED::OffsetHigh = reinterpret_cast<LARGE_INTEGER *>(&offset)->HighPart;
 			this->OVERLAPPED::hEvent = NULL;
 		}
-	};
-
-	template<typename LockType>
-	class Lock
-	{
-	public:
-		Lock(LockType &lock)
-			: lock(lock)
-		{
-			lock.Lock();
-		}
-
-		~Lock()
-		{
-			lock.Unlock();
-		}
-
-	private:
-		LockType &lock;
-	};
-
-	class ThreadLock: NonCopyable
-	{
-	public:
-		ThreadLock()
-		{
-			InitializeCriticalSection(&cs);
-		}
-
-		~ThreadLock()
-		{
-			DeleteCriticalSection(&cs);
-		}
-
-		void Lock()
-		{
-			EnterCriticalSection(&cs);
-		}
-
-		void Unlock()
-		{
-			LeaveCriticalSection(&cs);
-		}
-
-	private:
-		CRITICAL_SECTION cs;
 	};
 }
 

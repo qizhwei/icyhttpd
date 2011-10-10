@@ -58,6 +58,7 @@ namespace Httpd
 		SOCKET s;
 		if ((s = socket(af, type, protocol)) == INVALID_SOCKET)
 			throw SystemException();
+		SetHandleInformation(reinterpret_cast<HANDLE>(s), HANDLE_FLAG_INHERIT, 0);
 		return s;
 	}
 

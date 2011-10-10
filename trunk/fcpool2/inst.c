@@ -42,11 +42,10 @@ static void inst_uninit(inst_t *i)
 	CloseHandle(i->w32_process);
 }
 
-int inst_startup(void)
+void inst_startup(void)
 {
 	inst_type.size = sizeof(inst_t);
 	inst_type.uninit = (uninit_method_t *)&inst_uninit;
-	return 0;
 }
 
 static int create_pipe(HANDLE pipe[2])

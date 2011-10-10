@@ -26,7 +26,7 @@ namespace Httpd
 		: u(NULL)
 	{}
 
-	FcObject::FcObject(FcObject &o)
+	FcObject::FcObject(const FcObject &o)
 		: u(o.u ? fc_duplicate(o.u) : NULL)
 	{}
 
@@ -84,7 +84,9 @@ namespace Httpd
 		int error = reinterpret_cast<int>(
 			d.InvokeApc([=, &d](void *completion)->void
 		{
-			if (fc_begin_request(this->Pointer(), pool->Pointer(),
+			if (fc_begin_request(
+				reinterpret_cast<fc_request_t *>(this->Pointer()),
+				reinterpret_cast<fc_pool_t *>(pool->Pointer()),
 				&FcRequestBeginCallback, completion)) {
 				d.CompleteApc(completion, reinterpret_cast<void *>(-1));
 			}
@@ -99,7 +101,7 @@ namespace Httpd
 		Dispatcher &d = Dispatcher::Instance();
 		d.InvokeApc([=, &d](void *completion)->void
 		{
-			fc_abort_request(this->Pointer());
+			fc_abort_request(reinterpret_cast<fc_request_t *>(this->Pointer()));
 			d.CompleteApc(completion, NULL);
 		});
 	}
@@ -110,8 +112,9 @@ namespace Httpd
 		fc_ssize_t result = reinterpret_cast<fc_ssize_t>(
 			d.InvokeApc([=, &d](void *completion)->void
 		{
-			if (fc_read_request(this->Pointer(), buffer, size,
-				&FcRequestIoCompletion, completion)) {
+			if (fc_read_request(
+				reinterpret_cast<fc_request_t *>(this->Pointer()),
+				buffer, size, &FcRequestIoCompletion, completion)) {
 				d.CompleteApc(completion, reinterpret_cast<void *>(-1));
 			}
 		}));
@@ -127,8 +130,8 @@ namespace Httpd
 		fc_ssize_t result = reinterpret_cast<fc_ssize_t>(
 			d.InvokeApc([=, &d](void *completion)->void
 		{
-			if (fc_write_request(this->Pointer(), buffer, size,
-				&FcRequestIoCompletion, completion)) {
+			if (fc_write_request(reinterpret_cast<fc_request_t *>(this->Pointer()),
+				buffer, size, &FcRequestIoCompletion, completion)) {
 				d.CompleteApc(completion, reinterpret_cast<void *>(-1));
 			}
 		}));
@@ -144,8 +147,8 @@ namespace Httpd
 		fc_ssize_t result = reinterpret_cast<fc_ssize_t>(
 			d.InvokeApc([=, &d](void *completion)->void
 		{
-			if (fc_write_param_request(this->Pointer(), buffer, size,
-				&FcRequestIoCompletion, completion)) {
+			if (fc_write_param_request(reinterpret_cast<fc_request_t *>(this->Pointer()),
+				buffer, size, &FcRequestIoCompletion, completion)) {
 				d.CompleteApc(completion, reinterpret_cast<void *>(-1));
 			}
 		}));

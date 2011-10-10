@@ -5,7 +5,7 @@
 
 typedef struct timer timer_t;
 
-extern int timer_startup(void);
+extern void timer_startup(void);
 extern timer_t *timer_create(int interval, callback_t *cb, void *u);
 extern int timer_start(timer_t *t);
 extern int timer_stop(timer_t *t);

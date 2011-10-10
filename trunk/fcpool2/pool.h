@@ -11,7 +11,7 @@ typedef struct inst_handle {
 
 typedef void begin_req_callback_t(void *u, struct req *req);
 
-extern int pool_startup(void);
+extern void pool_startup(void);
 extern pool_t *pool_create(const char *cmd_line, int queue_length,
 	int max_instances, int idle_time, int max_requests);
 extern inst_handle_t *pool_acquire_inst(pool_t *pool);

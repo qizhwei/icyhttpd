@@ -8,7 +8,7 @@ typedef struct req req_t;
 
 typedef void req_begin_cb_t(void *u, int err);
 
-extern int req_startup(void);
+extern void req_startup(void);
 extern req_t *req_create(void);
 extern void req_abort(req_t *r);
 extern int req_begin(req_t *r, pool_t *pool, req_begin_cb_t *cb, void *u);

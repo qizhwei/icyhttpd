@@ -18,11 +18,10 @@ static void req_uninit(req_t *req)
 	assert(fifo_is_empty(&req->f_stdout));
 }
 
-int req_startup(void)
+void req_startup(void)
 {
 	req_type.size = sizeof(req_t);
 	req_type.uninit = (uninit_method_t *)&req_uninit;
-	return 0;
 }
 
 req_t *req_create(void)

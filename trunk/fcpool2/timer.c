@@ -19,12 +19,10 @@ static void timer_uninit(timer_t *t)
 	CloseHandle(t->w32_timer);
 }
 
-int timer_startup(void)
+void timer_startup(void)
 {
 	timer_type.size = sizeof(timer_t);
 	timer_type.uninit = (uninit_method_t *)&timer_uninit;
-
-	return 0;
 }
 
 timer_t *timer_create(int interval, callback_t *cb, void *u)

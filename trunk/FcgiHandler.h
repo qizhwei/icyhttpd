@@ -13,7 +13,7 @@ namespace Httpd
 	{
 	public:
 		FcObject();
-		FcObject(FcObject &o);
+		FcObject(const FcObject &o);
 		FcObject(void *u);
 		FcObject &operator =(FcObject &o);
 		~FcObject();

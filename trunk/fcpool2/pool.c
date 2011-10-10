@@ -63,13 +63,12 @@ static void inst_handle_uninit(inst_handle_t *hi)
 	obj_release(hi->i);
 }
 
-int pool_startup(void)
+void pool_startup(void)
 {
 	pool_type.size = sizeof(pool_t);
 	pool_type.uninit = (uninit_method_t *)&pool_uninit;
 	inst_handle_type.size = sizeof(inst_handle_t);
 	inst_handle_type.uninit = (uninit_method_t *)&inst_handle_uninit;
-	return 0;
 }
 
 static HANDLE create_job(void)

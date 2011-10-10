@@ -44,15 +44,14 @@ extern "C" {
 
 // type definitions
 typedef int fc_ssize_t;
-typedef void fc_pool_t;
-typedef void fc_request_t;
+typedef struct fc_pool fc_pool_t;
+typedef struct fc_request fc_request_t;
 typedef void fc_begin_request_callback_t(void *u, int err);
 typedef void fc_completion_t(void *u, fc_ssize_t size);
 
 // fc_startup() startup the entire system
 // this function should be called before using any of the below functions
-// returns 0 on success, -1 on error
-extern int fc_startup(void);
+extern void fc_startup(void);
 
 // fc_close() closes an object
 // object - pointer to the object

@@ -8,14 +8,14 @@
 
 static obj_type_t req_type;
 
-static void req_uninit(req_t *req)
+static void req_uninit(req_t *r)
 {
-	assert(req->state != REQ_PENDING);
-	assert(req->state != REQ_BEGIN);
-	assert(req->state != REQ_ACTIVE);
-	assert(fifo_is_empty(&req->f_params));
-	assert(fifo_is_empty(&req->f_stdin));
-	assert(fifo_is_empty(&req->f_stdout));
+	assert(r->state != REQ_PENDING);
+	assert(r->state != REQ_BEGIN);
+	assert(r->state != REQ_ACTIVE);
+	assert(fifo_is_empty(&r->f_params));
+	assert(fifo_is_empty(&r->f_stdin));
+	assert(fifo_is_empty(&r->f_stdout));
 }
 
 void req_startup(void)

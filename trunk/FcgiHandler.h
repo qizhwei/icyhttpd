@@ -38,7 +38,10 @@ namespace Httpd
 		void Abort();
 		UInt32 Read(char *buffer, UInt32 size);
 		UInt32 Write(const char *buffer, UInt32 size);
-		UInt32 WriteParam(const char *buffer, UInt32 size);
+		void WriteParam(const char *name, const char *value);
+		void WriteParam();
+	private:
+		UInt32 WriteParamInternal(const char *buffer, UInt32 size);
 	};
 
 	class FcgiHandler: public Handler

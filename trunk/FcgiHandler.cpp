@@ -2,8 +2,11 @@
 #include "Utility.h"
 #include "Exception.h"
 #include "fcpool.h"
+#include <vector>
+#include <cstring>
 
 using namespace Httpd;
+using namespace std;
 
 namespace
 {
@@ -146,7 +149,7 @@ namespace Httpd
 		return static_cast<UInt32>(result);
 	}
 
-	UInt32 FcRequest::WriteParam(const char *buffer, UInt32 size)
+	UInt32 FcRequest::WriteParamInternal(const char *buffer, UInt32 size)
 	{
 		Dispatcher &d = Dispatcher::Instance();
 		fc_ssize_t result = reinterpret_cast<fc_ssize_t>(
@@ -161,5 +164,38 @@ namespace Httpd
 			throw SystemException();
 		}
 		return static_cast<UInt32>(result);
+	}
+
+	void FcRequest::WriteParam(const char *name, const char *value)
+	{
+		vector<char> buffer;
+		size_t nameLen = strlen(name);
+		size_t valueLen = strlen(value);
+		buffer.reserve((nameLen < 0x80 ? 1 : 4)
+			+ (valueLen < 0x80 ? 1 : 4) + nameLen + valueLen);
+		if (nameLen < 0x80) {
+			buffer.push_back(static_cast<char>(nameLen));
+		} else {
+			buffer.push_back(static_cast<char>(0x80 | (nameLen >> 24)));
+            buffer.push_back(static_cast<char>(nameLen >> 16));
+            buffer.push_back(static_cast<char>(nameLen >> 8));
+            buffer.push_back(static_cast<char>(nameLen));
+		}
+		if (valueLen < 0x80) {
+			buffer.push_back(static_cast<char>(valueLen));
+		} else {
+			buffer.push_back(static_cast<char>(0x80 | (valueLen >> 24)));
+            buffer.push_back(static_cast<char>(valueLen >> 16));
+            buffer.push_back(static_cast<char>(valueLen >> 8));
+            buffer.push_back(static_cast<char>(valueLen));
+		}
+		buffer.insert(buffer.end(), name, name + nameLen);
+		buffer.insert(buffer.end(), value, value + valueLen);
+		this->WriteParamInternal(&*buffer.begin(), buffer.size());
+	}
+
+	void FcRequest::WriteParam()
+	{
+		this->WriteParamInternal(nullptr, 0);
 	}
 }

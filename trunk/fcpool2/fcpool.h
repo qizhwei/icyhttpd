@@ -5,10 +5,16 @@
 //
 // types and functions exported here starts with prefix 'fc_'
 //
-// all functions MUST be called in the same Windows thread
-// the thread MUST be in alertable wait state while waiting
-// except fc_startup() and fc_duplicate()
+// the following functions MUST be called in the same Windows
+// thread:
+//   * fc_close()
+//   * fc_abort_request()
+//   * fc_begin_request()
+//   * fc_read_request()
+//   * fc_write_request()
+//   * fc_write_param_request()
 //
+// the thread MUST be in alertable wait state while waiting.
 // for example, a thread with a following main loop staisfies
 // the above requirements:
 //
@@ -26,11 +32,11 @@
 // these callbacks are invoked to indicate operation completion
 // if and only if the return value of the operation function
 // indicates success:
-// * if the operation function succeeded, the callback
-//   function is called even on failure or cancellation
-//   of the operation
-// * if the operation function failed, the callback function
-//   is never called
+//   * if the operation function succeeded, the callback
+//     function is called even on failure or cancellation
+//     of the operation
+//   * if the operation function failed, the callback function
+//     is never called
 //
 // two parameters are introduced in the operation function:
 //     cb - pointer to the callback function

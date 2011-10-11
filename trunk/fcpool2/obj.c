@@ -1,10 +1,11 @@
 #include <stdlib.h>
 #include <assert.h>
+#include <windows.h>
 #include "obj.h"
 
 typedef struct hdr {
 	obj_type_t *type;
-	int ref_count;
+	volatile LONG ref_count;
 } hdr_t;
 
 #define HDR_TO_BODY(h) ((void *)((char *)(h) + sizeof(hdr_t)))
@@ -29,7 +30,7 @@ void *obj_add_ref(void *o)
 {
 	hdr_t *h = (hdr_t *)BODY_TO_HDR(o);
 	assert(h->ref_count > 0);
-	++h->ref_count;
+	InterlockedIncrement(&h->ref_count);
 	return o;
 }
 
@@ -37,7 +38,7 @@ void obj_release(void *o)
 {
 	hdr_t *h = (hdr_t *)BODY_TO_HDR(o);
 	assert(h->ref_count > 0);
-	if (--h->ref_count == 0) {
+	if (InterlockedDecrement(&h->ref_count) == 0) {
 		(*h->type->uninit)(o);
 		obj_free(o);
 	}

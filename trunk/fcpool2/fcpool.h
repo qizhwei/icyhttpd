@@ -7,6 +7,7 @@
 //
 // all functions MUST be called in the same Windows thread
 // the thread MUST be in alertable wait state while waiting
+// except fc_startup() and fc_duplicate()
 //
 // for example, a thread with a following main loop staisfies
 // the above requirements:

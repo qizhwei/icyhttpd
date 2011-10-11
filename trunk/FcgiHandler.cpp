@@ -48,7 +48,12 @@ namespace Httpd
 	void FcObject::Pointer(void *u)
 	{
 		if (this->u) {
-			fc_close(this->u);
+			Dispatcher &d = Dispatcher::Instance();
+			d.InvokeApc([=, &d](void *completion)->void
+			{
+				fc_close(this->u);
+				d.CompleteApc(completion, NULL);
+			});
 		}
 		this->u = u;
 	}

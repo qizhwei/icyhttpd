@@ -136,9 +136,15 @@ inst_handle_t *pool_acquire_inst(pool_t *pool)
 		return NULL;
 
 	if (list_is_empty(&pool->inst_list)) {
-		if (pool->max_instances > 0 && pool->run_cnt >= pool->max_instances)
+		if (pool->max_instances > 0 && pool->run_cnt >= pool->max_instances) {
+			obj_free(hi);
 			return NULL;
+		}
 		hi->i = inst_create(pool);
+		if (hi->i == NULL) {
+			obj_free(hi);
+			return NULL;
+		}
 		assert(hi->i->state == INST_IDLE);
 	} else {
 		hi->i = container_of(pool->inst_list.next, inst_t, pool_entry);

@@ -1,0 +1,78 @@
+#summary Tutorial on FastCGI pool for Python
+#labels Featured,Phase-Support
+
+= Installation =
+
+  * Windows only
+  * Precompiled binary is for Python 2.7
+  * Single file (fcpool.pyd), copy anywhere
+
+= Example =
+
+Assume that:
+  * Python locates at C:\Python27
+  * PHP locates at C:\php\php-cgi.exe
+  * PHP code stores in D:\www\test.php
+
+Copy fcpool.pyd into C:\Python27\DLLs
+
+PHP code:
+
+{{{
+<?
+print $_POST['hello']
+?>
+}}}
+
+Python code:
+
+{{{
+from fcpool import *
+p = Pool("c:\\php\\php-cgi.exe")
+r = Request(p, {
+	"SCRIPT_FILENAME": "d:\\www\\test.php",
+	"REQUEST_METHOD": "POST",
+	"CONTENT_LENGTH": "11",
+	"CONTENT_TYPE": "application/x-www-form-urlencoded"
+})
+r.write('hello=world')
+r.write(None)
+while True:
+	b = r.read(4096)
+	print(b)
+	if len(b) < 4096:
+		break
+}}}
+
+Result:
+
+{{{
+X-Powered-By: PHP/5.3.8
+Content-type: text/html
+
+world
+}}}
+
+= Semantics =
+
+Module *fcpool* contains two classes: *Pool* and *Request*
+
+*Pool*(cmd_line, queue_length = 0, max_instances = 0, idle_time = 30000, max_requests = 499)
+  * cmd_line: the command line to create new instance
+  * queue_length: maximum length of the queue containing pending requests (zero means no limit)
+  * max_instances: maximum simutaneously running instances (zero means no limit)
+  * idle_time: time (in milliseconds) to pooling an instance before killing it
+  * max_requests: maximum requests an instance can handle, typically 499 for php-cgi
+
+*Request*(pool, params)
+  * pool: the pool object
+  * params: a dict object which will be transferred into FastCGI param stream
+
+Notice that creating a request object actually begins it, therefore may pend the thread
+
+*Request* has two methods: read and write
+
+buffer = *Request*.read(_buffer size_)
+size = *Request*.write(_buffer_)
+
+buffer is actually a string. If len(buffer) < _buffer size_, end-of-file is reached. For example if the total response is 500 bytes, use 250 as _buffer size_ will receive buffers size 250, 250, 0; use 256 as _buffer size_ will receive 256, 244. write(None) indicates end-of-file, and the return value is 0; write(_empty string_) does nothing.

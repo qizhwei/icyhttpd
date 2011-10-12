@@ -45,7 +45,7 @@ int req_begin(req_t *r, pool_t *pool, req_begin_cb_t *cb, void *u)
 	if (r->state != REQ_IDLE)
 		return -1;
 
-	if (pool->req_cnt >= pool->queue_length)
+	if (pool->queue_length > 0 && pool->req_cnt >= pool->queue_length)
 		return -1;
 
 	// switch to pending state

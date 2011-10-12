@@ -63,7 +63,7 @@ Module *fcpool* contains two classes: *Pool* and *Request*
   * queue_length: maximum length of the queue containing pending requests (zero means no limit)
   * max_instances: maximum simutaneously running instances (zero means no limit)
   * idle_time: time (in milliseconds) to pool an instance before killing it
-  * max_requests: maximum requests an instance can handle, typically 499 for php-cgi
+  * max_requests: maximum requests an instance can handle, typically 499 for php-cgi ([http://mailman.nginx.org/pipermail/nginx/2008-March/004064.html why?])
 
 *Request*(pool, params)
   * pool: the pool object

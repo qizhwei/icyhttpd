@@ -5,7 +5,7 @@
 
   * Windows only
   * Precompiled binary is for Python 2.7
-  * Single file (fcpool.pyd), copy anywhere
+  * Single file ([http://icyhttpd.googlecode.com/files/fcpool.pyd fcpool.pyd]), copy anywhere
 
 = Example =
 
@@ -76,3 +76,5 @@ buffer = *Request*.read(_buffer size_)
 size = *Request*.write(_buffer_)
 
 buffer is actually a string. If len(buffer) < _buffer size_, end-of-file is reached. For example if the total response is 500 bytes, use 250 as _buffer size_ will receive buffers size 250, 250, 0; use 256 as _buffer size_ will receive 256, 244. write(None) indicates end-of-file, and the return value is 0; write(_empty string_) does nothing.
+
+Multithread is supported theorically and untested: the implementation of the fcpool module is fully asynchronous and no thread is involved, the python module wraps it in a synchronous way.

@@ -6,6 +6,7 @@
   * Windows only
   * Precompiled binary is for Python 2.7
   * Single file ([http://icyhttpd.googlecode.com/files/fcpool.pyd fcpool.pyd]), copy anywhere
+  * Currently the repository is [http://iceboy.0ginr.com/svn/fcpool here]
 
 = Example =
 
@@ -61,7 +62,7 @@ Module *fcpool* contains two classes: *Pool* and *Request*
   * cmd_line: the command line to create new instance
   * queue_length: maximum length of the queue containing pending requests (zero means no limit)
   * max_instances: maximum simutaneously running instances (zero means no limit)
-  * idle_time: time (in milliseconds) to pooling an instance before killing it
+  * idle_time: time (in milliseconds) to pool an instance before killing it
   * max_requests: maximum requests an instance can handle, typically 499 for php-cgi
 
 *Request*(pool, params)

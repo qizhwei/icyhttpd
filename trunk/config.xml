@@ -4,6 +4,11 @@
 		<port>1225</port>
 		<defaultNode ref="my_node" />
 	</endpoint>
+	<endpoint>
+		<ip>0.0.0.0</ip>
+		<port>1225</port>
+		<defaultNode ref="my_node" />
+	</endpoint>
 	<node id="my_node">
 		<path>d:\www</path>
 	</node>

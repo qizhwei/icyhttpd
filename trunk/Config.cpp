@@ -7,6 +7,8 @@
 #include <cstdio>
 #include <unordered_set>
 #include <unordered_map>
+#include <string>
+#include <sstream>
 
 using namespace Httpd;
 using namespace rapidxml;
@@ -15,41 +17,12 @@ using namespace std;
 namespace
 {
 	// types
-	class RootType
-	{
-	public:
-		static const char *Name() { return "root"; }
-	};
-
-	class StringType
-	{
-	public:
-		static const char *Name() { return "string"; }
-	};
-
-	class IntegerType
-	{
-	public:
-		static const char *Name() { return "int"; }
-	};
-
-	class EndpointType
-	{
-	public:
-		static const char *Name() { return "endpoint"; }
-	};
-
-	class NodeType
-	{
-	public:
-		static const char *Name() { return "node"; }
-	};
-
-	class HandlerType
-	{
-	public:
-		static const char *Name() { return "handler"; }
-	};
+	class RootType {};
+	class StringType {};
+	class IntegerType {};
+	class EndpointType {};
+	class NodeType {};
+	class HandlerType {};
 
 	// base and impl
 	template<typename T>
@@ -58,7 +31,21 @@ namespace
 	template<typename T>
 	class ConfigContext;
 
-	class ConfigContextBase;
+	class ConfigObjectBase;
+
+	class ConfigContextBase: NonCopyable
+	{
+	public:
+		virtual ConfigObjectBase *CreateObject(xml_node<> *xn) = 0;
+
+		virtual ConfigContextBase *Map(const char *name)
+		{
+			auto iter = types.find(name);
+			return iter != types.end() ? iter->second : nullptr;
+		}
+	protected:
+		unordered_map<CiString, ConfigContextBase *> types;
+	};
 
 	class ConfigObjectBase: NonCopyable
 	{
@@ -73,8 +60,16 @@ namespace
 			return context;
 		}
 
+		virtual void Fill(const char *value)
+		{
+			fprintf(stderr, "warning: ignoring content \'%s\'\n", value);
+		}
+
 	private:
 		ConfigContextBase *context;
+
+	protected:
+		unordered_map<CiString, ConfigObjectBase *> objects;
 	};
 
 	template<typename T>
@@ -85,22 +80,37 @@ namespace
 			: ConfigObjectBase(ConfigContext<T>::Instance())
 		{
 		}
-	};
 
-	class ConfigContextBase: NonCopyable
-	{
 	public:
-		virtual ConfigObjectBase *CreateObject(xml_node<> *xn) = 0;
-
-		virtual ConfigContextBase *Map(const char *name)
+		void Parse(xml_node<> *xn)
 		{
-			auto iter = types.find(name);
-			return iter != types.end() ? iter->second : nullptr;
+			for (node_iterator<char> i = xn; i != node_iterator<char>(); ++i) {
+				switch (i->type()) {
+				case node_element:
+					{
+						const char *name = i->name();
+						ConfigContextBase *ctx = ConfigContext<T>::Instance()->Map(name);
+						if (ctx) {
+							ConfigObjectBase *object = ctx->CreateObject(&*i);
+							if (ConfigContext<T>::IsNamespace()) {
+								if (objects.find(name) != objects.end()) {
+									fprintf(stderr, "warning: name \'%s\' already exists in context \'%s\'\n",
+										name, ConfigContext<T>::Name());
+								} else {
+									objects.insert(make_pair(name, object));
+								}
+							}
+						} else {
+							fprintf(stderr, "warning: unknown name \'%s\' in context \'%s\'\n",
+								name, ConfigContext<T>::Name());
+						}
+					}
+					break;
+				default:
+					fprintf(stderr, "warning: ignoring node \'%s\'\n", i->name());
+				}
+			}
 		}
-
-		virtual const char *Type() = 0;
-	protected:
-		unordered_map<CiString, ConfigContextBase *> types;
 	};
 
 	class ConfigNameReference: public ConfigObjectBase
@@ -115,6 +125,34 @@ namespace
 		const char *ref;
 	};
 
+	class ConfigNamespace: NonCopyable
+	{
+	public:
+		static ConfigNamespace &Instance()
+		{
+			static ConfigNamespace cn;
+			return cn;
+		}
+
+		void Add(const char *id, ConfigObjectBase *object)
+		{
+			if (map.find(id) != map.end()) {
+				fprintf(stderr, "warning: id \'%s\' already exists\n", id);
+			} else {
+				map.insert(make_pair(id, object));
+			}
+		}
+
+		ConfigObjectBase *Find(const char *ref)
+		{
+			auto iter = map.find(ref);
+			return iter != map.end() ? iter->second : nullptr;
+		}
+
+	private:
+		unordered_map<CiString, ConfigObjectBase *> map;
+	};
+
 	template<typename T>
 	class ConfigContextImpl: public ConfigContextBase
 	{
@@ -122,22 +160,28 @@ namespace
 		virtual ConfigObjectBase *CreateObject(xml_node<> *xn)
 		{
 			xml_attribute<> *ref = xn->first_attribute("ref");
+			xml_attribute<> *id = xn->first_attribute("id");
+			ConfigObjectBase *result;
+
 			if (ref) {
-				return new ConfigNameReference(ref->value(), this);
+				result = new ConfigNameReference(ref->value(), this);
 			} else {
-				return new ConfigObject<T>(xn);
+				ConfigObject<T> *object = new ConfigObject<T>;
+				object->Parse(xn);
+				result = object;
 			}
+
+			if (id) {
+				ConfigNamespace::Instance().Add(id->value(), result);
+			}
+
+			return result;
 		}
 
 		static ConfigContext<T> *Instance()
 		{
 			static ConfigContext<T> *inst(new ConfigContext<T>);
 			return inst;
-		}
-
-		virtual const char *Type()
-		{
-			return T::Name();
 		}
 	};
 
@@ -147,31 +191,49 @@ namespace
 	{
 	public:
 		ConfigContext();
+		static const char *Name() { return "root"; }
+		static bool IsNamespace() { return false; }
 	};
 
 	template<>
 	class ConfigContext<StringType>: public ConfigContextImpl<StringType>
 	{
+	public:
+		static const char *Name() { return "string"; }
+		static bool IsNamespace() { return false; }
 	};
 	
 	template<>
 	class ConfigContext<IntegerType>: public ConfigContextImpl<IntegerType>
 	{
+	public:
+		static const char *Name() { return "int"; }
+		static bool IsNamespace() { return false; }
 	};
 
 	template<>
 	class ConfigContext<EndpointType>: public ConfigContextImpl<EndpointType>
 	{
+	public:
+		ConfigContext();
+		static const char *Name() { return "endpoint"; }
+		static bool IsNamespace() { return true; }
 	};
 
 	template<>
 	class ConfigContext<NodeType>: public ConfigContextImpl<NodeType>
 	{
+	public:
+		static const char *Name() { return "node"; }
+		static bool IsNamespace() { return true; }
 	};
 
 	template<>
 	class ConfigContext<HandlerType>: public ConfigContextImpl<HandlerType>
 	{
+	public:
+		static const char *Name() { return "handler"; }
+		static bool IsNamespace() { return true; }
 	};
 
 	ConfigContext<RootType>::ConfigContext()
@@ -183,62 +245,64 @@ namespace
 		types.insert(make_pair("handler", ConfigContext<HandlerType>::Instance()));
 	}
 
+	ConfigContext<EndpointType>::ConfigContext()
+	{
+		types.insert(make_pair("ip", ConfigContext<StringType>::Instance()));
+		types.insert(make_pair("port", ConfigContext<IntegerType>::Instance()));
+		types.insert(make_pair("defaultNode", ConfigContext<NodeType>::Instance()));
+	}
+
 	template<>
 	class ConfigObject<RootType>: public ConfigObjectImpl<RootType>
 	{
-	public:
-		ConfigObject(xml_node<> *xn)
-		{
-			// TODO
-			for (node_iterator<char> i = xn; i != node_iterator<char>(); ++i) {
-				printf("%s is type of %s\n", i->name(), Context()->Map(i->name())->Type());
-			}
-		}
 	};
 
 	template<>
 	class ConfigObject<StringType>: public ConfigObjectImpl<StringType>
 	{
 	public:
-		ConfigObject(xml_node<> *xn)
+		void Parse(xml_node<> *xn)
 		{
+			s = xn->value();
+			ConfigObjectImpl::Parse(xn);
 		}
+
+	private:
+		const char *s;
 	};
 
 	template<>
 	class ConfigObject<IntegerType>: public ConfigObjectImpl<IntegerType>
 	{
 	public:
-		ConfigObject(xml_node<> *xn)
+		void Parse(xml_node<> *xn)
 		{
+			const char *value = xn->value();
+			istringstream iss(value);
+			iss >> i;
+			if (!iss.eof()) {
+				fprintf(stderr, "warning: cannot parse integer from content \'%s\'\n", value);
+				i = 0;
+			}
+			ConfigObjectImpl::Parse(xn);
 		}
+	private:
+		int i;
 	};
 
 	template<>
 	class ConfigObject<EndpointType>: public ConfigObjectImpl<EndpointType>
 	{
-	public:
-		ConfigObject(xml_node<> *xn)
-		{
-		}
 	};
 
 	template<>
 	class ConfigObject<NodeType>: public ConfigObjectImpl<NodeType>
 	{
-	public:
-		ConfigObject(xml_node<> *xn)
-		{
-		}
 	};
 
 	template<>
 	class ConfigObject<HandlerType>: public ConfigObjectImpl<HandlerType>
 	{
-	public:
-		ConfigObject(xml_node<> *xn)
-		{
-		}
 	};
 }
 
@@ -248,7 +312,7 @@ namespace Httpd
 		: file(filename)
 	{
 		// syntaticly parsing config file
-		parse<0>(data());
+		parse<parse_no_data_nodes | parse_trim_whitespace>(data());
 
 		xml_node<> *root = this->first_node("icyhttpd");
 		if (root == nullptr) {

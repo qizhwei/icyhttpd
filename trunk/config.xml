@@ -1,15 +1,9 @@
 <icyhttpd>
-	<endpoint>
-		<ip>0.0.0.0</ip>
-		<port>1225</port>
-		<defaultNode ref="my_node" />
-	</endpoint>
-	<endpoint>
-		<ip>0.0.0.0</ip>
-		<port>1225</port>
-		<defaultNode ref="my_node" />
-	</endpoint>
-	<node id="my_node">
-		<path>d:\www</path>
-	</node>
+	<site>
+		<host name="iceboy.org" />
+		<listen ip="0.0.0.0" port="1225" />
+		<mount url="/" path="d:\www" />
+		<handler extension="php" ref="php" />
+	</site>
+	<fastcgi id="php" path="d:\tools\php-5.3.8-nts-Win32-VC9-x86\php-cgi.exe" />
 </icyhttpd>

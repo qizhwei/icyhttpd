@@ -39,12 +39,12 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>.\fcpool2;.\rapidxml;$(IncludePath)</IncludePath>
+    <IncludePath>.\fcpool2;.\config;$(IncludePath)</IncludePath>
     <LibraryPath>$(OutputPath);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>.\fcpool2;.\rapidxml;$(IncludePath)</IncludePath>
+    <IncludePath>.\fcpool2;.\config;$(IncludePath)</IncludePath>
     <LibraryPath>$(OutputPath);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -81,12 +81,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Config.cpp" />
     <ClCompile Include="Connection.cpp" />
     <ClCompile Include="Dispatcher.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="FcgiHandler.cpp" />
     <ClCompile Include="FileHandler.cpp" />
+    <ClCompile Include="Loader.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Endpoint.cpp" />
     <ClCompile Include="Node.cpp" />
@@ -97,13 +97,13 @@
     <ClCompile Include="Utility.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Config.h" />
     <ClInclude Include="FcgiHandler.h" />
     <ClInclude Include="FileHandler.h" />
-    <ClInclude Include="rapidxml\rapidxml.hpp" />
-    <ClInclude Include="rapidxml\rapidxml_iterators.hpp" />
-    <ClInclude Include="rapidxml\rapidxml_print.hpp" />
-    <ClInclude Include="rapidxml\rapidxml_utils.hpp" />
+    <ClInclude Include="Loader.h" />
+    <ClInclude Include="rapidxml.hpp" />
+    <ClInclude Include="rapidxml_iterators.hpp" />
+    <ClInclude Include="rapidxml_print.hpp" />
+    <ClInclude Include="rapidxml_utils.hpp" />
     <ClInclude Include="Stream.h" />
     <ClInclude Include="Utility.h" />
     <ClInclude Include="Connection.h" />
@@ -118,9 +118,6 @@
     <ClInclude Include="SocketProvider.h" />
     <ClInclude Include="Types.h" />
     <ClInclude Include="Win32.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="config.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -198,4 +198,15 @@ namespace Httpd
 	{
 		this->WriteParamInternal(nullptr, 0);
 	}
+
+	FcgiHandler::FcgiHandler(const char *cmdLine, int queueLength, int maxInstances,
+		int idleTime, int maxRequests)
+		: pool(cmdLine, queueLength, maxInstances, idleTime, maxRequests)
+	{
+	}
+
+	void FcgiHandler::Handle(Node &node, HttpRequest &request, HttpResponse &response)
+	{
+		// TODO
+	}
 }

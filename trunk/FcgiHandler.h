@@ -47,7 +47,13 @@ namespace Httpd
 	class FcgiHandler: public Handler
 	{
 	public:
+		FcgiHandler(const char *cmdLine, int queueLength, int maxInstances,
+			int idleTime, int maxRequests);
 		virtual void Handle(Node &node, HttpRequest &request, HttpResponse &response);
+	private:
+		~FcgiHandler();
+	private:
+		FcPool pool;
 	};
 }
 

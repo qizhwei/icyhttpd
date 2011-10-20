@@ -14,7 +14,9 @@ namespace Httpd
 	class Endpoint: NonCopyable
 	{
 	public:
-		Endpoint(const std::string &ip, UInt16 port, Node *defaultNode);
+		Endpoint(const std::string &ip, UInt16 port);
+		bool SetDefaultNode(Node *defaultNode);
+		bool AddBinding(const CiString &host, Node *node);
 		Node &GetNode(const CiString &host);
 
 	private:

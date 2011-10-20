@@ -3,11 +3,12 @@
 
 #include "Utility.h"
 #include "Handler.h"
+#include "Endpoint.h"
 #include "rapidxml.hpp"
 #include "rapidxml_utils.hpp"
 #include <memory>
+#include <map>
 #include <vector>
-#include <unordered_map>
 #include <utility>
 #include <string>
 
@@ -15,9 +16,9 @@ namespace Httpd
 {
 	struct SiteData
 	{
+		const char *root;
 		std::vector<std::pair<const char *, int> > listens;
 		std::vector<const char *> hosts;
-		std::vector<std::pair<const char *, const char *> > mounts;
 		std::vector<std::pair<const char *, const char *> > handlers;
 	};
 
@@ -30,7 +31,8 @@ namespace Httpd
 		rapidxml::file<> file;
 		rapidxml::xml_document<> doc;
 		std::vector<SiteData> sites;
-		std::unordered_map<CiString, Handler *> handlerNs;
+		std::map<CiString, Handler *> handlerNs;
+		std::map<std::pair<CiString, int>, Endpoint *> eps;
 	private:
 		void ParseRoot(rapidxml::xml_node<> *xn);
 		void ParseSite(rapidxml::xml_node<> *xn);

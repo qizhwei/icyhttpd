@@ -68,6 +68,16 @@ namespace
 
 namespace Httpd
 {
+	FileHandler &FileHandler::Instance()
+	{
+		static FileHandler *fh = new FileHandler;
+		return *fh;
+	}
+
+	FileHandler::FileHandler()
+	{
+	}
+
 	void FileHandler::Handle(Node &node, HttpRequest &request, HttpResponse &response)
 	{
 		bool head;

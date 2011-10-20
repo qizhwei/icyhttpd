@@ -9,7 +9,9 @@ namespace Httpd
 	{
 	public:
 		virtual void Handle(Node &node, HttpRequest &request, HttpResponse &response);
+		static FileHandler &Instance();
 	private:
+		FileHandler();
 		~FileHandler();
 	};
 }

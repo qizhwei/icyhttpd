@@ -16,4 +16,9 @@ namespace Httpd
 		else
 			return *(iter->second);
 	}
+
+	bool Node::AddHandler(const CiString &ext, Handler *handler)
+	{
+		return this->bindings.insert(make_pair(ext, handler)).second;
+	}
 }

@@ -1,6 +1,9 @@
 #include "FcgiHandler.h"
 #include "Utility.h"
 #include "Exception.h"
+#include "Node.h"
+#include "Http.h"
+#include "Constant.h"
 #include "fcpool.h"
 #include <vector>
 #include <cstring>
@@ -207,6 +210,22 @@ namespace Httpd
 
 	void FcgiHandler::Handle(Node &node, HttpRequest &request, HttpResponse &response)
 	{
-		// TODO
+		FcRequest req;
+		req.Begin(&this->pool);
+		string filename = node.PathA() + request.URI();
+		req.WriteParam("SCRIPT_FILENAME", filename.c_str());
+		req.WriteParam("REQUEST_METHOD", request.Method());
+		req.WriteParam();
+		response.BeginHeader("200 OK");
+		response.EndHeader(false);
+		char buffer[BufferBlockSize];
+		while (true) {
+			UInt32 size = req.Read(buffer, sizeof(buffer));
+			if (size != 0)
+				response.Write(buffer, size);
+			if (size != sizeof(buffer))
+				break;
+		}
+		response.Write(nullptr, 0);
 	}
 }

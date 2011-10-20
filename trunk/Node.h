@@ -14,6 +14,7 @@ namespace Httpd
 	{
 	public:
 		Node(std::string path, Handler *defaultHandler);
+		bool AddHandler(const CiString &ext, Handler *handler);
 		Handler &GetHandler(const CiString &ext);
 		const std::string &PathA() { return pathA; }
 		const std::wstring &PathW() { return pathW; }

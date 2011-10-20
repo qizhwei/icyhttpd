@@ -1,4 +1,7 @@
 #include "Loader.h"
+#include "Node.h"
+#include "Endpoint.h"
+#include "FileHandler.h"
 #include "FcgiHandler.h"
 #include "rapidxml.hpp"
 #include "rapidxml_iterators.hpp"
@@ -54,7 +57,38 @@ namespace Httpd
 			}
 			ParseRoot(root);
 
-			// TODO: Build sites
+			for each (SiteData sd in this->sites) {
+				Node *node = new Node(sd.root, &FileHandler::Instance());
+				for each (pair<const char *, const char *> handler in sd.handlers) {
+					auto iter = this->handlerNs.find(handler.second);
+					if (iter == this->handlerNs.end()) {
+						Warning("handler \'%s\' not found\n", handler.second);
+						continue;
+					}
+					if (!node->AddHandler(handler.first, iter->second)) {
+						Warning("handler for extension \'%s\' already exists\n", handler.first);
+					}
+				}
+				for each (pair<const char *, int> listen in sd.listens) {
+					Endpoint *ep;
+					auto iter = this->eps.find(listen);
+					if (iter != this->eps.end()) {
+						ep = iter->second;
+					} else {
+						try {
+							ep = new Endpoint(listen.first, listen.second);
+						} catch (const exception &) {
+							Warning("failed to listen on %s:%d\n", listen.first, listen.second);
+							continue;
+						}
+					}
+					for each (const char *host in sd.hosts) {
+						if (!ep->AddBinding(host, node)) {
+							Warning("host %s on endpoint %s:%d already exists\n", host, listen.first, listen.second);
+						}
+					}
+				}
+			}
 
 		} catch (const LoaderException &) {
 		}
@@ -77,6 +111,12 @@ namespace Httpd
 	void Loader::ParseSite(rapidxml::xml_node<> *xn)
 	{
 		SiteData sd;
+		xml_attribute<> *root = xn->first_attribute("root");
+		if (!root) {
+			Warning("node \'site\' must have attribute \'root\'\n");
+			return;
+		}
+		sd.root = root->value();
 
 		for (node_iterator<char> i(xn); i != node_iterator<char>(); ++i) {
 			const char *name = i->name();
@@ -89,30 +129,18 @@ namespace Httpd
 			} else if (!_stricmp(name, "host")) {
 				xml_attribute<> *name = i->first_attribute("name");
 				sd.hosts.push_back(name ? name->value() : "");
-			} else if (!_stricmp(name, "mount")) {
-				xml_attribute<> *url = i->first_attribute("url");
-				xml_attribute<> *path = i->first_attribute("path");
-				if (!url) {
-					Warning("node \'mount\' must have attribute \'url\'\n");
-					continue;
-				}
-				if (!path) {
-					Warning("node \'mount\' must have attribute \'path\'\n");
-					continue;
-				}
-				sd.mounts.push_back(make_pair(url->value(), path->value()));
 			} else if (!_stricmp(name, "handler")) {
-				xml_attribute<> *extension = i->first_attribute("extension");
+				xml_attribute<> *ext = i->first_attribute("ext");
 				xml_attribute<> *ref = i->first_attribute("ref");
-				if (!extension) {
-					Warning("node \'mount\' must have attribute \'extension\'\n");
+				if (!ext) {
+					Warning("node \'mount\' must have attribute \'ext\'\n");
 					continue;
 				}
 				if (!ref) {
 					Warning("node \'mount\' must have attribute \'ref\'\n");
 					continue;
 				}
-				sd.handlers.push_back(make_pair(extension->value(), ref->value()));
+				sd.handlers.push_back(make_pair(ext->value(), ref->value()));
 			} else {
 				Warning("undefined node \'%s\'\n", name);
 			}

@@ -1,0 +1,96 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "naiveio", "naiveio\naiveio.vcxproj", "{B6C2708B-18B7-456A-AC02-C87A059DA709}"
+	ProjectSection(ProjectDependencies) = postProject
+		{17455D55-A39C-4622-8D97-55F0AB46D881} = {17455D55-A39C-4622-8D97-55F0AB46D881}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tempapp", "tempapp\tempapp.vcxproj", "{AB0AACAB-23FF-45C7-94CC-DC8C6A45A230}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B8490B3B-5533-4962-B38F-CF777A1CEB78} = {B8490B3B-5533-4962-B38F-CF777A1CEB78}
+		{B6C2708B-18B7-456A-AC02-C87A059DA709} = {B6C2708B-18B7-456A-AC02-C87A059DA709}
+		{492CD1AA-92DD-45AA-82AA-EC9AC98E1A89} = {492CD1AA-92DD-45AA-82AA-EC9AC98E1A89}
+		{F72FACD6-818E-456B-BF26-CA85D5F08DF8} = {F72FACD6-818E-456B-BF26-CA85D5F08DF8}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "protocol", "protocol\protocol.vcxproj", "{B8490B3B-5533-4962-B38F-CF777A1CEB78}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "util", "util\util.vcxproj", "{F72FACD6-818E-456B-BF26-CA85D5F08DF8}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "win32_common", "win32_common\win32_common.vcxproj", "{17455D55-A39C-4622-8D97-55F0AB46D881}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fiberio", "fiberio\fiberio.vcxproj", "{492CD1AA-92DD-45AA-82AA-EC9AC98E1A89}"
+	ProjectSection(ProjectDependencies) = postProject
+		{17455D55-A39C-4622-8D97-55F0AB46D881} = {17455D55-A39C-4622-8D97-55F0AB46D881}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "daemon", "daemon\daemon.vcxproj", "{7AE7DCCE-C88A-4024-AFCE-AB80FB51BFE2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B8490B3B-5533-4962-B38F-CF777A1CEB78} = {B8490B3B-5533-4962-B38F-CF777A1CEB78}
+		{B6C2708B-18B7-456A-AC02-C87A059DA709} = {B6C2708B-18B7-456A-AC02-C87A059DA709}
+		{492CD1AA-92DD-45AA-82AA-EC9AC98E1A89} = {492CD1AA-92DD-45AA-82AA-EC9AC98E1A89}
+		{F72FACD6-818E-456B-BF26-CA85D5F08DF8} = {F72FACD6-818E-456B-BF26-CA85D5F08DF8}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		fiberio - Debug|Win32 = fiberio - Debug|Win32
+		fiberio - Release|Win32 = fiberio - Release|Win32
+		naiveio - Debug|Win32 = naiveio - Debug|Win32
+		naiveio - Release|Win32 = naiveio - Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B6C2708B-18B7-456A-AC02-C87A059DA709}.fiberio - Debug|Win32.ActiveCfg = Debug|Win32
+		{B6C2708B-18B7-456A-AC02-C87A059DA709}.fiberio - Release|Win32.ActiveCfg = Release|Win32
+		{B6C2708B-18B7-456A-AC02-C87A059DA709}.naiveio - Debug|Win32.ActiveCfg = Debug|Win32
+		{B6C2708B-18B7-456A-AC02-C87A059DA709}.naiveio - Debug|Win32.Build.0 = Debug|Win32
+		{B6C2708B-18B7-456A-AC02-C87A059DA709}.naiveio - Release|Win32.ActiveCfg = Release|Win32
+		{B6C2708B-18B7-456A-AC02-C87A059DA709}.naiveio - Release|Win32.Build.0 = Release|Win32
+		{AB0AACAB-23FF-45C7-94CC-DC8C6A45A230}.fiberio - Debug|Win32.ActiveCfg = Debug|Win32
+		{AB0AACAB-23FF-45C7-94CC-DC8C6A45A230}.fiberio - Release|Win32.ActiveCfg = Release|Win32
+		{AB0AACAB-23FF-45C7-94CC-DC8C6A45A230}.naiveio - Debug|Win32.ActiveCfg = Debug|Win32
+		{AB0AACAB-23FF-45C7-94CC-DC8C6A45A230}.naiveio - Release|Win32.ActiveCfg = Release|Win32
+		{B8490B3B-5533-4962-B38F-CF777A1CEB78}.fiberio - Debug|Win32.ActiveCfg = Debug|Win32
+		{B8490B3B-5533-4962-B38F-CF777A1CEB78}.fiberio - Debug|Win32.Build.0 = Debug|Win32
+		{B8490B3B-5533-4962-B38F-CF777A1CEB78}.fiberio - Release|Win32.ActiveCfg = Release|Win32
+		{B8490B3B-5533-4962-B38F-CF777A1CEB78}.fiberio - Release|Win32.Build.0 = Release|Win32
+		{B8490B3B-5533-4962-B38F-CF777A1CEB78}.naiveio - Debug|Win32.ActiveCfg = Debug|Win32
+		{B8490B3B-5533-4962-B38F-CF777A1CEB78}.naiveio - Debug|Win32.Build.0 = Debug|Win32
+		{B8490B3B-5533-4962-B38F-CF777A1CEB78}.naiveio - Release|Win32.ActiveCfg = Release|Win32
+		{B8490B3B-5533-4962-B38F-CF777A1CEB78}.naiveio - Release|Win32.Build.0 = Release|Win32
+		{F72FACD6-818E-456B-BF26-CA85D5F08DF8}.fiberio - Debug|Win32.ActiveCfg = Debug|Win32
+		{F72FACD6-818E-456B-BF26-CA85D5F08DF8}.fiberio - Debug|Win32.Build.0 = Debug|Win32
+		{F72FACD6-818E-456B-BF26-CA85D5F08DF8}.fiberio - Release|Win32.ActiveCfg = Release|Win32
+		{F72FACD6-818E-456B-BF26-CA85D5F08DF8}.fiberio - Release|Win32.Build.0 = Release|Win32
+		{F72FACD6-818E-456B-BF26-CA85D5F08DF8}.naiveio - Debug|Win32.ActiveCfg = Debug|Win32
+		{F72FACD6-818E-456B-BF26-CA85D5F08DF8}.naiveio - Debug|Win32.Build.0 = Debug|Win32
+		{F72FACD6-818E-456B-BF26-CA85D5F08DF8}.naiveio - Release|Win32.ActiveCfg = Release|Win32
+		{F72FACD6-818E-456B-BF26-CA85D5F08DF8}.naiveio - Release|Win32.Build.0 = Release|Win32
+		{17455D55-A39C-4622-8D97-55F0AB46D881}.fiberio - Debug|Win32.ActiveCfg = Debug|Win32
+		{17455D55-A39C-4622-8D97-55F0AB46D881}.fiberio - Debug|Win32.Build.0 = Debug|Win32
+		{17455D55-A39C-4622-8D97-55F0AB46D881}.fiberio - Release|Win32.ActiveCfg = Release|Win32
+		{17455D55-A39C-4622-8D97-55F0AB46D881}.fiberio - Release|Win32.Build.0 = Release|Win32
+		{17455D55-A39C-4622-8D97-55F0AB46D881}.naiveio - Debug|Win32.ActiveCfg = Debug|Win32
+		{17455D55-A39C-4622-8D97-55F0AB46D881}.naiveio - Debug|Win32.Build.0 = Debug|Win32
+		{17455D55-A39C-4622-8D97-55F0AB46D881}.naiveio - Release|Win32.ActiveCfg = Release|Win32
+		{17455D55-A39C-4622-8D97-55F0AB46D881}.naiveio - Release|Win32.Build.0 = Release|Win32
+		{492CD1AA-92DD-45AA-82AA-EC9AC98E1A89}.fiberio - Debug|Win32.ActiveCfg = Debug|Win32
+		{492CD1AA-92DD-45AA-82AA-EC9AC98E1A89}.fiberio - Debug|Win32.Build.0 = Debug|Win32
+		{492CD1AA-92DD-45AA-82AA-EC9AC98E1A89}.fiberio - Release|Win32.ActiveCfg = Release|Win32
+		{492CD1AA-92DD-45AA-82AA-EC9AC98E1A89}.fiberio - Release|Win32.Build.0 = Release|Win32
+		{492CD1AA-92DD-45AA-82AA-EC9AC98E1A89}.naiveio - Debug|Win32.ActiveCfg = Debug|Win32
+		{492CD1AA-92DD-45AA-82AA-EC9AC98E1A89}.naiveio - Release|Win32.ActiveCfg = Release|Win32
+		{7AE7DCCE-C88A-4024-AFCE-AB80FB51BFE2}.fiberio - Debug|Win32.ActiveCfg = Debug|Win32
+		{7AE7DCCE-C88A-4024-AFCE-AB80FB51BFE2}.fiberio - Debug|Win32.Build.0 = Debug|Win32
+		{7AE7DCCE-C88A-4024-AFCE-AB80FB51BFE2}.fiberio - Release|Win32.ActiveCfg = Release|Win32
+		{7AE7DCCE-C88A-4024-AFCE-AB80FB51BFE2}.fiberio - Release|Win32.Build.0 = Release|Win32
+		{7AE7DCCE-C88A-4024-AFCE-AB80FB51BFE2}.naiveio - Debug|Win32.ActiveCfg = Debug|Win32
+		{7AE7DCCE-C88A-4024-AFCE-AB80FB51BFE2}.naiveio - Debug|Win32.Build.0 = Debug|Win32
+		{7AE7DCCE-C88A-4024-AFCE-AB80FB51BFE2}.naiveio - Release|Win32.ActiveCfg = Release|Win32
+		{7AE7DCCE-C88A-4024-AFCE-AB80FB51BFE2}.naiveio - Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

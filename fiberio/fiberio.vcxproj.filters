@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="dispatch.c" />
+    <ClCompile Include="init.c" />
+    <ClCompile Include="thread.c" />
+    <ClCompile Include="socket.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="fiberio.h" />
+  </ItemGroup>
+</Project>

@@ -1,6 +1,0 @@
-#summary 想到而未实现的优化
-
-  * Allocator (Memory Pool)
-  * Dynamic Thread Count
-  * __declspec(novtable)
-  * 对于同步完成的操作不投递完成包

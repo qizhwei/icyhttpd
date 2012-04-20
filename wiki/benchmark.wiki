@@ -1,10 +1,10 @@
 #summary Benchmarks for several httpd under Windows
 
 =Software=
-apache: apache 2.2.22 stable
-nginx: nginx 1.0.15
-iis: iis 7.0
-fiber: icyhttpd - fiberio
+apache: apache 2.2.22 stable<br>
+nginx: nginx 1.0.15<br>
+iis: iis 7.0<br>
+fiber: icyhttpd - fiberio<br>
 thread: icyhttpd - naiveio
 
 =Script=

@@ -1,0 +1,25 @@
+#summary Benchmarks for several httpd under Windows
+
+=Software=
+apache: apache 2.2.22 stable
+nginx: nginx 1.0.15
+iis: iis 7.0
+fiber: icyhttpd - fiberio
+thread: icyhttpd - naiveio
+
+=Script=
+
+{{{
+Measure-Command { tinyget -srv:127.0.0.1 -r:80 -uri:/file.txt -threads:4 -loop:1024 }
+}}}
+
+=Result=
+
+in time(sec), the lower the better
+
+|| || 256 || 4096 || 65536 || 1048576 ||
+|| apache || 0.602 || 0.600 || 0.734 || 5.174 ||
+|| nginx || 0.856 || 0.932 || 1.159 || 6.811 ||
+|| iis || 0.421 || 0.423 || 0.624 || 5.267 ||
+|| fiber || 0.514 || 0.520 || 0.632 || 4.942 ||
+|| thread || 0.587 || 0.591 || 0.687 || 4.954 ||

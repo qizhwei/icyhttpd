@@ -18,6 +18,7 @@ CSTATUS IoCreateThread(
 	void *Context)
 {
 	IO_THREAD *object;
+	CSTATUS status;
 
 	object = (IO_THREAD *)malloc(sizeof(IO_THREAD));
 	if (object == NULL) {
@@ -33,8 +34,9 @@ CSTATUS IoCreateThread(
 	object->ThreadHandle = CreateThread(
 		NULL, 0, NaiveIoThreadEntry, object, 0, NULL);
 	if (object->ThreadHandle == NULL) {
+		status = Win32ErrorCodeToCStatus(GetLastError());
 		free(object);
-		return Win32ErrorCodeToCStatus(GetLastError());
+		return status;
 	}
 
 	*Thread = object;

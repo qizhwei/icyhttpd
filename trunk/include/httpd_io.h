@@ -43,6 +43,11 @@ extern CSTATUS IoCreateClientByAccept(
 	OUT IO_CLIENT **Client,
 	IO_LISTENER *Listener);
 
+extern CSTATUS IoCreateClientByConnect(
+	OUT IO_CLIENT **Client,
+	const char *IPAddress,
+	int Port);
+
 extern void IoDestroyClient(
 	IO_CLIENT *Client);
 

@@ -40,10 +40,11 @@ struct _IO_THREAD {
 	IO_THREAD_ENTRY *ThreadEntry;
 	void *UserContext;
 	LPVOID FiberHandle;
-	IO_THREAD *JoinThread;
+	volatile PVOID JoinThread;
 };
 
 extern LPFN_ACCEPTEX IopfnAcceptEx;
+extern LPFN_CONNECTEX IopfnConnectEx;
 extern LPFN_TRANSMITFILE IopfnTransmitFile;
 
 extern int IopThreadCount;

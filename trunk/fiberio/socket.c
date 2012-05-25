@@ -119,6 +119,76 @@ CSTATUS IoCreateClientByAccept(
 	return C_SUCCESS;
 }
 
+typedef struct _CONNECT_BLOCK {
+	IOP_IO_BLOCK IoBlock;
+	SOCKET Socket;
+	struct sockaddr_in Service;
+} CONNECT_BLOCK;
+
+static CSTATUS IopCreateClientByConnectDelayedIo(
+	IOP_IO_BLOCK *IoBlock)
+{
+	CONNECT_BLOCK *block = CONTAINING_RECORD(IoBlock, CONNECT_BLOCK, IoBlock);
+	int iErrorCode;
+
+	if (!IopfnConnectEx(block->Socket, (SOCKADDR *)&block->Service, sizeof(block->Service),
+		NULL, 0, 0, &IoBlock->Overlapped))
+	{
+		iErrorCode = WSAGetLastError();
+		if (iErrorCode == WSA_IO_PENDING)
+			return C_SUCCESS;
+		return WSAErrorCodeToCStatus(iErrorCode);
+	}
+
+	return C_SUCCESS;
+}
+
+CSTATUS IoCreateClientByConnect(
+	OUT IO_CLIENT **Client,
+	const char *IPAddress,
+	int Port)
+{
+	CONNECT_BLOCK block;
+	struct sockaddr_in service;
+	CSTATUS status;
+	size_t dummy;
+
+	INIT_IO_BLOCK(&block.IoBlock, IopCreateClientByConnectDelayedIo);
+
+	if (Port <= 0 || Port > USHRT_MAX)
+		return C_INVALID_PORT;
+
+	block.Service.sin_family = AF_INET;
+	block.Service.sin_port = htons(Port);
+	block.Service.sin_addr.s_addr = inet_addr(IPAddress);
+
+	if (block.Service.sin_addr.s_addr == INADDR_NONE)
+		return C_INVALID_IP_ADDRESS;
+
+	status = IopCreateSocket(&block.Socket);
+	if (!SUCCESS(status))
+		return status;
+
+	service.sin_family = AF_INET;
+	service.sin_port = 0;
+	service.sin_addr.s_addr = INADDR_ANY;
+
+	if (bind(block.Socket, (SOCKADDR *)&service, sizeof(service))) {
+		status = WSAErrorCodeToCStatus(WSAGetLastError());
+		closesocket(block.Socket);
+		return status;
+	}
+
+	status = IopDispatcherBlock(&block.IoBlock, (HANDLE)block.Socket, &dummy);
+	if (!SUCCESS(status)) {
+		closesocket(block.Socket);
+		return status;
+	}
+
+	*Client = (IO_CLIENT *)block.Socket;
+	return C_SUCCESS;
+}
+
 void IoDestroyClient(
 	IO_CLIENT *Client)
 {

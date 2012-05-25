@@ -2,6 +2,7 @@
 #include "fiberio.h"
 
 LPFN_ACCEPTEX IopfnAcceptEx;
+LPFN_CONNECTEX IopfnConnectEx;
 LPFN_TRANSMITFILE IopfnTransmitFile;
 
 CSTATUS IoInitSystem(void)
@@ -13,6 +14,7 @@ CSTATUS IoInitSystem(void)
 	DWORD dummy;
 	int i;
 	static const GUID guidAcceptEx = WSAID_ACCEPTEX;
+	static const GUID guidConnectEx = WSAID_CONNECTEX;
 	static const GUID guidTransmitFile = WSAID_TRANSMITFILE;
 
 	result = WSAStartup(MAKEWORD(2, 2), &WSAData);
@@ -29,6 +31,10 @@ CSTATUS IoInitSystem(void)
 	if (WSAIoctl(s, SIO_GET_EXTENSION_FUNCTION_POINTER,
 		(LPVOID)&guidAcceptEx, sizeof(guidAcceptEx),
 		&IopfnAcceptEx, sizeof(IopfnAcceptEx), &dummy, NULL, NULL)
+		||
+		WSAIoctl(s, SIO_GET_EXTENSION_FUNCTION_POINTER,
+		(LPVOID)&guidConnectEx, sizeof(guidConnectEx),
+		&IopfnConnectEx, sizeof(IopfnConnectEx), &dummy, NULL, NULL)
 		||
 		WSAIoctl(s, SIO_GET_EXTENSION_FUNCTION_POINTER,
 		(LPVOID)&guidTransmitFile, sizeof(guidTransmitFile),

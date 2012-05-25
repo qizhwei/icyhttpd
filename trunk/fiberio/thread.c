@@ -14,11 +14,13 @@ static void IopThreadExit(
 {
 	IOP_IO_BLOCK deleteFiberBlock;
 	IOP_THREAD_BLOCK *threadBlock = CURRENT_THREAD_BLOCK();
+	IO_THREAD *joinThread;
 
 	// Wake up joiners
-	if (Thread->JoinThread != NULL) {
+	joinThread = (IO_THREAD *)InterlockedCompareExchangePointer(&Thread->JoinThread, Thread, NULL);
+	if (joinThread != NULL) {
 		PostQueuedCompletionStatus(IopQueueHandle, 0, FIBERIO_SWITCH_KEY,
-			(LPOVERLAPPED)Thread->JoinThread->FiberHandle);
+			(LPOVERLAPPED)joinThread->FiberHandle);
 	}
 
 	IoDetachThread(Thread);
@@ -95,10 +97,8 @@ CSTATUS IoJoinThread(
 {
 	IO_THREAD *CurrentThread = (IO_THREAD *)GetFiberData();
 	
-	assert(Thread->JoinThread == NULL);
-	Thread->JoinThread = CurrentThread;
-
-	SwitchToFiber(CURRENT_THREAD_BLOCK()->MainFiberHandle);
+	if (!InterlockedCompareExchangePointer(&Thread->JoinThread, CurrentThread, NULL))
+		SwitchToFiber(CURRENT_THREAD_BLOCK()->MainFiberHandle);
 
 	IoDetachThread(Thread);
 	return C_SUCCESS;

@@ -1,6 +1,18 @@
 #include <limits.h>
 #include "naiveio.h"
 
+static CSTATUS IopCreateSocket(
+	OUT SOCKET *Socket)
+{
+	SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (s == INVALID_SOCKET)
+		return WSAErrorCodeToCStatus(WSAGetLastError());
+
+	SetHandleInformation((HANDLE)s, HANDLE_FLAG_INHERIT, 0);
+	*Socket = s;
+	return C_SUCCESS;
+}
+
 CSTATUS IoCreateListener(
 	OUT IO_LISTENER **Listener,
 	const char *IPAddress,
@@ -20,11 +32,9 @@ CSTATUS IoCreateListener(
 	if (service.sin_addr.s_addr == INADDR_NONE)
 		return C_INVALID_IP_ADDRESS;
 
-	s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (s == INVALID_SOCKET)
-		return WSAErrorCodeToCStatus(WSAGetLastError());
-
-	SetHandleInformation((HANDLE)s, HANDLE_FLAG_INHERIT, 0);
+	status = IopCreateSocket(&s);
+	if (!SUCCESS(status))
+		return status;
 
 	if (bind(s, (SOCKADDR *)&service, sizeof(service))) {
 		status = WSAErrorCodeToCStatus(WSAGetLastError());
@@ -57,6 +67,39 @@ CSTATUS IoCreateClientByAccept(
 	s = accept((SOCKET)Listener, NULL, NULL);
 	if (s == INVALID_SOCKET)
 		return WSAErrorCodeToCStatus(WSAGetLastError());
+
+	*Client = (IO_CLIENT *)s;
+	return C_SUCCESS;
+}
+
+CSTATUS IoCreateClientByConnect(
+	OUT IO_CLIENT **Client,
+	const char *IPAddress,
+	int Port)
+{
+	SOCKET s;
+	CSTATUS status;
+	struct sockaddr_in service = {0};
+
+	if (Port <= 0 || Port > USHRT_MAX)
+		return C_INVALID_PORT;
+
+	service.sin_family = AF_INET;
+	service.sin_port = htons(Port);
+	service.sin_addr.s_addr = inet_addr(IPAddress);
+
+	if (service.sin_addr.s_addr == INADDR_NONE)
+		return C_INVALID_IP_ADDRESS;
+
+	status = IopCreateSocket(&s);
+	if (!SUCCESS(status))
+		return status;
+
+	if (connect(s, (SOCKADDR *)&service, sizeof(service))) {
+		status = WSAErrorCodeToCStatus(WSAGetLastError());
+		closesocket(s);
+		return status;
+	}
 
 	*Client = (IO_CLIENT *)s;
 	return C_SUCCESS;

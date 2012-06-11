@@ -2,19 +2,18 @@
 #include <string.h>
 #include "daemon.h"
 
-static DM_HANDLER_TYPE DmStaticHandlerType;
-static DM_HANDLER DmStaticHandler;
+static DM_HANDLER StaticHandler;
 
-CSTATUS DmCreateStaticHandler(
+static CSTATUS StaticHandlerCreate(
 	OUT DM_HANDLER **Handler,
 	DM_HANDLER_TYPE *Type,
 	const char *Param)
 {
-	*Handler = &DmStaticHandler;
+	*Handler = &StaticHandler;
 	return C_SUCCESS;
 }
 
-CSTATUS DmCreateFile(
+static CSTATUS MyCreateFile(
 	OUT IO_FILE **File,
 	DM_NODE *Node,
 	const char *RelativePath)
@@ -48,7 +47,7 @@ CSTATUS DmCreateFile(
 
 // TODO: Support range request
 
-CSTATUS DmSendFileResponse(
+static CSTATUS SendFileResponse(
 	HTTP_RESPONSE *Response,
 	IO_FILE *File)
 {
@@ -78,7 +77,7 @@ CSTATUS DmSendFileResponse(
 	return HttpEndResponse(Response);
 }
 
-void DmInvokeStaticHandler(
+static void StaticHandlerInvoke(
 	DM_HANDLER *Handler,
 	DM_NODE *Node,
 	const char *RelativePath,
@@ -89,23 +88,22 @@ void DmInvokeStaticHandler(
 	CSTATUS status;
 	IO_FILE *file;
 
-	status = DmCreateFile(&file, Node, RelativePath);
+	status = MyCreateFile(&file, Node, RelativePath);
 	if (!SUCCESS(status)) {
 		HttpWriteErrorStatusResponse(Response, status);
 		return;
 	}
 
-	status = DmSendFileResponse(Response, file);
+	status = SendFileResponse(Response, file);
 	IoDestroyFile(file);
 
 	if (!SUCCESS(status))
 		HttpSetForceCloseResponse(Response);
 }
 
-CSTATUS DmInitStaticHandler(void)
-{
-	DmStaticHandlerType.CreateFunc = DmCreateStaticHandler;
-	DmStaticHandlerType.InvokeFunc = DmInvokeStaticHandler;
-	DmStaticHandler.Type = &DmStaticHandlerType;
-	return DmRegisterHandler("static", &DmStaticHandlerType);
-}
+DM_HANDLER_TYPE StaticHandlerType = {
+	"static",
+	NULL,
+	StaticHandlerCreate,
+	StaticHandlerInvoke,
+};

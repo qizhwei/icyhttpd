@@ -7,6 +7,5 @@
 
 extern void DmConfigParserEntry(void);
 extern CSTATUS DmInitServer(void);
-extern CSTATUS DmInitStaticHandler(void);
 
 #endif

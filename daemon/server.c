@@ -202,10 +202,17 @@ void HttpMain(
 }
 
 CSTATUS DmRegisterHandler(
-	const char *TypeName,
 	DM_HANDLER_TYPE *Type)
 {
-	return RadixTreeInsert(DmHandlerMapping, TypeName, Type, 1);
+	CSTATUS status;
+
+	if (Type->InitFunc) {
+		status = Type->InitFunc();
+		if (!SUCCESS(status))
+			return status;
+	}
+
+	return RadixTreeInsert(DmHandlerMapping, Type->Name, Type, 1);
 }
 
 CSTATUS DmCreateHandler(

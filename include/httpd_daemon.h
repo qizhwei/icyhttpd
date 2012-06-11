@@ -10,6 +10,8 @@ typedef struct _DM_HANDLER DM_HANDLER;
 typedef struct _DM_NODE DM_NODE;
 typedef struct _DM_ENDPOINT DM_ENDPOINT;
 
+typedef CSTATUS DM_HANDLER_INIT_FUNC(void);
+
 typedef CSTATUS DM_HANDLER_CREATE_FUNC(
 	OUT DM_HANDLER **Handler,
 	DM_HANDLER_TYPE *Type,
@@ -25,6 +27,7 @@ typedef void DM_HANDLER_INVOKE_FUNC(
 
 struct _DM_HANDLER_TYPE {
 	const char *Name;
+	DM_HANDLER_INIT_FUNC *InitFunc;
 	DM_HANDLER_CREATE_FUNC *CreateFunc;
 	DM_HANDLER_INVOKE_FUNC *InvokeFunc;
 };
@@ -78,7 +81,6 @@ extern CSTATUS DmAttachHandlerNode(
 	OPT const char *Extension);
 
 extern CSTATUS DmRegisterHandler(
-	const char *TypeName,
 	DM_HANDLER_TYPE *Type);
 
 extern CSTATUS DmCreateHandler(

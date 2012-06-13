@@ -6,6 +6,7 @@ static DWORD WINAPI NaiveIoThreadEntry(
 	LPVOID lpParameter)
 {
 	IO_THREAD *Thread = (IO_THREAD *)lpParameter;
+	TlsSetValue(IopTlsIndex, Thread);
 	WaitForSingleObject(IopRunEvent, INFINITE);
 	Thread->ThreadEntry(Thread->UserContext);
 	IoDetachThread(Thread);
@@ -30,11 +31,18 @@ CSTATUS IoCreateThread(
 
 	object->ThreadEntry = ThreadEntry;
 	object->UserContext = Context;
+	object->EventHandle = CreateEventW(NULL, TRUE, FALSE, NULL);
+	if (object->EventHandle == NULL) {
+		status = Win32ErrorCodeToCStatus(GetLastError());
+		free(object);
+		return status;
+	}
 
 	object->ThreadHandle = CreateThread(
 		NULL, 0, NaiveIoThreadEntry, object, 0, NULL);
 	if (object->ThreadHandle == NULL) {
 		status = Win32ErrorCodeToCStatus(GetLastError());
+		CloseHandle(object->EventHandle);
 		free(object);
 		return status;
 	}
@@ -49,6 +57,7 @@ void IoDetachThread(
 	assert(Thread->ReferenceCount > 0);
 
 	if (InterlockedDecrement(&Thread->ReferenceCount) == 0) {
+		CloseHandle(Thread->EventHandle);
 		CloseHandle(Thread->ThreadHandle);
 		free(Thread);
 	}
@@ -67,4 +76,40 @@ CSTATUS IoJoinThread(
 	}
 
 	return C_SUCCESS;
+}
+
+static void CALLBACK IopApcEntry(
+	ULONG_PTR Context)
+{
+	IOP_APC_BLOCK *block = (IOP_APC_BLOCK *)Context;
+	block->ApcEntry(block->Context, (IO_APC *)block->EventHandle);
+}
+
+CSTATUS IoInvokeApc(
+	IO_APC_ENTRY *ApcEntry,
+	void *Context)
+{
+	IOP_APC_BLOCK block;
+
+	block.ApcEntry = ApcEntry;
+	block.Context = Context;
+	block.EventHandle = CURRENT_THREAD()->EventHandle;
+
+	if (!ResetEvent(block.EventHandle))
+		return Win32ErrorCodeToCStatus(GetLastError());
+
+	if (!QueueUserAPC(IopApcEntry, IopApcThread, (ULONG_PTR)&block))
+		return Win32ErrorCodeToCStatus(GetLastError());
+
+	if (WaitForSingleObject(block.EventHandle, INFINITE) != WAIT_OBJECT_0)
+		abort();
+
+	return C_SUCCESS;
+}
+
+void IoCompleteApc(
+	IO_APC *Apc)
+{
+	if (!SetEvent((HANDLE)Apc))
+		abort();
 }

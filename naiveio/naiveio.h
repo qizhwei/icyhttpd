@@ -9,9 +9,21 @@ struct _IO_THREAD {
 	IO_THREAD_ENTRY *ThreadEntry;
 	void *UserContext;
 	HANDLE ThreadHandle;
+	HANDLE EventHandle;
 };
+
+typedef struct _IOP_APC_BLOCK {
+	IO_APC_ENTRY *ApcEntry;
+	void *Context;
+	HANDLE EventHandle;
+} IOP_APC_BLOCK;
 
 extern LPFN_TRANSMITFILE IopfnTransmitFile;
 extern HANDLE IopRunEvent;
+extern DWORD IopTlsIndex;
+extern HANDLE IopApcThread;
+
+#define CURRENT_THREAD() \
+	((IO_THREAD *)TlsGetValue(IopTlsIndex))
 
 #endif

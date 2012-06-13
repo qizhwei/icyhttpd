@@ -43,6 +43,12 @@ struct _IO_THREAD {
 	volatile PVOID JoinThread;
 };
 
+typedef struct _IOP_APC_BLOCK {
+	IOP_IO_BLOCK IoBlock;
+	IO_APC_ENTRY *ApcEntry;
+	void *Context;
+} IOP_APC_BLOCK;
+
 extern LPFN_ACCEPTEX IopfnAcceptEx;
 extern LPFN_CONNECTEX IopfnConnectEx;
 extern LPFN_TRANSMITFILE IopfnTransmitFile;
@@ -51,6 +57,7 @@ extern int IopThreadCount;
 extern DWORD IopTlsIndex;
 extern HANDLE IopQueueHandle;
 extern IOP_THREAD_BLOCK *IopThreadBlocks;
+extern HANDLE IopApcThread;
 
 extern DWORD CALLBACK IopDispatcherThreadEntry(
 	LPVOID Context);

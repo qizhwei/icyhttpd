@@ -15,6 +15,8 @@ typedef void IO_THREAD_ENTRY(void *Context);
 typedef struct _IO_LISTENER IO_LISTENER;
 typedef struct _IO_CLIENT IO_CLIENT;
 typedef struct _IO_FILE IO_FILE;
+typedef struct _IO_APC IO_APC;
+typedef void IO_APC_ENTRY(void *Context, IO_APC *Apc);
 
 extern CSTATUS IoInitSystem(void);
 extern void IoUninitSystem(void);
@@ -79,6 +81,13 @@ extern CSTATUS IoTransmitFileClient(
 	IO_FILE *File,
 	uint64_t Offset,
 	uint64_t Length);
+
+extern CSTATUS IoInvokeApc(
+	IO_APC_ENTRY *ApcEntry,
+	void *Context);
+
+extern void IoCompleteApc(
+	IO_APC *Apc);
 
 #ifdef __cplusplus
 }

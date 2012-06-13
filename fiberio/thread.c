@@ -103,3 +103,46 @@ CSTATUS IoJoinThread(
 	IoDetachThread(Thread);
 	return C_SUCCESS;
 }
+
+static void CALLBACK IopApcEntry(
+	ULONG_PTR Context)
+{
+	IOP_APC_BLOCK *block = (IOP_APC_BLOCK *)Context;
+	block->ApcEntry(block->Context, (IO_APC *)&block->IoBlock.Overlapped);
+}
+
+static CSTATUS IoInvokeApcDelayedIo(
+	IOP_IO_BLOCK *IoBlock)
+{
+	IOP_APC_BLOCK *block = CONTAINING_RECORD(IoBlock, IOP_APC_BLOCK, IoBlock);
+
+	if (!QueueUserAPC(IopApcEntry, IopApcThread, (ULONG_PTR)block))
+		return Win32ErrorCodeToCStatus(GetLastError());
+
+	return C_SUCCESS;
+}
+
+CSTATUS IoInvokeApc(
+	IO_APC_ENTRY *ApcEntry,
+	void *Context)
+{
+	IOP_APC_BLOCK block;
+	IOP_THREAD_BLOCK *threadBlock = CURRENT_THREAD_BLOCK();
+
+	INIT_IO_BLOCK(&block.IoBlock, IoInvokeApcDelayedIo);
+	block.ApcEntry = ApcEntry;
+	block.Context = Context;
+	threadBlock->DelayedIoBlock = &block.IoBlock;
+	SwitchToFiber(threadBlock->MainFiberHandle);
+
+	// N.B. Thread block may be changed
+	threadBlock = CURRENT_THREAD_BLOCK();
+	return threadBlock->DelayedIoStatus;
+}
+
+void IoCompleteApc(
+	IO_APC *Apc)
+{
+	if (!PostQueuedCompletionStatus(IopQueueHandle, 0, FIBERIO_COMPLETE_KEY, (LPOVERLAPPED)Apc))
+		abort();
+}

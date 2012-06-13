@@ -2,7 +2,29 @@
 #include <string.h>
 #include "daemon.h"
 
-static DM_HANDLER StaticHandler;
+static CSTATUS StaticHandlerCreate(
+	OUT DM_HANDLER **Handler,
+	DM_HANDLER_TYPE *Type,
+	const char *Param);
+
+static void StaticHandlerInvoke(
+	DM_HANDLER *Handler,
+	DM_NODE *Node,
+	const char *RelativePath,
+	HTTP_CONNECTION *Connection,
+	HTTP_REQUEST *Request,
+	HTTP_RESPONSE *Response);
+
+DM_HANDLER_TYPE StaticHandlerType = {
+	"static",
+	NULL,
+	StaticHandlerCreate,
+	StaticHandlerInvoke,
+};
+
+static DM_HANDLER StaticHandler = {
+	&StaticHandlerType,
+};
 
 static CSTATUS StaticHandlerCreate(
 	OUT DM_HANDLER **Handler,
@@ -100,10 +122,3 @@ static void StaticHandlerInvoke(
 	if (!SUCCESS(status))
 		HttpSetForceCloseResponse(Response);
 }
-
-DM_HANDLER_TYPE StaticHandlerType = {
-	"static",
-	NULL,
-	StaticHandlerCreate,
-	StaticHandlerInvoke,
-};

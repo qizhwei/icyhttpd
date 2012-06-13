@@ -4,6 +4,7 @@
 LPFN_ACCEPTEX IopfnAcceptEx;
 LPFN_CONNECTEX IopfnConnectEx;
 LPFN_TRANSMITFILE IopfnTransmitFile;
+HANDLE IopApcThread;
 
 CSTATUS IoInitSystem(void)
 {
@@ -58,6 +59,7 @@ CSTATUS IoInitSystem(void)
 		INVALID_HANDLE_VALUE, NULL, 0, 0)) == NULL)
 	{
 		status = Win32ErrorCodeToCStatus(GetLastError());
+		TlsFree(IopTlsIndex);
 		WSACleanup();
 		return status;
 	}
@@ -104,6 +106,10 @@ void IoUninitSystem(void)
 CSTATUS IoMainLoop(void)
 {
 	int i;
+
+	if (!DuplicateHandle(GetCurrentProcess(), GetCurrentThread(),
+		GetCurrentProcess(), &IopApcThread, 0, FALSE, DUPLICATE_SAME_ACCESS))
+		return Win32ErrorCodeToCStatus(GetLastError());
 
 	for (i = 0; i < IopThreadCount; ++i)
 		ResumeThread(IopThreadBlocks[i].ThreadHandle);

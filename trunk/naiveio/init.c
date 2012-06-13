@@ -1,7 +1,9 @@
 #include "naiveio.h"
 
+DWORD IopTlsIndex;
 LPFN_TRANSMITFILE IopfnTransmitFile;
 HANDLE IopRunEvent;
+HANDLE IopApcThread;
 
 CSTATUS IoInitSystem(void)
 {
@@ -12,13 +14,21 @@ CSTATUS IoInitSystem(void)
 	DWORD dummy;
 	static const GUID guidTransmitFile = WSAID_TRANSMITFILE;
 
-	IopRunEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
-	if (!IopRunEvent)
+	if ((IopTlsIndex = TlsAlloc()) == TLS_OUT_OF_INDEXES) {
 		return Win32ErrorCodeToCStatus(GetLastError());
+	}
+
+	IopRunEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
+	if (!IopRunEvent) {
+		status = Win32ErrorCodeToCStatus(GetLastError());
+		TlsFree(IopTlsIndex);
+		return status;
+	}
 
 	result = WSAStartup(MAKEWORD(2, 2), &WSAData);
 	if (result) {
 		CloseHandle(IopRunEvent);
+		TlsFree(IopTlsIndex);
 		return WSAErrorCodeToCStatus(result);
 	}
 
@@ -27,6 +37,7 @@ CSTATUS IoInitSystem(void)
 		status = WSAErrorCodeToCStatus(WSAGetLastError());
 		WSACleanup();
 		CloseHandle(IopRunEvent);
+		TlsFree(IopTlsIndex);
 		return status;
 	}
 
@@ -38,6 +49,7 @@ CSTATUS IoInitSystem(void)
 		closesocket(s);
 		WSACleanup();
 		CloseHandle(IopRunEvent);
+		TlsFree(IopTlsIndex);
 		return status;
 	}
 
@@ -54,6 +66,10 @@ void IoUninitSystem(void)
 
 CSTATUS IoMainLoop(void)
 {
+	if (!DuplicateHandle(GetCurrentProcess(), GetCurrentThread(),
+		GetCurrentProcess(), &IopApcThread, 0, FALSE, DUPLICATE_SAME_ACCESS))
+		return Win32ErrorCodeToCStatus(GetLastError());
+
 	if (!SetEvent(IopRunEvent))
 		return Win32ErrorCodeToCStatus(GetLastError());
 

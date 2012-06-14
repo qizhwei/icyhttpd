@@ -69,6 +69,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="fc.c" />
+    <ClCompile Include="wrap.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="fc.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

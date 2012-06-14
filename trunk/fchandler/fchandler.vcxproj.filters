@@ -18,5 +18,13 @@
     <ClCompile Include="fc.c">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="wrap.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="fc.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

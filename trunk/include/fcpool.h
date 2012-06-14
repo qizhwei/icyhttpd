@@ -49,6 +49,8 @@
 extern "C" {
 #endif
 
+#include <stddef.h>
+
 // type definitions
 typedef int fc_ssize_t;
 typedef struct fc_pool fc_pool_t;

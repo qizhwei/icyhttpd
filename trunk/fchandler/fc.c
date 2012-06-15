@@ -43,6 +43,7 @@ static CSTATUS FcHandlerCreate(
 		return C_BAD_ALLOC;
 
 	fc->Handler.Type = &FcHandlerType;
+	// TODO: use Param
 	fc->Pool = fc_create_pool("D:\\php\\php-cgi.exe", 1000, 8, 5000, 499);
 	if (fc->Pool == NULL) {
 		free(fc);
@@ -97,7 +98,39 @@ static CSTATUS FcWriteParamWriter(
 	return C_SUCCESS;
 }
 
-static void FcHandlerInvoke(
+static CSTATUS FcpAddCgiVariables(
+	fc_request_t *FcRequest)
+{
+	BUFFERED_WRITER writer;
+	CSTATUS status;
+	size_t actualSize;
+
+	status = BufferedWriterInit(&writer, FC_INITIAL_ALLOC_SIZE, FC_BLOCK_SIZE,
+		(WRITE_FUNCTION *)FcWriteParamRequest, FcRequest);
+	if (!SUCCESS(status))
+		return status;
+
+	status = FcWriteParamWriter(&writer, "SCRIPT_FILENAME", "");
+	if (!SUCCESS(status))
+		return status;
+
+	status = FcWriteParamWriter(&writer, "REQUEST_METHOD", "GET");
+	if (!SUCCESS(status))
+		return status;
+
+	status = BufferedWriterFlush(&writer);
+	if (!SUCCESS(status))
+		return status;
+
+	BufferedWriterUninit(&writer);
+	status = FcWriteParamRequest(FcRequest, NULL, 0, &actualSize);
+	if (!SUCCESS(status))
+		return status;
+
+	return C_SUCCESS;
+}
+
+static CSTATUS FcpHandlerInvoke(
 	DM_HANDLER *Handler,
 	DM_NODE *Node,
 	const char *RelativePath,
@@ -107,33 +140,25 @@ static void FcHandlerInvoke(
 {
 	FC_HANDLER *fc = (FC_HANDLER *)Handler;
 	fc_request_t *req;
-	BUFFERED_WRITER paramWriter;
 	BUFFERED_READER dataReader;
 	CSTATUS status;
-	size_t actualSize;
 
 	req = fc_create_request();
 	if (req == NULL) {
-		// TODO
+		return C_GENERIC_ERROR;
 	}
 
 	status = FcBeginRequest(req, fc->Pool);
 	if (!SUCCESS(status)) {
-		// TODO
+		FcClose(req);
+		return status;
 	}
 
-	status = BufferedWriterInit(&paramWriter, FC_INITIAL_ALLOC_SIZE, FC_BLOCK_SIZE,
-		(WRITE_FUNCTION *)FcWriteParamRequest, req);
+	status = FcpAddCgiVariables(req);
 	if (!SUCCESS(status)) {
-		// TODO
+		FcClose(req);
+		return status;
 	}
-
-	// TODO
-	status = FcWriteParamWriter(&paramWriter, "SCRIPT_FILENAME", "");
-	status = FcWriteParamWriter(&paramWriter, "REQUEST_METHOD", "GET");
-	status = BufferedWriterFlush(&paramWriter);
-	BufferedWriterUninit(&paramWriter);
-	status = FcWriteParamRequest(req, NULL, 0, &actualSize);
 
 	status = BufferedReaderInit(&dataReader, FC_INITIAL_ALLOC_SIZE,
 		(READ_FUNCTION *)FcReadRequest, req);
@@ -148,4 +173,19 @@ static void FcHandlerInvoke(
 	}
 
 	BufferedReaderUninit(&dataReader);
+	FcClose(req);
+	return status;
+}
+
+static void FcHandlerInvoke(
+	DM_HANDLER *Handler,
+	DM_NODE *Node,
+	const char *RelativePath,
+	HTTP_CONNECTION *Connection,
+	HTTP_REQUEST *Request,
+	HTTP_RESPONSE *Response)
+{
+	CSTATUS status = FcpHandlerInvoke(Handler, Node,
+		RelativePath, Connection, Request, Response);
+	// TODO
 }

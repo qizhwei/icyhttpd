@@ -34,18 +34,17 @@ void BufferedWriterUninit(
 CSTATUS BufferedWriterFlush(
 	BUFFERED_WRITER *Writer)
 {
-	CSTATUS status;
+	CSTATUS status = C_SUCCESS;
 	char *data = Writer->Buffer.Data;
 	size_t remaining = Writer->DataSize;
 	size_t actualSize;
 
-	while (1) {
+	while (remaining) {
 		status = Writer->WriteFunction(Writer->Context, data, remaining, &actualSize);
 		if (!SUCCESS(status))
 			break;
 		data += actualSize;
-		if ((remaining -= actualSize) == 0)
-			break;
+		remaining -= actualSize;
 	}
 
 	memmove(Writer->Buffer.Data, data, remaining);

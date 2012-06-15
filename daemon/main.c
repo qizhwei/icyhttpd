@@ -6,13 +6,10 @@ static void DmInitHandlers(void)
 	DM_HANDLER_TYPE **type;
 	CSTATUS status;
 
-	LogPrintf("Loading handlers...\n");
 	for (type = DmHandlerList; *type != NULL; ++type) {
 		status = DmRegisterHandler(*type);
-		if (SUCCESS(status)) {
-			LogPrintf("  %s\n", (*type)->Name);
-		} else {
-			LogPrintf("  %s [failed with %d]\n", (*type)->Name, (int)status);
+		if (!SUCCESS(status)) {
+			LogPrintf("failed to load \'%s\'\n", (*type)->Name, (int)status);
 		}
 	}
 }

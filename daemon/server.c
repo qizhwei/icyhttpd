@@ -187,9 +187,10 @@ void HttpMain(
 
 	// Get handler by extension or default
 	ext = HttpGetExtensionRequest(Request);
-	if (ext)
+	if (ext && *ext == '.') {
 		handler = (DM_HANDLER *)RadixTreeQueryCaseInsensitive(
-			node->ExtensionToHandlerMapping, ext);
+			node->ExtensionToHandlerMapping, ext + 1);
+	}
 	if (!handler)
 		handler = node->DefaultHandler;
 

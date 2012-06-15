@@ -91,6 +91,9 @@
     <ClInclude Include="daemon.h" />
     <ClInclude Include="onullstream.hpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="icyhttpd.conf" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

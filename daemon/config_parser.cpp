@@ -131,6 +131,11 @@ out:
 		return false;
 	}
 
+	if (!curToken.empty()) {
+		tokens.push_back(string());
+		curToken.swap(tokens.back());
+	}
+
 	tokens.swap(Result);
 	return true;
 }
@@ -184,19 +189,6 @@ void ParseConfig(
 
 				DM_NODE *node;
 				CSTATUS status = DmCreateNode(&node);
-				if (!SUCCESS(status)) {
-					PrintStatus(LogStream, status);
-					continue;
-				}
-
-				DM_HANDLER *handler;
-				status = DmCreateHandler(&handler, "static", "");
-				if (!SUCCESS(status)) {
-					PrintStatus(LogStream, status);
-					continue;
-				}
-
-				status = DmAttachHandlerNode(node, handler, NULL);
 				if (!SUCCESS(status)) {
 					PrintStatus(LogStream, status);
 					continue;
@@ -325,6 +317,34 @@ void ParseConfig(
 					PrintStatus(LogStream, status);
 					continue;
 				}
+
+			} else if (command == "addhandler") {
+
+				if (tokens.size() < 3) {
+					LogStream << "Parameter count incorrect." << endl;
+					continue;
+				}
+
+				if (nodes.empty()) {
+					LogStream << "You must create a node first." << endl;
+					continue;
+				}
+
+				DM_HANDLER *handler;
+				const char *param = (tokens.size() == 3) ? "" : tokens[3].c_str();
+				CSTATUS status = DmCreateHandler(&handler, tokens[2].c_str(), param);
+				if (!SUCCESS(status)) {
+					PrintStatus(LogStream, status);
+					continue;
+				}
+
+				const char *ext = (tokens[1] == "*") ? NULL : tokens[1].c_str();
+				status = DmAttachHandlerNode(nodes.back().second, handler, ext);
+				if (!SUCCESS(status)) {
+					PrintStatus(LogStream, status);
+					continue;
+				}
+			
 			} else if (command == "siteend") {
 				if (nodes.empty()) {
 					LogStream << "You must create a node first." << endl;
@@ -357,5 +377,11 @@ void ParseConfig(
 extern "C"
 void DmConfigParserEntry(void)
 {
-	ParseConfig(cin, cout, cout);
+	ifstream fin("icyhttpd.conf");
+	if (!fin.is_open()) {
+		cerr << "Cannot open \'icyhttpd.conf\'" << endl;
+		exit(1);
+	}
+
+	ParseConfig(fin, onullstream(), cerr);
 }

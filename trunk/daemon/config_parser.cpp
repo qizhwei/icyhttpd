@@ -5,6 +5,7 @@
 #include <vector>
 #include <utility>
 #include <algorithm>
+#include <functional>
 #include <iterator>
 #include <cctype>
 #include <cassert>
